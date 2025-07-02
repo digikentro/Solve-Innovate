@@ -421,3 +421,4 @@ export const VALIDATION_SCHEMAS = {
 
 // Initialize global error handling
 // ErrorHandler.setupGlobalErrorHandling();
+ 

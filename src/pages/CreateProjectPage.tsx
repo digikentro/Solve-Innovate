@@ -14,6 +14,7 @@ import { SourceVerificationInfo } from '@/components/ui/SourceVerificationInfo';
 import { SourceVerificationService } from '@/services/sourceVerificationService';
 import { ProjectService } from '@/services/projectService';
 import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
+import Modal from '@/components/ui/Modal';
 
 const BUSINESS_SECTORS = [
   { id: 'education', name: 'Education' },
@@ -46,6 +47,14 @@ const SDG_GOALS = [
   { id: 'sdg-17', name: 'Partnerships for the Goals', number: 17 }
 ];
 
+// Type guard helpers
+function isSystemProblem(problem: any): problem is import('@/types/project').SystemProblem {
+  return problem && problem.hmwType === 'system' && problem.iosAssessment?.dimensions?.systemImpactPotential;
+}
+function isBusinessProblem(problem: any): problem is import('@/types/project').BusinessProblem {
+  return problem && problem.hmwType === 'business' && problem.iosAssessment?.dimensions?.businessImpactPotential;
+}
+
 export default function CreateProjectPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -67,8 +76,8 @@ export default function CreateProjectPage() {
   const [presentableSlide, setPresentableSlide] = useState<string>('');
   const [problemSlides, setProblemSlides] = useState<Record<string, { hmw: string; bullets: string[] }>>({});
   const [viewingSlide, setViewingSlide] = useState<{ problemId: string; slide: { hmw: string; bullets: string[] } } | null>(null);
-  const [isSystemFocused, setIsSystemFocused] = useState(false);
-  const [isBusinessFocused, setIsBusinessFocused] = useState(false);
+  const [isHmwTypeModalOpen, setIsHmwTypeModalOpen] = useState(false);
+  const [selectedHmwType, setSelectedHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
 
   const getSectorsForType = () => {
     if (projectType === 'social-impact') {
@@ -152,85 +161,6 @@ export default function CreateProjectPage() {
     setUploadedPdfs(newPdfs);
     if (newPdfs.length === 0) {
       setPdfContext('');
-    }
-  };
-
-  const handleGenerateProblem = async () => {
-    if (isGenerating) return;
-
-    if (inputMode === 'custom' && !problemDescription.trim()) {
-      alert('Please describe your problem');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-problem', {
-        body: {
-          projectType,
-          sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
-          problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
-          pdfContext: pdfContext || undefined, // Include PDF context if available
-        }
-      });
-
-      if (error) throw error;
-
-      if (!data || !data.title) throw new Error('No problem received from generation');
-
-      // Add unique ID to the problem and ensure IOS assessment is present
-      const newProblem = {
-        ...data,
-        id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        iosAssessment: data.iosAssessment || {
-          totalScore: data.opportunityScore || 75,
-          assessmentMode: 'automated',
-          resourceTier: 'standard',
-          dimensions: {
-            marketOpportunity: {
-              name: 'Market Opportunity',
-              score: data.subscores?.marketPotential || 15,
-              subscores: {
-                marketSize: data.subscores?.marketPotential || 15,
-                growthPotential: data.subscores?.marketPotential || 15,
-                competitiveLandscape: data.subscores?.marketPotential || 15
-              },
-              evidence: [],
-              sources: []
-            },
-            innovationPotential: {
-              name: 'Innovation Potential',
-              score: data.subscores?.solutionGap || 15,
-              subscores: {
-                solutionGap: data.subscores?.solutionGap || 15,
-                technologicalReadiness: data.subscores?.solutionGap || 15,
-                disruptivePotential: data.subscores?.solutionGap || 15
-              },
-              evidence: [],
-              sources: []
-            },
-            feasibility: {
-              name: 'Feasibility',
-              score: data.subscores?.technicalFeasibility || 15,
-              subscores: {
-                technicalFeasibility: data.subscores?.technicalFeasibility || 15,
-                resourceAvailability: data.subscores?.technicalFeasibility || 15,
-                implementationComplexity: data.subscores?.technicalFeasibility || 15
-              },
-              evidence: [],
-              sources: []
-            }
-          }
-        }
-      };
-
-      setGeneratedProblems(prev => [...prev, newProblem]);
-      toast.success('Problem generated successfully!');
-    } catch (error) {
-      console.error('Error generating problem:', error);
-      alert('Failed to generate problem. Please try again.');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -503,7 +433,7 @@ export default function CreateProjectPage() {
                   className="w-full min-h-[80px] max-h-[300px] p-4 text-base resize-none border-0 focus:outline-none bg-transparent"
                   style={{ fontSize: '16px' }}
                 />
-                {/* Toolbar: PDF Upload + System-Focused & Business-Focused Toggles (now below textarea) */}
+                {/* Toolbar: PDF Upload (System/Business toggles removed) */}
                 <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 flex items-center gap-4 mt-1">
                   <label className="cursor-pointer flex items-center gap-2">
                     <input
@@ -532,34 +462,6 @@ export default function CreateProjectPage() {
                       <span className="text-sm text-gray-700">Add Context</span>
                     </Button>
                   </label>
-                  {/* System-Focused Toggle Button */}
-                  <Button
-                    type="button"
-                    variant={isSystemFocused ? 'default' : 'outline'}
-                    size="sm"
-                    className={`flex items-center gap-2 border-2 ${isSystemFocused ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-blue-200 text-blue-600 bg-white hover:bg-blue-50'} shadow`}
-                    onClick={() => {
-                      setIsSystemFocused((prev) => !prev);
-                      if (!isSystemFocused) setIsBusinessFocused(false);
-                    }}
-                  >
-                    <FiZap className="w-4 h-4" />
-                    {isSystemFocused ? 'System-Focused ON' : 'System-Focused OFF'}
-                  </Button>
-                  {/* Business-Focused Toggle Button */}
-                  <Button
-                    type="button"
-                    variant={isBusinessFocused ? 'default' : 'outline'}
-                    size="sm"
-                    className={`flex items-center gap-2 border-2 ${isBusinessFocused ? 'border-green-600 bg-green-50 text-green-700' : 'border-green-200 text-green-600 bg-white hover:bg-green-50'} shadow`}
-                    onClick={() => {
-                      setIsBusinessFocused((prev) => !prev);
-                      if (!isBusinessFocused) setIsSystemFocused(false);
-                    }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h3m4 0V7a2 2 0 00-2-2h-7a2 2 0 00-2 2v2" /></svg>
-                    {isBusinessFocused ? 'Business-Focused ON' : 'Business-Focused OFF'}
-                  </Button>
                 </div>
               </div>
 
@@ -624,101 +526,97 @@ export default function CreateProjectPage() {
         {/* Generate Problem Button */}
         {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) && generatedProblems.length === 0 && (
           <div className="fixed bottom-6 right-6 z-50">
-              <Button 
-                onClick={async () => {
-                  if (isGenerating) return;
-                  if (inputMode === 'custom' && !problemDescription.trim()) {
-                    alert('Please describe your problem');
-                    return;
-                  }
-                  setIsGenerating(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke('generate-problem', {
-                      body: {
-                        projectType,
-                        sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
-                        problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
-                        pdfContext: pdfContext || undefined,
-                        systemFocused: isSystemFocused,
-                        businessFocused: isBusinessFocused,
-                      }
-                    });
-                    if (error) throw error;
-                    if (!data || !data.title) throw new Error('No problem received from generation');
-                    const newProblem = {
-                      ...data,
-                      id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                      iosAssessment: data.iosAssessment || {
-                        totalScore: data.opportunityScore || 75,
-                        assessmentMode: 'automated',
-                        resourceTier: 'standard',
-                        dimensions: {
-                          marketOpportunity: {
-                            name: 'Market Opportunity',
-                            score: data.subscores?.marketPotential || 15,
-                            subscores: {
-                              marketSize: data.subscores?.marketPotential || 15,
-                              growthPotential: data.subscores?.marketPotential || 15,
-                              competitiveLandscape: data.subscores?.marketPotential || 15
-                            },
-                            evidence: [],
-                            sources: []
-                          },
-                          innovationPotential: {
-                            name: 'Innovation Potential',
-                            score: data.subscores?.solutionGap || 15,
-                            subscores: {
-                              solutionGap: data.subscores?.solutionGap || 15,
-                              technologicalReadiness: data.subscores?.solutionGap || 15,
-                              disruptivePotential: data.subscores?.solutionGap || 15
-                            },
-                            evidence: [],
-                            sources: []
-                          },
-                          feasibility: {
-                            name: 'Feasibility',
-                            score: data.subscores?.technicalFeasibility || 15,
-                            subscores: {
-                              technicalFeasibility: data.subscores?.technicalFeasibility || 15,
-                              resourceAvailability: data.subscores?.technicalFeasibility || 15,
-                              implementationComplexity: data.subscores?.technicalFeasibility || 15
-                            },
-                            evidence: [],
-                            sources: []
-                          }
-                        }
-                      }
-                    };
-                    setGeneratedProblems(prev => [...prev, newProblem]);
-                    let toastMsg = 'Problem generated successfully!';
-                    if (isSystemFocused) toastMsg = 'System-focused HMW generated!';
-                    if (isBusinessFocused) toastMsg = 'Business-focused HMW generated!';
-                    toast.success(toastMsg);
-                  } catch (error) {
-                    console.error('Error generating problem:', error);
-                    alert('Failed to generate problem. Please try again.');
-                  } finally {
-                    setIsGenerating(false);
-                  }
-                }} 
+            <Button
+              onClick={() => setIsHmwTypeModalOpen(true)}
               disabled={isGenerating}
               className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
               size="lg"
-              >
-                {isGenerating ? (
-                  <>
+            >
+              {isGenerating ? (
+                <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Problem...
-                  </>
-                ) : (
+                  Generating Problem...
+                </>
+              ) : (
                 <>
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  {isSystemFocused ? 'Generate System-Focused HMW' : isBusinessFocused ? 'Generate Business-Focused HMW' : 'Generate Problem'}
+                  Generate Problem
                 </>
-                )}
-              </Button>
+              )}
+            </Button>
+            <Modal open={isHmwTypeModalOpen} onClose={() => setIsHmwTypeModalOpen(false)}>
+              <h2 className="text-xl font-bold mb-4">Select HMW Prompt Type</h2>
+              <div className="space-y-4">
+                <div
+                  className={`border rounded-lg p-4 cursor-pointer hover:border-indigo-400 transition ${selectedHmwType === 'human' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'}`}
+                  onClick={() => setSelectedHmwType('human')}
+                >
+                  <div className="font-semibold text-indigo-700 mb-1">Human-Centred HMW Prompt</div>
+                  <div className="text-sm text-gray-700 mb-1">A people-focused challenge for creative ways to improve user experience or behaviour.</div>
+                  <div className="text-xs text-gray-500 mb-1">Structure: "How might we help [target group] to [do / feel / understand X]?"</div>
+                  <div className="text-xs text-gray-400 italic">Ex: How might we help first-time smartphone users in rural India feel confident making digital payments?</div>
+                </div>
+                <div
+                  className={`border rounded-lg p-4 cursor-pointer hover:border-blue-400 transition ${selectedHmwType === 'system' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'}`}
+                  onClick={() => setSelectedHmwType('system')}
+                >
+                  <div className="font-semibold text-blue-700 mb-1">System-Focused HMW Prompt</div>
+                  <div className="text-sm text-gray-700 mb-1">Tackles structures, policies, or processes for root-cause redesign.</div>
+                  <div className="text-xs text-gray-500 mb-1">Structure: "How might we redesign / restructure [system component] to [deliver systemic outcome]?"</div>
+                  <div className="text-xs text-gray-400 italic">Ex: How might we redesign India's agricultural supply-chain information system to create end-to-end traceability with real-time pricing for farmers?</div>
+                </div>
+                <div
+                  className={`border rounded-lg p-4 cursor-pointer hover:border-green-400 transition ${selectedHmwType === 'business' ? 'border-green-600 bg-green-50' : 'border-gray-200 bg-white'}`}
+                  onClick={() => setSelectedHmwType('business')}
+                >
+                  <div className="font-semibold text-green-700 mb-1">Pure-Business HMW Prompt</div>
+                  <div className="text-sm text-gray-700 mb-1">A commercial strategy tool focused on financial impact, market opportunity, or efficiency.</div>
+                  <div className="text-xs text-gray-500 mb-1">Structure: "How might we [business action] to [achieve quantified business outcome] by [X % / ₹ Y] within [timeframe] while [key constraint]?"</div>
+                  <div className="text-xs text-gray-400 italic">Ex: How might we optimise our freemium pricing to raise conversion from 2% to 10% and reach ₹10 crore ARR within 12 months?</div>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6 gap-2">
+                <Button variant="outline" onClick={() => setIsHmwTypeModalOpen(false)}>Cancel</Button>
+                <Button
+                  onClick={async () => {
+                    if (!selectedHmwType) return;
+                    setIsHmwTypeModalOpen(false);
+                    setIsGenerating(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('generate-problem', {
+                        body: {
+                          projectType,
+                          sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
+                          problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
+                          pdfContext: pdfContext || undefined,
+                          hmwType: selectedHmwType,
+                        }
+                      });
+                      if (error) throw error;
+                      if (!data || !data.title) throw new Error('No problem received from generation');
+                      const newProblem = {
+                        ...data,
+                        hmwType: selectedHmwType,
+                        id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      };
+                      setGeneratedProblems(prev => [...prev, newProblem]);
+                      toast.success('Problem generated successfully!');
+                    } catch (error) {
+                      console.error('Error generating problem:', error);
+                      alert('Failed to generate problem. Please try again.');
+                    } finally {
+                      setIsGenerating(false);
+                      setSelectedHmwType(null);
+                    }
+                  }}
+                  disabled={!selectedHmwType || isGenerating}
+                >
+                  {isGenerating ? 'Generating...' : 'Generate'}
+                </Button>
+              </div>
+            </Modal>
           </div>
         )}
 
@@ -995,10 +893,39 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    <IOSAssessmentCard
-                      assessment={detailedProblem.iosAssessment!}
-                      problemTitle={detailedProblem.title}
-                    />
+                    {detailedProblem.iosAssessment && (
+                      <IOSAssessmentCard
+                        assessment={detailedProblem.iosAssessment}
+                        problemTitle={detailedProblem.title}
+                      />
+                    )}
+                    {/* Type-specific fields */}
+                    {isSystemProblem(detailedProblem) && (
+                      <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+                        <h4 className="font-semibold text-blue-800 mb-2">System Impact Potential</h4>
+                        <div className="text-sm text-gray-700 mb-1">Score: {detailedProblem.iosAssessment.dimensions.systemImpactPotential.score}</div>
+                        <div className="text-xs text-gray-500 mb-1">{detailedProblem.iosAssessment.dimensions.systemImpactPotential.name}</div>
+                        {/* Render subscores, evidence, sources as needed */}
+                      </div>
+                    )}
+                    {isBusinessProblem(detailedProblem) && (
+                      <div className="mt-4 p-4 border rounded-lg bg-green-50">
+                        <h4 className="font-semibold text-green-800 mb-2">Business Impact Potential</h4>
+                        <div className="text-sm text-gray-700 mb-1">Score: {detailedProblem.iosAssessment.dimensions.businessImpactPotential.score}</div>
+                        <div className="text-xs text-gray-500 mb-1">{detailedProblem.iosAssessment.dimensions.businessImpactPotential.name}</div>
+                        {/* Render subscores, evidence, sources as needed */}
+                      </div>
+                    )}
+                    {isBusinessProblem(detailedProblem) && detailedProblem.businessMetrics && (
+                      <div className="mt-4 p-4 border rounded-lg bg-yellow-50">
+                        <h4 className="font-semibold text-yellow-800 mb-2">Business Metrics</h4>
+                        <ul className="text-sm text-gray-700">
+                          {Object.entries(detailedProblem.businessMetrics).map(([key, value]) => (
+                            <li key={key}><span className="font-medium">{key}:</span> {value}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1042,30 +969,6 @@ export default function CreateProjectPage() {
                 </div>
               </div>
             )}
-
-            {/* Generate More Button - Bottom Center */}
-            <div className="flex justify-center mt-6">
-                <Button
-                onClick={handleGenerateProblem}
-                disabled={isGenerating}
-                  variant="outline"
-                className="flex items-center gap-2"
-              >
-                {isGenerating ? (
-                    <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                    </>
-                  ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Generate more
-                  </>
-                  )}
-                </Button>
-              </div>
           </div>
         )}
       </div>

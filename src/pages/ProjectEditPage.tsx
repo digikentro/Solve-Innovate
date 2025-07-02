@@ -50,3 +50,4 @@ export default function ProjectEditPage() {
       <ProjectForm initialData={project} />
     </div>
   );
+}

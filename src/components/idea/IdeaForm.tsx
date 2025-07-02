@@ -61,7 +61,7 @@ export const IdeaForm = ({ initialData, onSuccess }: IdeaFormProps) => {
         try {
           const project = await ProjectService.getProjectById(projectId, user.id);
           if (project) {
-            setProjectTitle(project.title);
+          setProjectTitle(project.title);
           }
         } catch (error) {
           console.error('Error loading project:', error);

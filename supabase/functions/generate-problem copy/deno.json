@@ -1,6 +1,0 @@
-{
-  "imports": {
-    "langchain/llms/openai": "https://esm.sh/langchain/llms/openai",
-    "langchain/prompts": "https://esm.sh/langchain/prompts"
-  }
-} 
