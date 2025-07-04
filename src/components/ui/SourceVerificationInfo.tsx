@@ -1,5 +1,5 @@
 import React from 'react';
-import { SOURCE_VERIFICATION_TIERS } from '@/services/sourceVerificationService';
+import { SOURCE_VERIFICATION_TIERS, SourceVerificationService } from '@/services/sourceVerificationService';
 
 interface SourceVerificationInfoProps {
   className?: string;
@@ -27,13 +27,7 @@ export const SourceVerificationInfo: React.FC<SourceVerificationInfoProps> = ({
       <div className="grid grid-cols-5 gap-2 mb-3">
         {SOURCE_VERIFICATION_TIERS.map((tier) => (
           <div key={tier.tier} className="text-center">
-            <div className={`px-2 py-1 rounded text-white text-xs font-medium ${
-              tier.tier === 1 ? 'bg-green-500' :
-              tier.tier === 2 ? 'bg-blue-500' :
-              tier.tier === 3 ? 'bg-yellow-500' :
-              tier.tier === 4 ? 'bg-orange-500' :
-              'bg-red-500'
-            }`}>
+            <div className={`px-2 py-1 rounded ${SourceVerificationService.getTierColor(tier.tier)} text-white text-xs font-medium`}>
               Tier {tier.tier}
             </div>
             <div className="text-xs text-gray-600 mt-1">{tier.credibilityScore}%</div>
@@ -47,10 +41,7 @@ export const SourceVerificationInfo: React.FC<SourceVerificationInfoProps> = ({
           {SOURCE_VERIFICATION_TIERS.map((tier) => (
             <div key={tier.tier} className="border-l-4 border-gray-200 pl-3">
               <div className="flex items-center mb-1">
-                <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                  tier.tier <= 2 ? 'bg-green-400' : 
-                  tier.tier <= 3 ? 'bg-yellow-400' : 'bg-red-400'
-                }`}></span>
+                <span className={`inline-block w-3 h-3 rounded-full mr-2`}></span>
                 <span className="font-medium text-sm">{tier.name}</span>
                 <span className="text-xs text-gray-500 ml-2">({tier.credibilityScore}% credibility)</span>
               </div>
@@ -73,28 +64,3 @@ export const SourceVerificationInfo: React.FC<SourceVerificationInfoProps> = ({
     </div>
   );
 };
-
-export const SourceVerificationBadge: React.FC<{ tier: number; className?: string }> = ({
-  tier,
-  className = ''
-}) => {
-  const tierInfo = SOURCE_VERIFICATION_TIERS.find(t => t.tier === tier);
-  
-  if (!tierInfo) return null;
-
-  return (
-    <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-      tier === 1 ? 'bg-green-100 text-green-800' :
-      tier === 2 ? 'bg-blue-100 text-blue-800' :
-      tier === 3 ? 'bg-yellow-100 text-yellow-800' :
-      tier === 4 ? 'bg-orange-100 text-orange-800' :
-      'bg-red-100 text-red-800'
-    } ${className}`}>
-      <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-        tier <= 2 ? 'bg-green-400' : 
-        tier <= 3 ? 'bg-yellow-400' : 'bg-red-400'
-      }`}></span>
-      Tier {tier} - {tierInfo.name}
-    </div>
-  );
-}; 

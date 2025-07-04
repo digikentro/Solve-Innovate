@@ -54,12 +54,6 @@ export const IOSDashboard: React.FC<IOSDashboardProps> = ({ className = '' }) =>
     return 'text-red-600';
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 70) return 'bg-green-100';
-    if (score >= 50) return 'bg-yellow-100';
-    return 'bg-red-100';
-  };
-
   if (loading) {
     return (
       <div className={`animate-pulse ${className}`}>

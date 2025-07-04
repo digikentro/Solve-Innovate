@@ -27,7 +27,7 @@ serve(async (req) => {
     }
 
     // Get request body
-    const { sector, problemDescription, userSkills, projectType, inputMode, hmwType } = await req.json();
+    const { projectType, sector, problemDescription, userSkills , inputMode, hmwType } = await req.json();
 
     // Validate required fields based on input mode
     if (inputMode === 'predefined' && !sector) {
@@ -54,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    let prompt, promptid;
+    let prompt="", promptid;
 
     if (projectType) {
       prompt += `Project Type: ${projectType === 'social-impact' ? 'Social Impact (SDG-focused)' : 'Business'}\n`;

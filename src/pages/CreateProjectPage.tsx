@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { aiService, ProblemStatement } from '@/services/aiService';
+import { ProblemStatement } from '@/services/aiService';
 import { IOSAssessmentCard, IOSAssessmentCardCompact } from '@/components/ui/IOSAssessmentCard';
 import { IOSFrameworkService, ProblemStatementEnhanced } from '@/services/iosFramework';
 import { Button } from '@/components/ui/button';
@@ -17,14 +17,51 @@ import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
 import Modal from '@/components/ui/Modal';
 
 const BUSINESS_SECTORS = [
-  { id: 'education', name: 'Education' },
-  { id: 'finance', name: 'Finance' },
-  { id: 'healthcare', name: 'Healthcare' },
   { id: 'technology', name: 'Technology' },
-  { id: 'environment', name: 'Environment' },
-  { id: 'agriculture', name: 'Agriculture' },
-  { id: 'transportation', name: 'Transportation' },
-  { id: 'energy', name: 'Energy' }
+  { id: 'hardware_electronics', name: 'Hardware and Electronics' },
+  { id: 'digital_services', name: 'Digital Services' },
+  { id: 'healthcare', name: 'Healthcare' },
+  { id: 'pharmaceuticals_biotechnology', name: 'Pharmaceuticals and Biotechnology' },
+  { id: 'medical_devices', name: 'Medical Devices and Equipment' },
+  { id: 'finance', name: 'Financial Services' },
+  { id: 'banking_credit', name: 'Banking and Credit' },
+  { id: 'investment_asset_management', name: 'Investment and Asset Management' },
+  { id: 'insurance', name: 'Insurance' },
+  { id: 'retail', name: 'Retail Trade' },
+  { id: 'consumer_products', name: 'Consumer Products' },
+  { id: 'manufacturing', name: 'Manufacturing and Industrial' },
+  { id: 'heavy_manufacturing', name: 'Heavy Manufacturing' },
+  { id: 'light_manufacturing', name: 'Light Manufacturing' },
+  { id: 'energy', name: 'Energy and Utilities' },
+  { id: 'traditional_energy', name: 'Traditional Energy' },
+  { id: 'renewable_energy', name: 'Renewable Energy' },
+  { id: 'transportation', name: 'Transportation and Logistics' },
+  { id: 'transportation_services', name: 'Transportation Services' },
+  { id: 'automotive', name: 'Automotive Industry' },
+  { id: 'real_estate', name: 'Real Estate' },
+  { id: 'construction', name: 'Construction' },
+  { id: 'media', name: 'Media and Entertainment' },
+  { id: 'traditional_media', name: 'Traditional Media' },
+  { id: 'digital_media', name: 'Digital Media' },
+  { id: 'education', name: 'Education' },
+  { id: 'traditional_education', name: 'Traditional Education' },
+  { id: 'edtech', name: 'Educational Technology (EdTech)' },
+  { id: 'agriculture', name: 'Agriculture and Food' },
+  { id: 'agriculture_farming', name: 'Agriculture' },
+  { id: 'food_industry', name: 'Food Industry' },
+  { id: 'professional_services', name: 'Professional Services' },
+  { id: 'business_services', name: 'Business Services' },
+  { id: 'technical_services', name: 'Technical Services' },
+  { id: 'government', name: 'Government and Public Sector' },
+  { id: 'government_services', name: 'Government Services' },
+  { id: 'public_infrastructure', name: 'Public Infrastructure' },
+  { id: 'nonprofit', name: 'Non-Profit and Social Sector' },
+  { id: 'nonprofit_organizations', name: 'Non-Profit Organizations' },
+  { id: 'social_services', name: 'Social Services' },
+  { id: 'emerging_cross_sector', name: 'Emerging and Cross-Sector Industries' },
+  { id: 'sustainability_green_economy', name: 'Sustainability and Green Economy' },
+  { id: 'digital_transformation', name: 'Digital Transformation' },
+  { id: 'health_wellness', name: 'Health and Wellness' },
 ];
 
 const SDG_GOALS = [
@@ -46,14 +83,6 @@ const SDG_GOALS = [
   { id: 'sdg-16', name: 'Peace, Justice and Strong Institutions', number: 16 },
   { id: 'sdg-17', name: 'Partnerships for the Goals', number: 17 }
 ];
-
-// Type guard helpers
-function isSystemProblem(problem: any): problem is import('@/types/project').SystemProblem {
-  return problem && problem.hmwType === 'system' && problem.iosAssessment?.dimensions?.systemImpactPotential;
-}
-function isBusinessProblem(problem: any): problem is import('@/types/project').BusinessProblem {
-  return problem && problem.hmwType === 'business' && problem.iosAssessment?.dimensions?.businessImpactPotential;
-}
 
 export default function CreateProjectPage() {
   const navigate = useNavigate();
@@ -78,6 +107,8 @@ export default function CreateProjectPage() {
   const [viewingSlide, setViewingSlide] = useState<{ problemId: string; slide: { hmw: string; bullets: string[] } } | null>(null);
   const [isHmwTypeModalOpen, setIsHmwTypeModalOpen] = useState(false);
   const [selectedHmwType, setSelectedHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
+  const [lastHmwType, setLastHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
+  const isGeneratingMoreRef = useRef(false);
 
   const getSectorsForType = () => {
     if (projectType === 'social-impact') {
@@ -214,12 +245,12 @@ export default function CreateProjectPage() {
     setIsGeneratingSlide(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-presentable-slide', {
-        body: { 
+        body: {
           title: problem.title, 
           description: problem.description 
         }
       });
-      
+
       if (error) throw error;
       
       // Store the raw JSON data from the edge function
@@ -293,6 +324,77 @@ export default function CreateProjectPage() {
         return <Globe className="w-4 h-4" />;
       default:
         return <Target className="w-4 h-4" />;
+    }
+  };
+
+  // Helper to generate a problem (used by both modal and Generate More)
+  const generateProblem = async (hmwTypeToUse: 'human' | 'system' | 'business') => {
+    setIsGenerating(true);
+    isGeneratingMoreRef.current = true;
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-problem', {
+        body: {
+          projectType,
+          sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
+          problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
+          pdfContext: pdfContext || undefined,
+          hmwType: hmwTypeToUse,
+        }
+      });
+      if (error) throw error;
+      if (!data || !data.title) throw new Error('No problem received from generation');
+      const newProblem = {
+        ...data,
+        id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        iosAssessment: data.iosAssessment || {
+          totalScore: data.opportunityScore || 75,
+          assessmentMode: 'automated',
+          resourceTier: 'standard',
+          dimensions: {
+            marketOpportunity: {
+              name: 'Market Opportunity',
+              score: data.subscores?.marketPotential || 15,
+              subscores: {
+                marketSize: data.subscores?.marketPotential || 15,
+                growthPotential: data.subscores?.marketPotential || 15,
+                competitiveLandscape: data.subscores?.marketPotential || 15
+              },
+              evidence: [],
+              sources: []
+            },
+            innovationPotential: {
+              name: 'Innovation Potential',
+              score: data.subscores?.solutionGap || 15,
+              subscores: {
+                solutionGap: data.subscores?.solutionGap || 15,
+                technologicalReadiness: data.subscores?.solutionGap || 15,
+                disruptivePotential: data.subscores?.solutionGap || 15
+              },
+              evidence: [],
+              sources: []
+            },
+            feasibility: {
+              name: 'Feasibility',
+              score: data.subscores?.technicalFeasibility || 15,
+              subscores: {
+                technicalFeasibility: data.subscores?.technicalFeasibility || 15,
+                resourceAvailability: data.subscores?.technicalFeasibility || 15,
+                implementationComplexity: data.subscores?.technicalFeasibility || 15
+              },
+              evidence: [],
+              sources: []
+            }
+          }
+        }
+      };
+      setGeneratedProblems(prev => [...prev, newProblem]);
+      toast.success('Problem generated successfully!');
+    } catch (error) {
+      console.error('Error generating problem:', error);
+      alert('Failed to generate problem. Please try again.');
+    } finally {
+      setIsGenerating(false);
+      isGeneratingMoreRef.current = false;
     }
   };
 
@@ -526,18 +628,18 @@ export default function CreateProjectPage() {
         {/* Generate Problem Button */}
         {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) && generatedProblems.length === 0 && (
           <div className="fixed bottom-6 right-6 z-50">
-            <Button
+              <Button 
               onClick={() => setIsHmwTypeModalOpen(true)}
               disabled={isGenerating}
               className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
               size="lg"
-            >
-              {isGenerating ? (
-                <>
+              >
+                {isGenerating ? (
+                  <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Generating Problem...
-                </>
-              ) : (
+                    Generating Problem...
+                  </>
+                ) : (
                 <>
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -584,28 +686,9 @@ export default function CreateProjectPage() {
                     if (!selectedHmwType) return;
                     setIsHmwTypeModalOpen(false);
                     setIsGenerating(true);
+                    setLastHmwType(selectedHmwType); // Remember last used type
                     try {
-                      const { data, error } = await supabase.functions.invoke('generate-problem', {
-                        body: {
-                          projectType,
-                          sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
-                          problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
-                          pdfContext: pdfContext || undefined,
-                          hmwType: selectedHmwType,
-                        }
-                      });
-                      if (error) throw error;
-                      if (!data || !data.title) throw new Error('No problem received from generation');
-                      const newProblem = {
-                        ...data,
-                        hmwType: selectedHmwType,
-                        id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                      };
-                      setGeneratedProblems(prev => [...prev, newProblem]);
-                      toast.success('Problem generated successfully!');
-                    } catch (error) {
-                      console.error('Error generating problem:', error);
-                      alert('Failed to generate problem. Please try again.');
+                      await generateProblem(selectedHmwType);
                     } finally {
                       setIsGenerating(false);
                       setSelectedHmwType(null);
@@ -614,8 +697,8 @@ export default function CreateProjectPage() {
                   disabled={!selectedHmwType || isGenerating}
                 >
                   {isGenerating ? 'Generating...' : 'Generate'}
-                </Button>
-              </div>
+              </Button>
+            </div>
             </Modal>
           </div>
         )}
@@ -791,6 +874,32 @@ export default function CreateProjectPage() {
               })}
             </div>
 
+            {/* Generate More Button */}
+            {generatedProblems.length > 0 && (
+              <div className="flex justify-center mt-8">
+                <Button
+                  onClick={async () => {
+                    if (lastHmwType) {
+                      setIsGenerating(true);
+                      await generateProblem(lastHmwType);
+                    } else {
+                      setIsHmwTypeModalOpen(true);
+                    }
+                  }}
+                  disabled={isGenerating}
+                  className="px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition flex items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    'Generate More'
+                  )}
+                </Button>
+              </div>
+            )}
+
             {/* Problem Sources Modal */}
             {sourcesProblem && (
               <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -841,12 +950,9 @@ export default function CreateProjectPage() {
                                 {tierSources.length > 0 ? (
                                   <div className="space-y-2">
                                     {tierSources.map((source, index) => (
-                                      <div key={index} className="border-l-4 border-gray-200 pl-3 py-1">
+                                      <div key={index} className="border-l-4 border-gray-200 pl-3 py-1 border rounded-md">
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-sm font-medium text-gray-900">{source.name}</span>
-                                          <span className={`text-xs ${SourceVerificationService.getBiasColor(source.biasScore || 75)}`}>
-                                            Bias: {source.biasScore || 75}%
-                                          </span>
                                         </div>
                                         <div className="text-xs text-gray-600 mb-1">{source.credibility}</div>
                                         {source.url && (
@@ -869,7 +975,7 @@ export default function CreateProjectPage() {
                             );
                           })}
                         </div>
-                      </div>
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -893,39 +999,10 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    {detailedProblem.iosAssessment && (
-                      <IOSAssessmentCard
-                        assessment={detailedProblem.iosAssessment}
-                        problemTitle={detailedProblem.title}
-                      />
-                    )}
-                    {/* Type-specific fields */}
-                    {isSystemProblem(detailedProblem) && (
-                      <div className="mt-4 p-4 border rounded-lg bg-blue-50">
-                        <h4 className="font-semibold text-blue-800 mb-2">System Impact Potential</h4>
-                        <div className="text-sm text-gray-700 mb-1">Score: {detailedProblem.iosAssessment.dimensions.systemImpactPotential.score}</div>
-                        <div className="text-xs text-gray-500 mb-1">{detailedProblem.iosAssessment.dimensions.systemImpactPotential.name}</div>
-                        {/* Render subscores, evidence, sources as needed */}
-                      </div>
-                    )}
-                    {isBusinessProblem(detailedProblem) && (
-                      <div className="mt-4 p-4 border rounded-lg bg-green-50">
-                        <h4 className="font-semibold text-green-800 mb-2">Business Impact Potential</h4>
-                        <div className="text-sm text-gray-700 mb-1">Score: {detailedProblem.iosAssessment.dimensions.businessImpactPotential.score}</div>
-                        <div className="text-xs text-gray-500 mb-1">{detailedProblem.iosAssessment.dimensions.businessImpactPotential.name}</div>
-                        {/* Render subscores, evidence, sources as needed */}
-                      </div>
-                    )}
-                    {isBusinessProblem(detailedProblem) && detailedProblem.businessMetrics && (
-                      <div className="mt-4 p-4 border rounded-lg bg-yellow-50">
-                        <h4 className="font-semibold text-yellow-800 mb-2">Business Metrics</h4>
-                        <ul className="text-sm text-gray-700">
-                          {Object.entries(detailedProblem.businessMetrics).map(([key, value]) => (
-                            <li key={key}><span className="font-medium">{key}:</span> {value}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <IOSAssessmentCard
+                      assessment={detailedProblem.iosAssessment!}
+                      problemTitle={detailedProblem.title}
+                    />
                   </div>
                 </div>
               </div>
@@ -938,7 +1015,7 @@ export default function CreateProjectPage() {
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold">Presentable Slide</h3>
-                      <Button
+                <Button
                         onClick={() => setViewingSlide(null)}
                         variant="ghost"
                         size="sm"
@@ -946,7 +1023,7 @@ export default function CreateProjectPage() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </Button>
+                </Button>
                     </div>
                     
                     <div className="overflow-y-auto max-h-[70vh]">
