@@ -35,7 +35,7 @@ export interface IOSAssessment {
   updatedAt: string;
 }
 
-export interface ProblemStatementEnhanced {
+export interface ProblemStatement {
   id?: string;
   title: string;
   description: string;
@@ -106,15 +106,6 @@ export const IOS_CRITERIA = {
       globalTrendAlignment: { weight: 25, maxScore: 20 }
     }
   }
-};
-
-// Source credibility tiers
-export const SOURCE_TIERS = {
-  1: { name: 'Highest Credibility', examples: ['Government agencies', 'UN reports', 'Peer-reviewed journals'] },
-  2: { name: 'High Credibility', examples: ['Industry associations', 'Research institutes', 'Established consulting firms'] },
-  3: { name: 'Moderate Credibility', examples: ['Specialized consultancies', 'Trade publications', 'NGO studies'] },
-  4: { name: 'Contextual Credibility', examples: ['Expert interviews', 'Community leaders', 'Pilot program results'] },
-  5: { name: 'Supporting Evidence', examples: ['News sources', 'Blog posts', 'Anecdotal evidence'] }
 };
 
 export class IOSFrameworkService {

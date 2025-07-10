@@ -27,7 +27,7 @@ serve(async (req) => {
     }
 
     // Get request body
-    const { projectType, sector, problemDescription, userSkills , inputMode, hmwType } = await req.json();
+    const { projectType, inputMode, sector, problemDescription, pdfContext,  hmwType } = await req.json();
 
     // Validate required fields based on input mode
     if (inputMode === 'predefined' && !sector) {

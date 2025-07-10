@@ -61,7 +61,9 @@ export class ProjectService {
       .from('projects')
       .insert([{
               ...sanitizedData,
-              user_id: userId
+              user_id: userId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
       }])
       .select()
       .single();

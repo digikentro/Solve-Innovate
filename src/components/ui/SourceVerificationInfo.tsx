@@ -27,7 +27,7 @@ export const SourceVerificationInfo: React.FC<SourceVerificationInfoProps> = ({
       <div className="grid grid-cols-5 gap-2 mb-3">
         {SOURCE_VERIFICATION_TIERS.map((tier) => (
           <div key={tier.tier} className="text-center">
-            <div className={`px-2 py-1 rounded ${SourceVerificationService.getTierColor(tier.tier)} text-white text-xs font-medium`}>
+            <div className={`px-2 py-1 rounded ${SourceVerificationService.getTierColor(tier.tier)} text-xs font-medium`}>
               Tier {tier.tier}
             </div>
             <div className="text-xs text-gray-600 mt-1">{tier.credibilityScore}%</div>
@@ -41,7 +41,7 @@ export const SourceVerificationInfo: React.FC<SourceVerificationInfoProps> = ({
           {SOURCE_VERIFICATION_TIERS.map((tier) => (
             <div key={tier.tier} className="border-l-4 border-gray-200 pl-3">
               <div className="flex items-center mb-1">
-                <span className={`inline-block w-3 h-3 rounded-full mr-2`}></span>
+                <span className={`inline-block w-3 h-3 rounded-full mr-2 ${SourceVerificationService.getTierColor(tier.tier)}`}></span>
                 <span className="font-medium text-sm">{tier.name}</span>
                 <span className="text-xs text-gray-500 ml-2">({tier.credibilityScore}% credibility)</span>
               </div>

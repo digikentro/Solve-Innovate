@@ -8,13 +8,15 @@ interface IOSAssessmentCardProps {
   problemTitle: string;
   className?: string;
   onClick?: () => void;
+  generatedAt?: Date;
 }
 
 export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
   assessment,
   problemTitle,
   className = '',
-  onClick
+  onClick,
+  generatedAt
 }) => {
   const getScoreColor = (score: number) => {
     if (score >= 16) return 'text-green-600';
@@ -73,40 +75,31 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
 
   return (
     <Card className={`p-6 ${className}`} onClick={onClick}>
-      <div className="mb-6">
+      <div className="mb-6 flex items-start justify-between">
         <h3 className="text-lg font-semibold mb-2">{problemTitle}</h3>
-        
-        {/* Total Score and Source Verification */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">Total IOS Score</div>
-          <div className={`text-2xl font-bold ${getTotalScoreColor(assessment.totalScore)}`}>
-            {assessment.totalScore}/100
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">Source Verification</div>
-          <div className={`text-lg font-bold ${sourceVerificationScore >= 80 ? 'text-green-600' : sourceVerificationScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-            {sourceVerificationScore}/100
-          </div>
-        </div>
-        
-        <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTotalScoreBgColor(assessment.totalScore)} ${getTotalScoreColor(assessment.totalScore)}`}>
-          {getOpportunityLevel(assessment.totalScore)}
-        </div>
       </div>
 
-      {/* Assessment Mode and Resource Tier */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-xs text-gray-500 mb-1">Assessment Mode</div>
-          <div className="font-medium capitalize">{assessment.assessmentMode}</div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-xs text-gray-500 mb-1">Resource Tier</div>
-          <div className="font-medium capitalize">{assessment.resourceTier}</div>
+      {/* Total Score and Source Verification */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-gray-600">Total IOS Score</div>
+        <div className={`text-2xl font-bold ${getTotalScoreColor(assessment.totalScore)}`}>
+          {assessment.totalScore}/100
         </div>
       </div>
+      
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-gray-600">Source Verification</div>
+        <div className={`text-lg font-bold ${sourceVerificationScore >= 80 ? 'text-green-600' : sourceVerificationScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+          {sourceVerificationScore}/100
+        </div>
+      </div>
+      
+      <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTotalScoreBgColor(assessment.totalScore)} ${getTotalScoreColor(assessment.totalScore)}`}>
+        {getOpportunityLevel(assessment.totalScore)}
+      </div>
+
+      {/* Add extra gap before Source Verification Framework */}
+      <div className="mt-6" />
 
       {/* Source Verification Summary */}
       <div className="mb-6 p-4 bg-blue-100 rounded-lg">
@@ -128,7 +121,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
             const tierInfo = SourceVerificationService.getTierInfo(tier);
             return (
               <div key={tier} className="text-center">
-                <div className={`px-2 py-1 rounded text-white font-medium ${SourceVerificationService.getTierColor(tier).replace('text-', 'bg-').replace('border-', '')}`}>
+                <div className={`px-2 py-1 rounded text-white font-medium ${SourceVerificationService.getTierColor(tier)}`}>
                   Tier {tier}
                 </div>
                 <div className="text-gray-600 mt-1">{tierSources.length}</div>
@@ -354,12 +347,10 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
         </div>
       )}
 
-      {/* Assessment Metadata */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>Created: {new Date(assessment.createdAt).toLocaleDateString()}</span>
-          <span>Updated: {new Date(assessment.updatedAt).toLocaleDateString()}</span>
-        </div>
+      {/* Created/Updated Dates at the bottom */}
+      <div className="mt-8 pt-4 border-t border-gray-200 flex gap-8 text-xs text-gray-500">
+        <span>Created: {(generatedAt ? generatedAt.toLocaleDateString() : new Date().toLocaleDateString())}</span>
+        <span>Updated: {(generatedAt ? generatedAt.toLocaleDateString() : new Date().toLocaleDateString())}</span>
       </div>
     </Card>
   );
@@ -475,14 +466,6 @@ export const IOSAssessmentCardCompact: React.FC<IOSAssessmentCardProps> = ({
               </span>
             </div>
           ))}
-      </div>
-
-      {/* Assessment Mode */}
-      <div className="mt-3 pt-2 border-t border-gray-100">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">Mode:</span>
-          <span className="font-medium capitalize">{assessment.assessmentMode}</span>
-        </div>
       </div>
     </Card>
   );

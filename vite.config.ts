@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     port: 3000,
     allowedHosts: [
-      'mask-fuel-requiring-homeland.trycloudflare.com'
+      'scanner-readily-workshop-ribbon.trycloudflare.com'
     ]
   },
 });

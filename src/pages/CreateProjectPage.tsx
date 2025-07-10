@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProblemStatement } from '@/services/aiService';
+import { ProblemStatement } from '@/services/iosFramework';
 import { IOSAssessmentCard, IOSAssessmentCardCompact } from '@/components/ui/IOSAssessmentCard';
-import { IOSFrameworkService, ProblemStatementEnhanced } from '@/services/iosFramework';
+import { IOSFrameworkService } from '@/services/iosFramework';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -15,6 +15,8 @@ import { SourceVerificationService } from '@/services/sourceVerificationService'
 import { ProjectService } from '@/services/projectService';
 import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
 import Modal from '@/components/ui/Modal';
+
+type ProblemStatementWithGeneratedAt = ProblemStatement & { generatedAt?: string };
 
 const BUSINESS_SECTORS = [
   { id: 'technology', name: 'Technology' },
@@ -84,6 +86,48 @@ const SDG_GOALS = [
   { id: 'sdg-17', name: 'Partnerships for the Goals', number: 17 }
 ];
 
+// Fun loading messages for the overlay
+const LOADING_MESSAGES = [
+  'Brainstorming creative challenges…',
+  'Scouting for innovation opportunities…',
+  'Consulting the wisdom of the crowd…',
+  'Synthesizing insights from global experts…',
+  'Shuffling through the innovation playbook…',
+  'Finding the next big breakthrough…',
+  'Turning problems into possibilities…',
+];
+
+function LoadingOverlay({ show }: { show: boolean }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (show) {
+      intervalRef.current = setInterval(() => {
+        setMsgIdx(idx => (idx + 1) % LOADING_MESSAGES.length);
+      }, 1500);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      setMsgIdx(0);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black bg-opacity-60">
+      <div className="flex flex-col items-center gap-6 p-8 bg-white bg-opacity-90 rounded-2xl shadow-2xl border-2 border-indigo-200">
+        <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-2" />
+        <div className="text-xl font-semibold text-indigo-800 animate-pulse text-center min-h-[2.5em]">
+          {LOADING_MESSAGES[msgIdx]}
+        </div>
+        <div className="text-xs text-gray-500 mt-2">This may take a few seconds…</div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateProjectPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -91,13 +135,13 @@ export default function CreateProjectPage() {
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
   const [problemDescription, setProblemDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedProblems, setGeneratedProblems] = useState<ProblemStatementEnhanced[]>([]);
+  const [generatedProblems, setGeneratedProblems] = useState<ProblemStatementWithGeneratedAt[]>([]);
   const [selectedProblems, setSelectedProblems] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [inputMode, setInputMode] = useState<'predefined' | 'custom'>('predefined');
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
-  const [detailedProblem, setDetailedProblem] = useState<ProblemStatementEnhanced | null>(null);
-  const [sourcesProblem, setSourcesProblem] = useState<ProblemStatementEnhanced | null>(null);
+  const [detailedProblem, setDetailedProblem] = useState<ProblemStatementWithGeneratedAt | null>(null);
+  const [sourcesProblem, setSourcesProblem] = useState<ProblemStatementWithGeneratedAt | null>(null);
   const [uploadedPdfs, setUploadedPdfs] = useState<File[]>([]);
   const [pdfContext, setPdfContext] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
@@ -160,11 +204,11 @@ export default function CreateProjectPage() {
       // In a real implementation, you'd send these to your backend for text extraction
       const newPdfs = [...uploadedPdfs, ...pdfFiles];
       setUploadedPdfs(newPdfs);
-      
+
       // Simulate extracting text from PDFs
       const extractedText = await simulatePdfTextExtraction(pdfFiles);
       setPdfContext(extractedText);
-      
+
       toast.success(`Successfully uploaded ${pdfFiles.length} PDF(s)`);
     } catch (error) {
       console.error('Error processing PDFs:', error);
@@ -179,7 +223,7 @@ export default function CreateProjectPage() {
     // or send to backend for processing
     return new Promise((resolve) => {
       setTimeout(() => {
-        const context = files.map(file => 
+        const context = files.map(file =>
           `Content from ${file.name}: This is simulated extracted text from the PDF. In a real implementation, this would contain the actual text content extracted from the PDF file.`
         ).join('\n\n');
         resolve(context);
@@ -214,10 +258,10 @@ export default function CreateProjectPage() {
     }
     const userSkills = user?.user_metadata?.skills || [];
     const scoredProblems = generatedProblems.map(problem => {
-      const problemSkills = problem.requiredSkills.map(skill => skill.toLowerCase());
-      const userSkillMatches = userSkills.filter((userSkill: string) => 
-        problemSkills.some(problemSkill => 
-          problemSkill.includes(userSkill.toLowerCase()) || 
+      const problemSkills = problem.requiredSkills.map((skill: string) => skill.toLowerCase());
+      const userSkillMatches = userSkills.filter((userSkill: string) =>
+        problemSkills.some((problemSkill: string) =>
+          problemSkill.includes(userSkill.toLowerCase()) ||
           userSkill.toLowerCase().includes(problemSkill)
         )
       );
@@ -239,20 +283,20 @@ export default function CreateProjectPage() {
     }
   };
 
-  const handleGenerateSlideForProblem = async (problem: ProblemStatementEnhanced) => {
+  const handleGenerateSlideForProblem = async (problem: ProblemStatement) => {
     if (!problem.id) return;
-    
+
     setIsGeneratingSlide(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-presentable-slide', {
         body: {
-          title: problem.title, 
-          description: problem.description 
+          title: problem.title,
+          description: problem.description
         }
       });
 
       if (error) throw error;
-      
+
       // Store the raw JSON data from the edge function
       if (data && typeof data === 'object' && data.hmw && data.bullets) {
         setProblemSlides(prev => ({
@@ -289,7 +333,7 @@ export default function CreateProjectPage() {
           title: problem.title,
           description: problem.description,
           tags: problem.sdgGoals,
-        status: 'draft'
+          status: 'draft'
         }, user.id);
       }
 
@@ -331,10 +375,12 @@ export default function CreateProjectPage() {
   const generateProblem = async (hmwTypeToUse: 'human' | 'system' | 'business') => {
     setIsGenerating(true);
     isGeneratingMoreRef.current = true;
+    const now = new Date();
     try {
       const { data, error } = await supabase.functions.invoke('generate-problem', {
         body: {
           projectType,
+          inputMode,
           sector: inputMode === 'predefined' ? getSectorName(selectedSector || '') : '',
           problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
           pdfContext: pdfContext || undefined,
@@ -385,7 +431,8 @@ export default function CreateProjectPage() {
               sources: []
             }
           }
-        }
+        },
+        generatedAt: now.toISOString(),
       };
       setGeneratedProblems(prev => [...prev, newProblem]);
       toast.success('Problem generated successfully!');
@@ -407,7 +454,7 @@ export default function CreateProjectPage() {
           {projectType && (
             <>
               <span>/</span>
-              <span 
+              <span
                 className="hover:text-gray-700 cursor-pointer"
                 onClick={() => {
                   setProjectType(null);
@@ -425,7 +472,7 @@ export default function CreateProjectPage() {
           {selectedSector && (
             <>
               <span>/</span>
-              <span 
+              <span
                 className="hover:text-gray-700 cursor-pointer"
                 onClick={() => {
                   setGeneratedProblems([]);
@@ -445,7 +492,7 @@ export default function CreateProjectPage() {
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">1. Choose Project Type</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card 
+              <Card
                 className="p-6 cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-indigo-300"
                 onClick={() => handleProjectTypeSelect('social-impact')}
               >
@@ -463,7 +510,7 @@ export default function CreateProjectPage() {
                 </div>
               </Card>
 
-              <Card 
+              <Card
                 className="p-6 cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-indigo-300"
                 onClick={() => handleProjectTypeSelect('business')}
               >
@@ -486,15 +533,15 @@ export default function CreateProjectPage() {
 
         {/* Problem Input Section */}
         {projectType && generatedProblems.length === 0 && (
-        <div className="mb-8">
+          <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">2. Define Your Problem</h2>
-            
+
             {/* Custom Problem Description */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3 text-gray-700">Write your own problem:</h3>
               <div className="mb-3">
                 <p className="text-sm text-gray-600 mb-2">
-                  💡 <strong>Tip:</strong> Frame your problem as a "How Might We" statement for better results. 
+                  💡 <strong>Tip:</strong> Frame your problem as a "How Might We" statement for better results.
                   Focus on the human experience and avoid prescribing solutions.
                 </p>
                 <details className="text-xs text-gray-500">
@@ -515,13 +562,12 @@ export default function CreateProjectPage() {
                   </div>
                 </details>
               </div>
-              
+
               {/* Enhanced Text Input with PDF Upload */}
-              <div className={`border-2 rounded-lg overflow-hidden transition-all duration-200 focus-within:ring-4 ${
-                inputMode === 'custom' 
-                  ? 'border-indigo-500 ring-indigo-200 bg-white' 
-                  : 'border-gray-300 focus-within:border-indigo-400 focus-within:ring-indigo-100 bg-white'
-              }`}>
+              <div className={`border-2 rounded-lg overflow-hidden transition-all duration-200 focus-within:ring-4 ${inputMode === 'custom'
+                ? 'border-indigo-500 ring-indigo-200 bg-white'
+                : 'border-gray-300 focus-within:border-indigo-400 focus-within:ring-indigo-100 bg-white'
+                }`}>
                 <textarea
                   placeholder="How might we help [specific group] [achieve specific outcome] in [specific context]?"
                   value={problemDescription}
@@ -604,42 +650,42 @@ export default function CreateProjectPage() {
               <h3 className="text-lg font-medium mb-3 text-gray-700">
                 Select from {projectType === 'social-impact' ? 'SDG Goals' : 'Business Sectors'}:
               </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {sectorsWithCustom.map((sector) => (
-              <button
-                key={sector.id}
-                type="button"
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {sectorsWithCustom.map((sector) => (
+                  <button
+                    key={sector.id}
+                    type="button"
                     onClick={() => handleSectorSelect(sector.id)}
                     className={`w-full py-4 px-3 rounded-lg border text-sm font-medium transition-all duration-150 focus:outline-none
                       ${selectedSector === sector.id && inputMode === 'predefined'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
-                    : 'bg-white text-gray-800 border-gray-300 hover:bg-indigo-50'}
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
+                        : 'bg-white text-gray-800 border-gray-300 hover:bg-indigo-50'}
                 `}
                     aria-pressed={selectedSector === sector.id && inputMode === 'predefined'}
-              >
-                {sector.name}
-              </button>
-            ))}
+                  >
+                    {sector.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-            </div>
-            </div>
-          )}
+        )}
 
         {/* Generate Problem Button */}
         {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) && generatedProblems.length === 0 && (
           <div className="fixed bottom-6 right-6 z-50">
-              <Button 
+            <Button
               onClick={() => setIsHmwTypeModalOpen(true)}
               disabled={isGenerating}
               className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
               size="lg"
-              >
-                {isGenerating ? (
-                  <>
+            >
+              {isGenerating ? (
+                <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Problem...
-                  </>
-                ) : (
+                  Generating Problem...
+                </>
+              ) : (
                 <>
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -697,11 +743,14 @@ export default function CreateProjectPage() {
                   disabled={!selectedHmwType || isGenerating}
                 >
                   {isGenerating ? 'Generating...' : 'Generate'}
-              </Button>
-            </div>
+                </Button>
+              </div>
             </Modal>
           </div>
         )}
+
+        {/* Engaging loading overlay for initial HMW generation */}
+        <LoadingOverlay show={isGenerating && generatedProblems.length === 0} />
 
         {/* Generated Problems Display */}
         {generatedProblems.length > 0 && (
@@ -734,20 +783,20 @@ export default function CreateProjectPage() {
                     )}
                   </Button>
                 )}
-                </div>
-                  </div>
+              </div>
+            </div>
 
             {/* Selection Info */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
-                💡 Select the problem that best matches your interests and skills. 
+                💡 Select the problem that best matches your interests and skills.
                 Use the "Skill Match" button to automatically find the best match for your profile.
                 Each problem includes a comprehensive Innovation Opportunity Score (IOS) assessment with verified sources from Tier 1-5 credibility framework.
               </p>
               <div className="mt-2 text-xs text-blue-600">
                 <strong>Source Verification Framework:</strong> Tier 1 (Government/UN) → Tier 5 (News/Blogs). Higher tiers = higher credibility and trust.
-                </div>
               </div>
+            </div>
 
             {/* Problems List - Vertical */}
             <div className="flex flex-col gap-6 overflow-y-auto p-2">
@@ -755,12 +804,11 @@ export default function CreateProjectPage() {
                 const isSelected = selectedProblems.has(problem.id || 'temp-id');
                 return (
                   <div key={problem.id || 'temp-id'}>
-                    <Card 
-                      className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-md flex flex-col h-full ${
-                        isSelected 
-                          ? 'ring-2 ring-indigo-500 bg-indigo-50' 
-                          : 'hover:bg-gray-50'
-                      }`}
+                    <Card
+                      className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-md flex flex-col h-full ${isSelected
+                        ? 'ring-2 ring-indigo-500 bg-indigo-50'
+                        : 'hover:bg-gray-50'
+                        }`}
                       onClick={() => handleProblemToggle(problem.id || 'temp-id')}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -777,21 +825,21 @@ export default function CreateProjectPage() {
                       </div>
                       <div className="space-y-2 flex-1">
                         <div className="text-xs">
-                    <div className="flex justify-between">
+                          <div className="flex justify-between">
                             <span>Market Opportunity</span>
                             <span>{problem.iosAssessment?.dimensions.marketOpportunity.score || problem.subscores.marketPotential}/20</span>
-                    </div>
-                    <div className="flex justify-between">
+                          </div>
+                          <div className="flex justify-between">
                             <span>Innovation Potential</span>
                             <span>{problem.iosAssessment?.dimensions.innovationPotential.score || problem.subscores.solutionGap}/20</span>
-                    </div>
-                    <div className="flex justify-between">
+                          </div>
+                          <div className="flex justify-between">
                             <span>Feasibility</span>
                             <span>{problem.iosAssessment?.dimensions.feasibility.score || problem.subscores.technicalFeasibility}/20</span>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {problem.requiredSkills.slice(0, 3).map((skill, i) => (
+                          {problem.requiredSkills.slice(0, 3).map((skill: string, i: number) => (
                             <span
                               key={i}
                               className="px-2 py-1 bg-gray-100 rounded-full text-xs"
@@ -817,9 +865,9 @@ export default function CreateProjectPage() {
                               size="sm"
                               onClick={e => {
                                 e.stopPropagation();
-                                setViewingSlide({ 
-                                  problemId: problem.id!, 
-                                  slide: problemSlides[problem.id!] 
+                                setViewingSlide({
+                                  problemId: problem.id!,
+                                  slide: problemSlides[problem.id!]
                                 });
                               }}
                               className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
@@ -917,7 +965,7 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    
+
                     {/* Two Column Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[70vh]">
                       {/* Left Column - Source Verification Framework */}
@@ -925,24 +973,21 @@ export default function CreateProjectPage() {
                         <h4 className="font-medium text-gray-900 mb-3">Source Verification Framework</h4>
                         <SourceVerificationInfo showDetails={true} />
                       </div>
-                      
+
                       {/* Right Column - Scrollable Sources */}
                       <div className="overflow-y-auto">
                         <h4 className="font-medium text-gray-900 mb-3">Problem Sources by Tier</h4>
                         <div className="space-y-4">
                           {[1, 2, 3, 4, 5].map(tier => {
-                            const tierSources = Object.values(sourcesProblem.iosAssessment?.dimensions || {}).flatMap(d => 
-                              d.sources.filter(s => s.tier === tier)
+                            const tierSources = Object.values(sourcesProblem.iosAssessment?.dimensions || {}).flatMap((d: any) =>
+                              d.sources.filter((s: any) => s.tier === tier)
                             );
                             const tierInfo = SourceVerificationService.getTierInfo(tier);
                             return (
                               <div key={tier} className="border rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center">
-                                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                                      tier <= 2 ? 'bg-green-400' : 
-                                      tier <= 3 ? 'bg-yellow-400' : 'bg-red-400'
-                                    }`}></span>
+                                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${SourceVerificationService.getTierColor(tier)}`}></span>
                                     <span className="font-medium">Tier {tier} - {tierInfo?.name}</span>
                                   </div>
                                   <span className="text-sm text-gray-500">{tierSources.length} sources</span>
@@ -950,20 +995,18 @@ export default function CreateProjectPage() {
                                 {tierSources.length > 0 ? (
                                   <div className="space-y-2">
                                     {tierSources.map((source, index) => (
-                                      <div key={index} className="border-l-4 border-gray-200 pl-3 py-1 border rounded-md">
+                                      <div key={index} className="border-l-4 border-gray-200 pl-3 py-1">
                                         <div className="flex items-center justify-between mb-1">
-                                          <span className="text-sm font-medium text-gray-900">{source.name}</span>
+                                          <div className="flex items-center">                            <span className="text-xs font-medium text-gray-900">{source.name}</span>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <span className="px-2 py-1 rounded text-xs font-medium">&nbsp;</span>
+                                            <span className={`text-xs ${SourceVerificationService.getBiasColor(source.biasScore || 75)}`}></span>
+                                          </div>
                                         </div>
                                         <div className="text-xs text-gray-600 mb-1">{source.credibility}</div>
                                         {source.url && (
-                                          <a 
-                                            href={source.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-blue-600 hover:text-blue-800 underline"
-                                          >
-                                            View Source
-                                          </a>
+                                          <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>View Source →</a>
                                         )}
                                       </div>
                                     ))}
@@ -975,7 +1018,7 @@ export default function CreateProjectPage() {
                             );
                           })}
                         </div>
-                    </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -985,7 +1028,7 @@ export default function CreateProjectPage() {
             {/* Problem Detailed View Modal */}
             {detailedProblem && (
               <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold">Problem Detailed View</h3>
@@ -999,10 +1042,13 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    <IOSAssessmentCard
-                      assessment={detailedProblem.iosAssessment!}
-                      problemTitle={detailedProblem.title}
-                    />
+                    <div className="overflow-y-auto hide-scrollbar" style={{ maxHeight: '75vh' }}>
+                      <IOSAssessmentCard
+                        assessment={detailedProblem.iosAssessment!}
+                        problemTitle={detailedProblem.title}
+                        generatedAt={detailedProblem.generatedAt ? new Date(detailedProblem.generatedAt) : undefined}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1015,7 +1061,7 @@ export default function CreateProjectPage() {
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold">Presentable Slide</h3>
-                <Button
+                      <Button
                         onClick={() => setViewingSlide(null)}
                         variant="ghost"
                         size="sm"
@@ -1023,9 +1069,9 @@ export default function CreateProjectPage() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                </Button>
+                      </Button>
                     </div>
-                    
+
                     <div className="overflow-y-auto max-h-[70vh]">
                       <div className="relative rounded-2xl border-2 border-gray-300 shadow p-0 overflow-hidden">
                         {/* HMW Statement */}
@@ -1037,7 +1083,7 @@ export default function CreateProjectPage() {
                           <ul className="list-disc space-y-3 text-gray-800 ml-8">
                             {viewingSlide.slide.bullets.map((bullet, i) => (
                               <li key={i}>{bullet}</li>
-                    ))}
+                            ))}
                           </ul>
                         </div>
                       </div>

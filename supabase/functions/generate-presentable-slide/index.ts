@@ -8,7 +8,7 @@ const SYSTEM_PROMPT = `You are an expert at creating business presentation slide
 async function generatePresentableSlide(title: string, description: string) {
   const userPrompt = `Project Title: ${title}\nProject Description: ${description}`;
   const body = {
-    model: 'gpt-4',
+    model: 'gpt-3.5-turbo',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt }
