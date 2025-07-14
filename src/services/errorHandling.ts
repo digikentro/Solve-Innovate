@@ -386,39 +386,6 @@ export class ErrorHandler {
   }
 }
 
-// Common validation schemas
-export const VALIDATION_SCHEMAS = {
-  problemDescription: {
-    required: true,
-    type: 'string',
-    minLength: 10,
-    maxLength: 1000
-  },
-  
-  hmwStatement: {
-    required: true,
-    type: 'string',
-    minLength: 20,
-    maxLength: 500
-  },
-  
-  assessmentScores: {
-    market_opportunity_score: { type: 'number', min: 0, max: 100 },
-    innovation_potential_score: { type: 'number', min: 0, max: 100 },
-    feasibility_score: { type: 'number', min: 0, max: 100 },
-    impact_potential_score: { type: 'number', min: 0, max: 100 },
-    india_context_score: { type: 'number', min: 0, max: 100 },
-    global_relevance_score: { type: 'number', min: 0, max: 100 }
-  },
-  
-  sourceVerification: {
-    title: { required: true, type: 'string', minLength: 5, maxLength: 200 },
-    url: { required: true, type: 'string', pattern: /^https?:\/\/.+/ },
-    tier: { required: true, type: 'number', min: 1, max: 5 },
-    biasScore: { required: true, type: 'number', min: 0, max: 100 }
-  }
-};
-
 // Initialize global error handling
 // ErrorHandler.setupGlobalErrorHandling();
  

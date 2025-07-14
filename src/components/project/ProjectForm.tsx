@@ -11,7 +11,7 @@ import { ProjectService } from '@/services/projectService';
 const projectSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
-  tags: z.string().optional(),
+  skills: z.string().optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -37,7 +37,7 @@ export const ProjectForm = ({ initialData, onSuccess }: ProjectFormProps) => {
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
-      tags: initialData?.tags?.join(', ') || '',
+      skills: initialData?.skills?.join(', ') || '',
     },
   });
 
@@ -50,7 +50,7 @@ export const ProjectForm = ({ initialData, onSuccess }: ProjectFormProps) => {
       const projectData = {
         title: data.title,
         description: data.description || undefined,
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
+        skills: data.skills ? data.skills.split(',').map(skill => skill.trim()) : [],
         status: 'draft' as const,
       };
 
@@ -106,13 +106,13 @@ export const ProjectForm = ({ initialData, onSuccess }: ProjectFormProps) => {
       </div>
 
       <div>
-        <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
-          Tags (comma separated)
+        <label htmlFor="skills" className="block text-sm font-medium text-gray-700">
+          Skills (comma separated)
         </label>
         <input
-          id="tags"
+          id="skills"
           type="text"
-          {...register('tags')}
+          {...register('skills')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           placeholder="e.g., web, mobile, ai"
           disabled={isSubmitting}

@@ -7,8 +7,10 @@ import type { Project, ProjectInput } from '@/types/project';
 export interface CreateProjectData {
   title: string;
   description?: string;
-  tags?: string[];
+  skills?: string[];
   status?: string;
+  assessments?: any;
+  presentable_slide?: any;
 }
 
 export class ProjectService {
@@ -100,7 +102,7 @@ export class ProjectService {
   }
 
   /**
-   * Get user projects with caching
+   * Get user projects (no caching)
    */
   static async getUserProjects(userId: string): Promise<Project[]> {
     const context: ErrorContext = {
@@ -109,40 +111,31 @@ export class ProjectService {
       timestamp: new Date().toISOString()
     };
 
-    return CachingService.withCache(
-      `user_projects_${userId}`,
-      {
-        namespace: CACHE_NAMESPACES.PROJECTS,
-        ttl: CACHE_TTL.MEDIUM
-      },
+    return ErrorHandler.withRetry(
       async () => {
-        return ErrorHandler.withRetry(
-          async () => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-            if (error) {
-              throw new SmartSolveError(
-                'Failed to fetch projects',
-                context,
-                true,
-                'Unable to load projects. Please try again.'
-              );
-            }
+        if (error) {
+          throw new SmartSolveError(
+            'Failed to fetch projects',
+            context,
+            true,
+            'Unable to load projects. Please try again.'
+          );
+        }
 
-            return data || [];
-  },
-          context
-        );
-      }
+        return data || [];
+      },
+      context
     );
   }
 
   /**
-   * Get project by ID with caching
+   * Get project by ID (no caching)
    */
   static async getProjectById(projectId: string, userId: string): Promise<Project | null> {
     const context: ErrorContext = {
@@ -151,39 +144,30 @@ export class ProjectService {
       timestamp: new Date().toISOString()
     };
 
-    return CachingService.withCache(
-      `project_${projectId}`,
-      {
-        namespace: CACHE_NAMESPACES.PROJECTS,
-        ttl: CACHE_TTL.MEDIUM
-      },
+    return ErrorHandler.withRetry(
       async () => {
-        return ErrorHandler.withRetry(
-          async () => {
-    const { data, error } = await supabase
-              .from('projects')
-              .select('*')
-              .eq('id', projectId)
-              .eq('user_id', userId)
-              .single();
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
 
-            if (error) {
-              if (error.code === 'PGRST116') {
-                return null; // Not found
-              }
-              throw new SmartSolveError(
-                'Failed to fetch project',
-                context,
-                true,
-                'Unable to load project. Please try again.'
-              );
-            }
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return null; // Not found
+          }
+          throw new SmartSolveError(
+            'Failed to fetch project',
+            context,
+            true,
+            'Unable to load project. Please try again.'
+          );
+        }
 
-            return data;
-          },
-          context
-        );
-      }
+        return data;
+      },
+      context
     );
   }
 

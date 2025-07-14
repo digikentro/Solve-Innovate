@@ -432,7 +432,7 @@ export class SecurityService {
       const { data, error } = await supabase
         .from(resourceType === 'project' ? 'projects' : 
               resourceType === 'assessment' ? 'enhanced_scoring' : 'profiles')
-        .select('user_id')
+        .select(resourceType === 'profile' ? 'id' : 'user_id')
         .eq('id', resourceId)
         .single();
 
@@ -440,8 +440,16 @@ export class SecurityService {
         return { authorized: false, reason: 'Resource not found' };
       }
 
-      if (data.user_id !== user.id) {
-        return { authorized: false, reason: 'Not authorized' };
+      if (resourceType === 'profile') {
+        const profileData = data as { id: string };
+        if (profileData.id !== user.id) {
+          return { authorized: false, reason: 'Not authorized' };
+        }
+      } else if (resourceType === 'project' || resourceType === 'assessment') {
+        const resourceData = data as { user_id: string };
+        if (resourceData.user_id !== user.id) {
+          return { authorized: false, reason: 'Not authorized' };
+        }
       }
 
       return { authorized: true };
@@ -472,58 +480,7 @@ export class SecurityService {
     };
   }
 
-  // Log security events
-  static async logSecurityEvent(
-    event: string,
-    details: any,
-    userId?: string,
-    ip?: string
-  ): Promise<void> {
-    try {
-      const securityLog = {
-        event,
-        details: JSON.stringify(details),
-        user_id: userId,
-        ip_address: ip,
-        timestamp: new Date().toISOString()
-      };
-
-      // Store in Supabase (you might want to create a security_logs table)
-      console.log('Security Event:', securityLog);
-      
-      // In a real implementation, you'd store this in a dedicated table
-      // await supabase.from('security_logs').insert([securityLog]);
-    } catch (error) {
-      console.warn('Failed to log security event:', error);
-    }
-  }
 }
-
-// Common validation schemas
-export const SECURITY_SCHEMAS = {
-  problemInput: {
-    description: { required: true, type: 'string', minLength: 10, maxLength: 1000, sanitize: true },
-    sector: { required: true, type: 'string', pattern: /^(social_impact|business)$/ },
-    category: { required: false, type: 'string', maxLength: 100, sanitize: true }
-  },
-  
-  assessmentInput: {
-    problem_id: { required: true, type: 'string' },
-    market_opportunity_score: { required: true, type: 'number', min: 0, max: 100 },
-    innovation_potential_score: { required: true, type: 'number', min: 0, max: 100 },
-    feasibility_score: { required: true, type: 'number', min: 0, max: 100 },
-    impact_potential_score: { required: true, type: 'number', min: 0, max: 100 },
-    india_context_score: { required: true, type: 'number', min: 0, max: 100 },
-    global_relevance_score: { required: true, type: 'number', min: 0, max: 100 }
-  },
-  
-  sourceVerificationInput: {
-    title: { required: true, type: 'string', minLength: 5, maxLength: 200, sanitize: true },
-    url: { required: true, type: 'string', isUrl: true },
-    tier: { required: true, type: 'number', min: 1, max: 5 },
-    biasScore: { required: true, type: 'number', min: 0, max: 100 }
-  }
-};
 
 // Rate limit configurations for different operations
 export const RATE_LIMIT_CONFIGS = {

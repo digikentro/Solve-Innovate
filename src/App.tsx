@@ -7,7 +7,6 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
-import { ProjectAssessmentPage } from '@/pages/ProjectAssessmentPage';
 import CreateProjectPage from '@/pages/CreateProjectPage';
 import { ProfileCard } from '@/components/dashboard/ProfileCard';
 import { IOSDashboard } from '@/components/dashboard/IOSDashboard';
@@ -181,6 +180,14 @@ function App() {
               }
             />
             <Route
+                path="profile/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditProfilePage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
                 path="projects"
                 element={
                   <ProtectedRoute>
@@ -209,14 +216,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProjectEditPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path="projects/:id/assessment"
-                element={
-                  <ProtectedRoute>
-                    <ProjectAssessmentPage />
                   </ProtectedRoute>
                 }
             />

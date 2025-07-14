@@ -4,9 +4,11 @@ CREATE TABLE IF NOT EXISTS public.projects (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
-    tags TEXT[] DEFAULT '{}',
+    skills TEXT[] DEFAULT '{}',
     status TEXT DEFAULT 'draft',
+    presentable_slide JSONB; 
     metadata JSONB DEFAULT '{}',
+    assessments JSONB DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

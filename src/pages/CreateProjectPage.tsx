@@ -15,6 +15,8 @@ import { SourceVerificationService } from '@/services/sourceVerificationService'
 import { ProjectService } from '@/services/projectService';
 import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
 import Modal from '@/components/ui/Modal';
+import { profileService } from '@/services/profileService';
+import type { Profile } from '@/services/profileService';
 
 type ProblemStatementWithGeneratedAt = ProblemStatement & { generatedAt?: string };
 
@@ -97,6 +99,17 @@ const LOADING_MESSAGES = [
   'Turning problems into possibilities…',
 ];
 
+// Simple loading messages for skill matching
+const SKILL_MATCH_MESSAGES = [
+  'Analyzing your skills…',
+  'Finding the perfect match…',
+  'Comparing with generated problems…',
+  'Identifying best opportunities…',
+  'Matching skills to challenges…',
+  'Finding your ideal project…',
+  'Connecting skills to impact…',
+];
+
 function LoadingOverlay({ show }: { show: boolean }) {
   const [msgIdx, setMsgIdx] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -128,6 +141,37 @@ function LoadingOverlay({ show }: { show: boolean }) {
   );
 }
 
+function SkillMatchOverlay({ show }: { show: boolean }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (show) {
+      intervalRef.current = setInterval(() => {
+        setMsgIdx(idx => (idx + 1) % SKILL_MATCH_MESSAGES.length);
+      }, 1500);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      setMsgIdx(0);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black bg-opacity-60">
+      <div className="flex flex-col items-center gap-6 p-8 bg-white bg-opacity-90 rounded-2xl shadow-2xl border-2 border-indigo-200">
+        <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-2" />
+        <div className="text-xl font-semibold text-indigo-800 animate-pulse text-center min-h-[2.5em]">
+          {SKILL_MATCH_MESSAGES[msgIdx]}
+        </div>
+        <div className="text-xs text-gray-500 mt-2">Finding your perfect match…</div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateProjectPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -153,6 +197,18 @@ export default function CreateProjectPage() {
   const [selectedHmwType, setSelectedHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
   const [lastHmwType, setLastHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
   const isGeneratingMoreRef = useRef(false);
+  const [isSkillMatching, setIsSkillMatching] = useState(false);
+  const [skillMatchReasoning, setSkillMatchReasoning] = useState<{ problemId: string; reasoning: string } | null>(null);
+  const [showSkillMatchModal, setShowSkillMatchModal] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const prof = await profileService.getProfile();
+      setProfile(prof);
+    };
+    fetchProfile();
+  }, []);
 
   const getSectorsForType = () => {
     if (projectType === 'social-impact') {
@@ -172,6 +228,7 @@ export default function CreateProjectPage() {
     setProblemDescription('');
     setInputMode('predefined');
     setSelectedProblems(new Set());
+    setSkillMatchReasoning(null);
   };
 
   const handleSectorSelect = (sectorId: string) => {
@@ -179,6 +236,7 @@ export default function CreateProjectPage() {
     setGeneratedProblems([]);
     setInputMode('predefined');
     setSelectedProblems(new Set());
+    setSkillMatchReasoning(null);
   };
 
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,6 +244,7 @@ export default function CreateProjectPage() {
     setInputMode('custom');
     setGeneratedProblems([]);
     setSelectedProblems(new Set());
+    setSkillMatchReasoning(null);
   };
 
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,35 +310,56 @@ export default function CreateProjectPage() {
     });
   };
 
-  const handleSkillMatch = () => {
+  const handleSkillMatch = async () => {
     if (generatedProblems.length === 0) {
-      alert('Please generate problems first');
+      toast.error('Please generate problems first');
       return;
     }
-    const userSkills = user?.user_metadata?.skills || [];
-    const scoredProblems = generatedProblems.map(problem => {
-      const problemSkills = problem.requiredSkills.map((skill: string) => skill.toLowerCase());
-      const userSkillMatches = userSkills.filter((userSkill: string) =>
-        problemSkills.some((problemSkill: string) =>
-          problemSkill.includes(userSkill.toLowerCase()) ||
-          userSkill.toLowerCase().includes(problemSkill)
-        )
-      );
-      const matchScore = userSkillMatches.length / Math.max(problemSkills.length, 1);
-      const iosScore = problem.iosAssessment ? problem.iosAssessment.totalScore / 100 : problem.opportunityScore / 100;
-      const combinedScore = (matchScore * 0.4) + (iosScore * 0.6);
-      return {
-        ...problem,
-        skillMatchScore: combinedScore,
-        matchedSkills: userSkillMatches
-      };
-    });
-    const topProblem = scoredProblems.sort((a, b) => b.skillMatchScore - a.skillMatchScore)[0];
-    if (topProblem) {
-      setSelectedProblems(new Set([topProblem.id!]));
-      toast.success('Matched 1 problem with your skills!');
-    } else {
-      toast.error('No problems matched your skills. Try generating more problems.');
+
+    let userSkills = profile?.skills;
+    if (!Array.isArray(userSkills)) userSkills = [];
+    if (userSkills.length === 0) {
+      toast.error('No skills found in your profile. Please update your skills first.');
+      return;
+    }
+
+    setIsSkillMatching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('match-skill', {
+        body: {
+          userSkills,
+          generatedProblems
+        }
+      });
+
+      if (error) throw error;
+
+      if (data && data.success && data.matchedProblem) {
+        setSelectedProblems(new Set([data.matchedProblem.id!]));
+        
+        // Store the reasoning for display
+        setSkillMatchReasoning({
+          problemId: data.matchedProblem.id!,
+          reasoning: data.matchedProblem.reasoning
+        });
+        
+        // Show simple success message with reasoning
+        toast.success(
+          `Matched: "${data.matchedProblem.title}"`,
+          { duration: 3000 }
+        );
+        
+        
+      } else if (data && !data.success) {
+        toast.error(data.message || 'No skills match found');
+      } else {
+        toast.error('No skills match found. Try updating your skills or generating more problems.');
+      }
+    } catch (error) {
+      console.error('Error matching skills:', error);
+      toast.error('Failed to match skills. Please try again.');
+    } finally {
+      setIsSkillMatching(false);
     }
   };
 
@@ -328,12 +408,19 @@ export default function CreateProjectPage() {
     try {
       const selectedProblemData = generatedProblems.filter(p => selectedProblems.has(p.id!));
       for (const problem of selectedProblemData) {
-        // Create project using ProjectService
+        // Remove HMW name/title from assessment if present
+        let assessment = problem.iosAssessment ? { ...problem.iosAssessment } : undefined;
+        if (assessment) {
+          (assessment as any).name = 'Initial Assessment';
+          (assessment as any).createdAt = problem.createdAt || new Date().toISOString();
+        }
         await ProjectService.createProject({
           title: problem.title,
           description: problem.description,
-          tags: problem.sdgGoals,
-          status: 'draft'
+          skills: problem.requiredSkills,
+          status: 'draft',
+          assessments: assessment ? [assessment] : [],
+          presentable_slide: problemSlides[problem.id!] || undefined, // <-- add this line
         }, user.id);
       }
 
@@ -352,31 +439,17 @@ export default function CreateProjectPage() {
     return sector?.name || sectorId;
   };
 
-  const getDimensionIcon = (dimensionKey: string) => {
-    switch (dimensionKey) {
-      case 'marketOpportunity':
-        return <TrendingUp className="w-4 h-4" />;
-      case 'innovationPotential':
-        return <Lightbulb className="w-4 h-4" />;
-      case 'feasibility':
-        return <Shield className="w-4 h-4" />;
-      case 'impactPotential':
-        return <Target className="w-4 h-4" />;
-      case 'indiaContext':
-        return <Users className="w-4 h-4" />;
-      case 'globalRelevance':
-        return <Globe className="w-4 h-4" />;
-      default:
-        return <Target className="w-4 h-4" />;
-    }
-  };
-
   // Helper to generate a problem (used by both modal and Generate More)
   const generateProblem = async (hmwTypeToUse: 'human' | 'system' | 'business') => {
     setIsGenerating(true);
     isGeneratingMoreRef.current = true;
     const now = new Date();
     try {
+      // Get previously generated HMW titles and their IOS scores to avoid duplicates and guide generation
+      const previousHmws = generatedProblems.map(problem => ({
+        title: problem.title,
+        iosScore: problem.iosAssessment?.totalScore || problem.opportunityScore
+      }));
       const { data, error } = await supabase.functions.invoke('generate-problem', {
         body: {
           projectType,
@@ -385,56 +458,27 @@ export default function CreateProjectPage() {
           problemDescription: inputMode === 'custom' ? problemDescription.trim() : '',
           pdfContext: pdfContext || undefined,
           hmwType: hmwTypeToUse,
+          previousHmws,
         }
       });
       if (error) throw error;
       if (!data || !data.title) throw new Error('No problem received from generation');
+      let iosAssessment = data.iosAssessment;
+      if (iosAssessment && iosAssessment.dimensions) {
+        iosAssessment = {
+          ...iosAssessment,
+          totalScore: IOSFrameworkService.calculateIOSScore(iosAssessment)
+        };
+      }
       const newProblem = {
         ...data,
         id: `problem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        iosAssessment: data.iosAssessment || {
-          totalScore: data.opportunityScore || 75,
-          assessmentMode: 'automated',
-          resourceTier: 'standard',
-          dimensions: {
-            marketOpportunity: {
-              name: 'Market Opportunity',
-              score: data.subscores?.marketPotential || 15,
-              subscores: {
-                marketSize: data.subscores?.marketPotential || 15,
-                growthPotential: data.subscores?.marketPotential || 15,
-                competitiveLandscape: data.subscores?.marketPotential || 15
-              },
-              evidence: [],
-              sources: []
-            },
-            innovationPotential: {
-              name: 'Innovation Potential',
-              score: data.subscores?.solutionGap || 15,
-              subscores: {
-                solutionGap: data.subscores?.solutionGap || 15,
-                technologicalReadiness: data.subscores?.solutionGap || 15,
-                disruptivePotential: data.subscores?.solutionGap || 15
-              },
-              evidence: [],
-              sources: []
-            },
-            feasibility: {
-              name: 'Feasibility',
-              score: data.subscores?.technicalFeasibility || 15,
-              subscores: {
-                technicalFeasibility: data.subscores?.technicalFeasibility || 15,
-                resourceAvailability: data.subscores?.technicalFeasibility || 15,
-                implementationComplexity: data.subscores?.technicalFeasibility || 15
-              },
-              evidence: [],
-              sources: []
-            }
-          }
-        },
+        iosAssessment,
         generatedAt: now.toISOString(),
       };
       setGeneratedProblems(prev => [...prev, newProblem]);
+      // Clear skill match reasoning when new problems are generated
+      setSkillMatchReasoning(null);
       toast.success('Problem generated successfully!');
     } catch (error) {
       console.error('Error generating problem:', error);
@@ -761,12 +805,22 @@ export default function CreateProjectPage() {
                 <Button
                   onClick={handleSkillMatch}
                   variant="outline"
+                  disabled={isSkillMatching}
                   className="flex items-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Skill Match
+                  {isSkillMatching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Matching...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Skill Match
+                    </>
+                  )}
                 </Button>
                 {selectedProblems.size > 0 && (
                   <Button
@@ -779,7 +833,7 @@ export default function CreateProjectPage() {
                         Creating Project...
                       </>
                     ) : (
-                      `Create Project`
+                      `Save Drafts`
                     )}
                   </Button>
                 )}
@@ -813,7 +867,24 @@ export default function CreateProjectPage() {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-sm mb-2">{problem.title}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-sm">{problem.title}</h3>
+                            {skillMatchReasoning && skillMatchReasoning.problemId === problem.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowSkillMatchModal(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium hover:bg-green-200 transition-colors"
+                                title="Click to see why this problem matches your skills"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Skill Match
+                              </button>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-600">{problem.description}</p>
                         </div>
                         <div className="ml-2 text-right">
@@ -827,15 +898,15 @@ export default function CreateProjectPage() {
                         <div className="text-xs">
                           <div className="flex justify-between">
                             <span>Market Opportunity</span>
-                            <span>{problem.iosAssessment?.dimensions.marketOpportunity.score || problem.subscores.marketPotential}/20</span>
+                            <span>{problem.iosAssessment?.dimensions?.marketOpportunity?.score !== undefined ? problem.iosAssessment.dimensions.marketOpportunity.score : '-'}/10</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Innovation Potential</span>
-                            <span>{problem.iosAssessment?.dimensions.innovationPotential.score || problem.subscores.solutionGap}/20</span>
+                            <span>{problem.iosAssessment?.dimensions?.innovationPotential?.score !== undefined ? problem.iosAssessment.dimensions.innovationPotential.score : '-'}/10</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Feasibility</span>
-                            <span>{problem.iosAssessment?.dimensions.feasibility.score || problem.subscores.technicalFeasibility}/20</span>
+                            <span>{problem.iosAssessment?.dimensions?.feasibility?.score !== undefined ? problem.iosAssessment.dimensions.feasibility.score : '-'}/10</span>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1">
@@ -980,7 +1051,7 @@ export default function CreateProjectPage() {
                         <div className="space-y-4">
                           {[1, 2, 3, 4, 5].map(tier => {
                             const tierSources = Object.values(sourcesProblem.iosAssessment?.dimensions || {}).flatMap((d: any) =>
-                              d.sources.filter((s: any) => s.tier === tier)
+                              Array.isArray(d.sources) ? d.sources.filter((s: any) => s.tier === tier) : []
                             );
                             const tierInfo = SourceVerificationService.getTierInfo(tier);
                             return (
@@ -1092,9 +1163,61 @@ export default function CreateProjectPage() {
                 </div>
               </div>
             )}
+
+            {/* Skill Match Reasoning Modal */}
+            {showSkillMatchModal && skillMatchReasoning && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Skill Match Reasoning
+                      </h3>
+                      <Button
+                        onClick={() => setShowSkillMatchModal(false)}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </Button>
+                    </div>
+                    
+                    <div className="overflow-y-auto max-h-[70vh]">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-green-800 mb-2">Why this problem matches your skills:</h4>
+                        <p className="text-green-700 text-sm leading-relaxed">
+                          {skillMatchReasoning.reasoning}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-800 mb-2">Your Skills:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {profile?.skills?.map((skill: string, index: number) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
+      {/* Skill matching loading overlay */}
+      <SkillMatchOverlay show={isSkillMatching} />
     </div>
   );
 } 

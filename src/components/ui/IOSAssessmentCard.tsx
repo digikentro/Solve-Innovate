@@ -18,9 +18,10 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
   onClick,
   generatedAt
 }) => {
+  // For individual dimension scores (0-10)
   const getScoreColor = (score: number) => {
-    if (score >= 16) return 'text-green-600';
-    if (score >= 12) return 'text-yellow-600';
+    if (score >= 8) return 'text-green-600';
+    if (score >= 5) return 'text-yellow-600';
     return 'text-red-600';
   };
 
@@ -78,24 +79,24 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
       <div className="mb-6 flex items-start justify-between">
         <h3 className="text-lg font-semibold mb-2">{problemTitle}</h3>
       </div>
-
-      {/* Total Score and Source Verification */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-gray-600">Total IOS Score</div>
-        <div className={`text-2xl font-bold ${getTotalScoreColor(assessment.totalScore)}`}>
-          {assessment.totalScore}/100
+        
+        {/* Total Score and Source Verification */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600">Total IOS Score</div>
+          <div className={`text-2xl font-bold ${getTotalScoreColor(assessment.totalScore)}`}>
+            {assessment.totalScore}/100
+          </div>
         </div>
-      </div>
-      
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-gray-600">Source Verification</div>
-        <div className={`text-lg font-bold ${sourceVerificationScore >= 80 ? 'text-green-600' : sourceVerificationScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-          {sourceVerificationScore}/100
+        
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600">Source Verification</div>
+          <div className={`text-lg font-bold ${sourceVerificationScore >= 80 ? 'text-green-600' : sourceVerificationScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+            {sourceVerificationScore}/100
+          </div>
         </div>
-      </div>
-      
-      <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTotalScoreBgColor(assessment.totalScore)} ${getTotalScoreColor(assessment.totalScore)}`}>
-        {getOpportunityLevel(assessment.totalScore)}
+        
+        <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTotalScoreBgColor(assessment.totalScore)} ${getTotalScoreColor(assessment.totalScore)}`}>
+          {getOpportunityLevel(assessment.totalScore)}
       </div>
 
       {/* Add extra gap before Source Verification Framework */}
@@ -149,7 +150,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                     <h4 className="font-bold text-lg text-gray-900">{dimension.name}</h4>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${isSystem ? 'bg-blue-500 text-white' : 'bg-yellow-500 text-white'}`}>{isSystem ? 'System-Focused Metric' : 'Business-Focused Metric'}</span>
                   </div>
-                  <div className={`text-lg font-bold ${getScoreColor(dimension.score)}`}>{dimension.score}/20</div>
+                  <div className={`text-lg font-bold ${getScoreColor(dimension.score)}`}>{dimension.score}/10</div>
                 </div>
                 <div className="text-xs text-gray-500 mb-4">{dimension.weight}% weight</div>
                 {/* Render each subscore with extra info */}
@@ -166,7 +167,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                               <h4 className="font-medium text-gray-900">{subKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
                               <div className="text-xs text-gray-500">20% weight</div>
                             </div>
-                            <div className={`text-lg font-bold ${getScoreColor(subVal)}`}>{subVal}/20</div>
+                            <div className={`text-lg font-bold ${getScoreColor(subVal)}`}>{subVal}/10</div>
                           </div>
                         </div>
                       );
@@ -179,7 +180,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                             <h4 className="font-medium text-gray-900">{subKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
                             <div className="text-xs text-gray-500">{weight}% weight</div>
                           </div>
-                          <div className={`text-lg font-bold ${getScoreColor(score)}`}>{score}/20</div>
+                          <div className={`text-lg font-bold ${getScoreColor(score)}`}>{score}/10</div>
                         </div>
                         {/* Evidence */}
                         {evidence.length > 0 && (
@@ -202,7 +203,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                                   <div key={index} className="border-l-4 border-gray-200 pl-3 py-1">
                                     <div className="flex items-center justify-between mb-1">
                                       <div className="flex items-center">
-                                        <span className={`inline-block w-3 h-3 rounded-full mr-2 ${source.tier <= 2 ? 'bg-green-400' : source.tier <= 3 ? 'bg-yellow-400' : 'bg-red-400'}`}></span>
+                                        <span className={`inline-block w-3 h-3 rounded-full mr-2 ${SourceVerificationService.getTierColor(source.tier)}`}></span>
                                         <span className="text-xs font-medium text-gray-900">{source.name}</span>
                                       </div>
                                       <div className="flex items-center space-x-2">
@@ -238,7 +239,7 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                   <h4 className="font-medium text-gray-900">{dimension.name}</h4>
                   <div className="text-xs text-gray-500">{dimension.weight}% weight</div>
                 </div>
-                <div className={`text-lg font-bold ${getScoreColor(dimension.score)}`}>{dimension.score}/20</div>
+                <div className={`text-lg font-bold ${getScoreColor(dimension.score)}`}>{dimension.score}/10</div>
               </div>
               {/* Subscores */}
               <div className="grid grid-cols-3 gap-2 mb-3">
@@ -273,8 +274,8 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
                         <div key={index} className="border-l-4 border-gray-200 pl-3 py-1">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center">
-                              <span className={`inline-block w-3 h-3 rounded-full mr-2 ${source.tier <= 2 ? 'bg-green-400' : source.tier <= 3 ? 'bg-yellow-400' : 'bg-red-400'}`}></span>
-                              <span className="text-xs font-medium text-gray-900">{source.name}</span>
+                              <span className={`inline-block w-3 h-3 rounded-full mr-2 ${SourceVerificationService.getTierColor(source.tier)}`}></span>
+                              <span className="text-xs font-medium text-gray-900 max-w-[400px] break-words block whitespace-normal" title={source.name}>{source.name}</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className={`px-2 py-1 rounded text-xs font-medium ${SourceVerificationService.getTierColor(source.tier)}`}>Tier {source.tier}</span>
@@ -462,7 +463,7 @@ export const IOSAssessmentCardCompact: React.FC<IOSAssessmentCardProps> = ({
             <div key={key} className="flex items-center justify-between text-xs">
               <span className="text-gray-600">{dimension.name}</span>
               <span className={`font-medium ${getScoreColor(dimension.score)}`}>
-                {dimension.score}/20
+                {dimension.score}/10
               </span>
             </div>
           ))}

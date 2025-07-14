@@ -6,10 +6,11 @@ export interface ProjectInput {
   title: string;
   description: string | null;
   status: ProjectStatus;
-  tags?: string[] | null;
+  skills?: string[] | null;
   created_at: string;
   updated_at: string;
   presentable_slide?: any;
+  assessments?: any; // or IOSAssessment[] if you want to type it strictly
 }
 
 export interface Project extends ProjectInput {

@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 
 export interface Profile {
   id: string;
-  user_id: string;
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
@@ -102,7 +101,6 @@ export const profileService = {
         .from('profiles')
         .insert([{
           id: user.id,
-          user_id: user.id,
           ...input,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

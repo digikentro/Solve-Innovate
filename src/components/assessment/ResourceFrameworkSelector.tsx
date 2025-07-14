@@ -115,14 +115,6 @@ export const ResourceFrameworkSelector: React.FC<ResourceFrameworkSelectorProps>
           </div>
         ))}
       </div>
-      
-      {selectedTier && (
-        <div className="mt-4 p-3 bg-blue-50 rounded">
-          <p className="text-sm text-blue-800">
-            <strong>Selected:</strong> {tiers.find(t => t.id === selectedTier)?.name}
-          </p>
-        </div>
-      )}
     </div>
   );
 }; 
