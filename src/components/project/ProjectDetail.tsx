@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import type { Project } from '@/types/project';
 import { FiEdit, FiTrash2, FiArrowLeft, FiPlus, FiTrendingUp } from 'react-icons/fi';
-import { IOSAssessmentCard } from '@/components/ui/IOSAssessmentCard';
+import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 import { supabase } from '@/lib/supabase';
 import VerticalModal, { HorizontalModal } from '@/components/ui/Modal';
 import { ResourceFrameworkSelector } from '@/components/assessment/ResourceFrameworkSelector';
@@ -183,7 +183,7 @@ export const ProjectDetail = () => {
                     {project.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                        className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
                       >
                         {skill}
                       </span>
@@ -396,22 +396,14 @@ export const ProjectDetail = () => {
           </div>
         </div>
       </HorizontalModal>
-      {/* View Assessment Modal */}
-      <VerticalModal open={viewAssessmentIdx !== null} onClose={() => setViewAssessmentIdx(null)}>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Assessment Detailed View</h3>
-          </div>
-          <div className="overflow-y-auto hide-scrollbar" style={{ maxHeight: '75vh' }}>
-            {viewAssessmentIdx !== null && assessments[viewAssessmentIdx] && (
-              <IOSAssessmentCard
-                assessment={assessments[viewAssessmentIdx]}
+      {/* View Assessment Modal (Reusable) */}
+      <AssessmentProblemDetailedView
+        open={viewAssessmentIdx !== null && !!assessments[viewAssessmentIdx]}
+        onClose={() => setViewAssessmentIdx(null)}
+        assessment={viewAssessmentIdx !== null ? assessments[viewAssessmentIdx] : undefined}
                 problemTitle={project.title}
+        viewType="assessment"
               />
-            )}
-          </div>
-        </div>
-      </VerticalModal>
     </div>
   );
 };

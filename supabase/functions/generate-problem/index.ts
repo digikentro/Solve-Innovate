@@ -59,36 +59,36 @@ serve(async (req) => {
     if (hmwType == "business") {
       prompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
 
-1. **Market Opportunity (30% weight)**
+1. Market Opportunity (30% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
    - Market Momentum and Growth Dynamics (35%): Growth rates, funding trends, innovation activity
    - Market Accessibility and Cultural Alignment (35%): Barriers, cultural factors, community engagement
 
-2. **Innovation Potential (15% weight)**
+2. Innovation Potential (15% weight)
    - Solution Novelty and Cultural Innovation (35%): Competitive analysis, cultural patterns, emerging approaches
    - Technology Readiness and Adaptive Potential (35%): TRL assessment, local capabilities, adaptation potential
    - Competitive Landscape and Innovation Ecosystem (30%): Competition analysis, collaboration opportunities
 
-3. **Feasibility (20% weight)**
+3. Feasibility (20% weight)
    - Technical Feasibility and Adaptive Implementation (50%): Engineering complexity, phased approaches, local capacity
    - Operational Feasibility and Community Implementation (50%): Organizational capacity, community engagement
 
-4. **Impact Potential (10% weight)**
+4. Impact Potential (10% weight)
    - Social Impact and Community Value (40%): Population reach, community-defined value, cultural impact
    - Environmental Impact and Sustainability (30%): Environmental metrics, local priorities, sustainability
    - Economic Impact and Community Development (30%): Job creation, local empowerment, economic resilience
 
-5. **India Context (10% weight)**
+5. India Context (10% weight)
    - Market Readiness and Cultural Alignment (35%): Infrastructure, cultural alignment, regional variations
    - Regulatory Environment and Policy Support (35%): Regulatory framework, policy trends, implementation
    - Innovation Ecosystem and Social Dynamics (30%): Talent availability, social dynamics, community factors
 
-6. **Global Relevance (10% weight)**
+6. Global Relevance (10% weight)
    - Cross-Cultural Adaptability and Global Scalability (40%): Cultural adaptation, international markets, global dynamics
    - Emerging Market Potential and Development Alignment (35%): International markets, SDG alignment, emerging dynamics
    - Global Trend Alignment and Future Relevance (25%): Technology trends, social movements, future scenarios
 
-7. **Business Metrics (15% weight)**
+7. Business Metrics (15% weight)
    - Financial Return (40%): ROI, NPV, IRR, profit margins, payback
    - Competitive Advantage (25%): IP, defensibility, market differentiation
    - Scalability & Resource Fit (20%): Operational scalability with existing resources
@@ -98,37 +98,37 @@ serve(async (req) => {
     else if (hmwType == "system") {
       prompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
 
-1. **Market Opportunity (20% weight)**
+1. Market Opportunity (20% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
    - Market Momentum and Growth Dynamics (35%): Growth rates, funding trends, innovation activity
    - Market Accessibility and Cultural Alignment (35%): Barriers, cultural factors, community engagement
 
-2. **Innovation Potential (15% weight)**
+2. Innovation Potential (15% weight)
    - Solution Novelty and Cultural Innovation (35%): Competitive analysis, cultural patterns, emerging approaches
    - Technology Readiness and Adaptive Potential (35%): TRL assessment, local capabilities, adaptation potential
    - Competitive Landscape and Innovation Ecosystem (30%): Competition analysis, collaboration opportunities
 
-3. **Feasibility (15% weight)**
+3. Feasibility (15% weight)
    - Technical Feasibility and Adaptive Implementation (40%): Engineering complexity, phased approaches, local capacity
    - Financial Feasibility and Resource Flexibility (35%): Capital requirements, resource models, cultural factors
    - Operational Feasibility and Community Implementation (25%): Organizational capacity, community engagement
 
-4. **System Impact (20% weight)**
+4. System Impact (20% weight)
    - Social Impact and Community Value (40%): Population reach, community-defined value, cultural impact
    - Environmental Impact and Sustainability (30%): Environmental metrics, local priorities, sustainability
    - Economic Impact and Community Development (30%): Job creation, local empowerment, economic resilience
 
-5. **India Context (10% weight)**
+5. India Context (10% weight)
    - Market Readiness and Cultural Alignment (35%): Infrastructure, cultural alignment, regional variations
    - Regulatory Environment and Policy Support (35%): Regulatory framework, policy trends, implementation
    - Innovation Ecosystem and Social Dynamics (30%): Talent availability, social dynamics, community factors
 
-6. **Global Relevance (10% weight)**
+6. Global Relevance (10% weight)
    - Cross-Cultural Adaptability and Global Scalability (40%): Cultural adaptation, international markets, global dynamics
    - Emerging Market Potential and Development Alignment (35%): International markets, SDG alignment, emerging dynamics
    - Global Trend Alignment and Future Relevance (25%): Technology trends, social movements, future scenarios
 
-7. **System Metrics (10% weight)**
+7. System Metrics (10% weight)
    - System Leverage (30%): Root-cause focus, structural shifts, system redesign potential
    - Stakeholder Alignment (30%): Multi-actor coordination, incentives alignment, stakeholder roles
    - Policy & Governance Feasibility (25%): Regulatory integration, institutional fit, government support
@@ -138,32 +138,32 @@ serve(async (req) => {
     else {
       prompt += `For the problem statement, provide a comprehensive assessment using the 6-dimensional IOS Framework:
 
-1. **Market Opportunity (25% weight)**
+1. Market Opportunity (25% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
    - Market Momentum and Growth Dynamics (35%): Growth rates, funding trends, innovation activity
    - Market Accessibility and Cultural Alignment (35%): Barriers, cultural factors, community engagement
 
-2. **Innovation Potential (20% weight)**
+2. Innovation Potential (20% weight)
    - Solution Novelty and Cultural Innovation (35%): Competitive analysis, cultural patterns, emerging approaches
    - Technology Readiness and Adaptive Potential (35%): TRL assessment, local capabilities, adaptation potential
    - Competitive Landscape and Innovation Ecosystem (30%): Competition analysis, collaboration opportunities
 
-3. **Feasibility (20% weight)**
+3. Feasibility (20% weight)
    - Technical Feasibility and Adaptive Implementation (40%): Engineering complexity, phased approaches, local capacity
    - Financial Feasibility and Resource Flexibility (35%): Capital requirements, resource models, cultural factors
    - Operational Feasibility and Community Implementation (25%): Organizational capacity, community engagement
 
-4. **Impact Potential (15% weight)**
+4. Impact Potential (15% weight)
    - Social Impact and Community Value (40%): Population reach, community-defined value, cultural impact
    - Environmental Impact and Sustainability (30%): Environmental metrics, local priorities, sustainability
    - Economic Impact and Community Development (30%): Job creation, local empowerment, economic resilience
 
-5. **India Context (10% weight)**
+5. India Context (10% weight)
    - Market Readiness and Cultural Alignment (35%): Infrastructure, cultural alignment, regional variations
    - Regulatory Environment and Policy Support (35%): Regulatory framework, policy trends, implementation
    - Innovation Ecosystem and Social Dynamics (30%): Talent availability, social dynamics, community factors
 
-6. **Global Relevance (10% weight)**
+6. Global Relevance (10% weight)
    - Cross-Cultural Adaptability and Global Scalability (40%): Cultural adaptation, international markets, global dynamics
    - Emerging Market Potential and Development Alignment (35%): International markets, SDG alignment, emerging dynamics
    - Global Trend Alignment and Future Relevance (25%): Technology trends, social movements, future scenarios\n`
@@ -173,7 +173,7 @@ serve(async (req) => {
 
 For each dimension, you MUST include verified sources from the following Tier 1-5 framework:
 
-**Tier 1 - Highest Credibility (95% credibility score):**
+Tier 1 - Highest Credibility (95% credibility score):
 - Government of India ministries and departments
 - United Nations agencies (UNDP, WHO, UNESCO, FAO, ILO, etc.)
 - World Bank Group Reports
@@ -184,7 +184,7 @@ For each dimension, you MUST include verified sources from the following Tier 1-
 - McKinsey Global Institute
 - Boston Consulting Group (BCG)
 
-**Tier 2 - High Credibility (85% credibility score):**
+Tier 2 - High Credibility (85% credibility score):
 - Confederation of Indian Industry (CII)
 - Federation of Indian Chambers of Commerce and Industry (FICCI)
 - National Association of Software and Service Companies (NASSCOM)
@@ -195,7 +195,7 @@ For each dimension, you MUST include verified sources from the following Tier 1-
 - Pew Research Center, Gallup International
 - MIT Technology Review, Stanford Research Institute
 
-**Tier 3 - Moderate Credibility (75% credibility score):**
+Tier 3 - Moderate Credibility (75% credibility score):
 - Indian Institutes of Technology (IITs)
 - Indian Institutes of Management (IIMs)
 - Tata Institute of Social Sciences (TISS)
@@ -205,7 +205,7 @@ For each dimension, you MUST include verified sources from the following Tier 1-
 - Development Alternatives, PRADAN, SELCO Foundation
 - International research institutes (ICRISAT, IRRI, IFPRI, IWMI)
 
-**Tier 4 - Contextual Credibility (65% credibility score):**
+Tier 4 - Contextual Credibility (65% credibility score):
 - Expert interviews with domain specialists
 - Community leader testimonials
 - Pilot program evaluation reports
@@ -214,7 +214,7 @@ For each dimension, you MUST include verified sources from the following Tier 1-
 - Local knowledge documentation
 - Grassroots organization reports
 
-**Tier 5 - Supporting Evidence (45% credibility score):**
+Tier 5 - Supporting Evidence (45% credibility score):
 - The Hindu, The Times of India, Hindustan Times
 - Business Standard, Economic Times, Mint
 - Scroll.in, The Wire, Newslaundry
@@ -703,7 +703,8 @@ Format the response as a JSON object with this exact structure:\n`
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`
       },
       body: JSON.stringify({
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
+        "tools": [{ "type": "web_search_preview" }],
         "input": prompt,
       })
     });

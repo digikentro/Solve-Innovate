@@ -1,4 +1,4 @@
-# SolveSmart - AI-Optimized Project Plan
+# SolveInnovate - AI-Optimized Project Plan
 
 ## Project Context
 **AI Developer**: Windsurf SWE-1 Model  

@@ -1,4 +1,4 @@
-# AI Development Guide for SolveSmart
+# AI Development Guide for SolveInnovate
 
 ## How to Work with This AI Assistant
 

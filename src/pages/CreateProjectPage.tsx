@@ -17,6 +17,8 @@ import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
 import Modal from '@/components/ui/Modal';
 import { profileService } from '@/services/profileService';
 import type { Profile } from '@/services/profileService';
+import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
+import { PresentableSlideCard } from '@/components/project/PresentableSlideCard';
 
 type ProblemStatementWithGeneratedAt = ProblemStatement & { generatedAt?: string };
 
@@ -117,7 +119,7 @@ function LoadingOverlay({ show }: { show: boolean }) {
     if (show) {
       intervalRef.current = setInterval(() => {
         setMsgIdx(idx => (idx + 1) % LOADING_MESSAGES.length);
-      }, 1500);
+      }, 3000);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -192,7 +194,15 @@ export default function CreateProjectPage() {
   const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
   const [presentableSlide, setPresentableSlide] = useState<string>('');
   const [problemSlides, setProblemSlides] = useState<Record<string, { hmw: string; bullets: string[] }>>({});
-  const [viewingSlide, setViewingSlide] = useState<{ problemId: string; slide: { hmw: string; bullets: string[] } } | null>(null);
+  const [viewingSlide, setViewingSlide] = useState<{
+    problemId: string;
+    slide: {
+      hmw: string;
+      bullets: string[];
+      iconSet?: string;
+      iconName?: string;
+    };
+  } | null>(null);
   const [isHmwTypeModalOpen, setIsHmwTypeModalOpen] = useState(false);
   const [selectedHmwType, setSelectedHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
   const [lastHmwType, setLastHmwType] = useState<null | 'human' | 'system' | 'business'>(null);
@@ -383,7 +393,9 @@ export default function CreateProjectPage() {
           ...prev,
           [problem.id!]: {
             hmw: data.hmw,
-            bullets: data.bullets
+            bullets: data.bullets,
+            iconSet: data.iconSet || '',
+            iconName: data.iconName || '',
           }
         }));
         toast.success('Presentable slide generated successfully!');
@@ -687,6 +699,13 @@ export default function CreateProjectPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Big OR Separator */}
+            <div className="flex items-center my-12">
+              <div className="flex-grow border-t-2 border-gray-300"></div>
+              <span className="mx-10 text-3xl font-extrabold text-gray-500 bg-white rounded-full shadow px-5 py-1 select-none flex items-center justify-center" style={{ letterSpacing: '0.2em', border: '4px solid #e5e7eb' }}>OR</span>
+              <div className="flex-grow border-t-2 border-gray-300"></div>
             </div>
 
             {/* Predefined Sectors */}
@@ -1096,39 +1115,20 @@ export default function CreateProjectPage() {
               </div>
             )}
 
-            {/* Problem Detailed View Modal */}
-            {detailedProblem && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">Problem Detailed View</h3>
-                      <Button
-                        onClick={() => setDetailedProblem(null)}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </Button>
-                    </div>
-                    <div className="overflow-y-auto hide-scrollbar" style={{ maxHeight: '75vh' }}>
-                      <IOSAssessmentCard
-                        assessment={detailedProblem.iosAssessment!}
-                        problemTitle={detailedProblem.title}
-                        generatedAt={detailedProblem.generatedAt ? new Date(detailedProblem.generatedAt) : undefined}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Problem Detailed View Modal (Reusable) */}
+            <AssessmentProblemDetailedView
+              open={!!detailedProblem}
+              onClose={() => setDetailedProblem(null)}
+              assessment={detailedProblem?.iosAssessment}
+              problemTitle={detailedProblem?.title || ''}
+              generatedAt={detailedProblem?.generatedAt ? new Date(detailedProblem.generatedAt) : undefined}
+              viewType="problem"
+            />
 
-            {/* Slide View Modal */}
+            {/* Slide View Modal (Reusable) */}
             {viewingSlide && (
               <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold">Presentable Slide</h3>
@@ -1142,22 +1142,13 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-
-                    <div className="overflow-y-auto max-h-[70vh]">
-                      <div className="relative rounded-2xl border-2 border-gray-300 shadow p-0 overflow-hidden">
-                        {/* HMW Statement */}
-                        <div className="bg-yellow-200 text-gray-900 font-bold text-2xl text-center px-12 py-8">
-                          {viewingSlide.slide.hmw}
-                        </div>
-                        {/* Bullets */}
-                        <div className="bg-white px-16 py-10">
-                          <ul className="list-disc space-y-3 text-gray-800 ml-8">
-                            {viewingSlide.slide.bullets.map((bullet, i) => (
-                              <li key={i}>{bullet}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
+                    <div className="overflow-y-auto">
+                      <PresentableSlideCard
+                        hmw={viewingSlide.slide.hmw}
+                        bullets={viewingSlide.slide.bullets}
+                        iconSet={viewingSlide.slide.iconSet as any}
+                        iconName={viewingSlide.slide.iconName || ''}
+                      />
                     </div>
                   </div>
                 </div>

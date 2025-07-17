@@ -3,17 +3,24 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-const SYSTEM_PROMPT = `You are an expert at creating business presentation slides. Given a project title and description, generate a single-slide summary in the style of a 'How Might We' (HMW) slide.\n\nInstructions:\n- Write a bold HMW question based on the project.\n- Provide 3-4 concise bullet points summarizing the key context, pain points, or challenges.\n- Use clear, professional language.\n- Respond ONLY in valid JSON: { "hmw": string, "bullets": string[] }`;
+const SYSTEM_PROMPT = `You are an expert at creating business presentation slides. 
+Given a project title and description, generate a single-slide summary in the style of a 'How Might We' (HMW) slide.
+
+Instructions:
+- Write a bold HMW question based on the project.
+- Provide 3-4 concise bullet points summarizing the key context, pain points, or challenges.
+- Choose the most relevant icon from the full list of react-icons (https://react-icons.github.io/react-icons/). Return the icon’s import path as two fields: iconSet (e.g., 'fi', 'fa', 'md', etc.) and iconName (e.g., 'FiHome', 'FaBeer', 'MdWork', etc.).
+- Use clear, professional language.
+- Respond ONLY in valid JSON: { "hmw": string, "bullets": string[], "iconSet": string, "iconName": string }`;
 
 async function generatePresentableSlide(title: string, description: string) {
   const userPrompt = `Project Title: ${title}\nProject Description: ${description}`;
   const body = {
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt }
     ],
-    temperature: 0.7,
     max_tokens: 400
   };
   const response = await fetch(OPENAI_API_URL, {

@@ -1,4 +1,4 @@
-# SolveSmart SaaS Platform - Full MVP Blueprint
+# SolveInnovate SaaS Platform - Full MVP Blueprint
 
 ---
 
@@ -17,7 +17,7 @@ Sectors: Business & Social Impact
 2️⃣ Onboarding wizard collects skills, interests, institution data
 3️⃣ User types free-text problem interest query
 4️⃣ AI generates HMW problem statements in real-time
-5️⃣ Opportunity Score calculated (based on SolveSmart Opportunity Score Framework)
+5️⃣ Opportunity Score calculated (based on SolveInnovate Opportunity Score Framework)
 6️⃣ Required skills extracted
 7️⃣ Skill match % calculated
 8️⃣ User reviews problems and selects one to work on
@@ -193,6 +193,6 @@ Output:
 
 ---
 
-This blueprint consolidates all knowledge from existing SolveSmart documents, architecture, AI pipelines, developer guides, scoring frameworks, and your vision for SaaS expansion.
+This blueprint consolidates all knowledge from existing SolveInnovate documents, architecture, AI pipelines, developer guides, scoring frameworks, and your vision for SaaS expansion.
 
 > ✅ Ready for development, team onboarding & system build.

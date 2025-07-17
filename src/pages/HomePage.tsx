@@ -13,11 +13,11 @@ export function HomePage() {
       <section className="text-center space-y-8 py-16">
         <h1 className="text-4xl tracking-tight sm:text-6xl">
           {/* Discover Innovation Opportunities with AI */}
-          Leave every problem to SolveSmart
+          Leave every problem to SolveInnovate
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-        SolveSmart is a general AI agent that bridges between problem and solution: it doesn't just think, it delivers results. SolveSmart excels at using design thinking, behaviour design, business consulting to solve problem in any sector, solves every problem at your fingertips  
-          {/* SolveSmart helps you identify and solve real-world problems using AI-powered problem discovery and opportunity scoring. */}
+        SolveInnovate is a general AI agent that bridges between problem and solution: it doesn't just think, it delivers results. SolveInnovate excels at using design thinking, behaviour design, business consulting to solve problem in any sector, solves every problem at your fingertips  
+          {/* SolveInnovate helps you identify and solve real-world problems using AI-powered problem discovery and opportunity scoring. */}
         </p>
         <div className="flex justify-center gap-4">
           {user ? (

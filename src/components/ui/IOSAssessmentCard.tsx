@@ -135,7 +135,17 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
 
       {/* Dimensions Grid */}
       <div className="space-y-4">
-        {Object.entries(assessment.dimensions).map(([key, dimension], idx, arr) => {
+        {(() => {
+          // Sort so that systemMetrics or businessMetrics always comes last
+          const dimensionEntries = Object.entries(assessment.dimensions);
+          dimensionEntries.sort(([keyA], [keyB]) => {
+            const isA7th = keyA === 'systemMetrics' || keyA === 'businessMetrics';
+            const isB7th = keyB === 'systemMetrics' || keyB === 'businessMetrics';
+            if (isA7th && !isB7th) return 1;
+            if (!isA7th && isB7th) return -1;
+            return 0;
+          });
+          return dimensionEntries.map(([key, dimension], idx, arr) => {
           // Special handling for 7th metric
           const isSystem = key === 'systemMetrics';
           const isBusiness = key === 'businessMetrics';
@@ -297,7 +307,8 @@ export const IOSAssessmentCard: React.FC<IOSAssessmentCardProps> = ({
               )}
             </div>
           );
-        })}
+          });
+        })()}
       </div>
 
       {/* Cultural Factors and Trend Analysis */}

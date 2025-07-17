@@ -1,4 +1,4 @@
-# SolveSmart - AI-Optimized Technical Specification
+# SolveInnovate - AI-Optimized Technical Specification
 
 ## 1. Implementation Guide
 

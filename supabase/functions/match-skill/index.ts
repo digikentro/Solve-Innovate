@@ -94,7 +94,7 @@ Choose the problem number (1, 2, 3, etc.) that best fits the user's skills.`;
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`
       },
       body: JSON.stringify({
-        "model": 'gpt-3.5-turbo',
+        "model": 'gpt-4o-mini',
         "input": prompt
       })
     });
