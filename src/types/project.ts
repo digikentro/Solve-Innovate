@@ -11,6 +11,7 @@ export interface ProjectInput {
   updated_at: string;
   presentable_slide?: any;
   assessments?: any; // or IOSAssessment[] if you want to type it strictly
+  canvas?: any; // Excalidraw data or null
 }
 
 export interface Project extends ProjectInput {

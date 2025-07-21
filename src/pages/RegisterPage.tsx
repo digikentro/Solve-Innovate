@@ -15,6 +15,7 @@ export function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [showCheckEmail, setShowCheckEmail] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +29,8 @@ export function RegisterPage() {
 
     try {
       await signUp(formData.email, formData.password);
-      toast.success('Account created successfully! Please check your email to verify your account.');
-      navigate('/login');
+      setShowCheckEmail(true);
+      // Do not navigate immediately
     } catch (error) {
       console.error('Error signing up:', error);
       toast.error('Failed to create account. Please try again.');
@@ -45,6 +46,25 @@ export function RegisterPage() {
       [name]: value,
     }));
   };
+
+  if (showCheckEmail) {
+    return (
+      <div className="container max-w-md mx-auto py-16 text-center">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Check your email</CardTitle>
+            <CardDescription>
+              We've sent a confirmation link to <span className="font-semibold">{formData.email}</span>.<br />
+              Please check your inbox and click the link to activate your account before logging in.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button onClick={() => navigate('/login')} className="w-full">Go to Login</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-md mx-auto py-16">

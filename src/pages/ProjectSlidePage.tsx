@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Project } from '@/types/project';
 import { PresentableSlideCard } from '@/components/project/PresentableSlideCard';
 import * as FiIcons from 'react-icons/fi';
 import * as FaIcons from 'react-icons/fa';
 import * as MdIcons from 'react-icons/md';
+import { FiArrowLeft } from 'react-icons/fi';
 // Add more sets as needed
 
 const ICON_SETS = {
@@ -45,6 +46,7 @@ export default function ProjectSlidePage() {
   const [saving, setSaving] = useState(false);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [iconSearch, setIconSearch] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -110,14 +112,23 @@ export default function ProjectSlidePage() {
   const SlideIcon = iconSet && iconName ? () => <DynamicIcon iconSet={iconSet as IconSetKey} iconName={iconName} className="w-16 h-16 text-gray-700" /> : null;
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
-      <Link to={`/projects/${project.id}`} className="text-indigo-600 hover:underline text-sm">← Back to Project</Link>
-      <h1 className="text-2xl font-bold mt-4 mb-6">Presentable Slide</h1>
+    <div className="max-w-6xl mx-auto py-10 px-4">
+      <div className="flex items-center mb-6 gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200"
+          type="button"
+          aria-label="Back"
+        >
+          <FiArrowLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-2xl font-bold m-0">Presentable Slide</h1>
+      </div>
       {slide ? (
         <PresentableSlideCard
           hmw={hmw}
           bullets={bullets}
-          iconSet={iconSet || ''}
+          iconSet={iconSet as IconSetKey}
           iconName={iconName || ''}
           editing={editing}
           saving={saving}

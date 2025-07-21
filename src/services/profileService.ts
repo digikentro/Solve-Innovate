@@ -4,7 +4,6 @@ export interface Profile {
   id: string;
   full_name: string | null;
   username: string | null;
-  avatar_url: string | null;
   bio: string | null;
   website: string | null;
   role: string | null;
@@ -46,38 +45,6 @@ export const profileService = {
       skills: Array.isArray(profile.skills) ? profile.skills : [],
       interests: Array.isArray(profile.interests) ? profile.interests : [],
     };
-  },
-
-  // Upload avatar
-  uploadAvatar: async (file: File): Promise<string | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-    
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file);
-      
-    if (uploadError) {
-      console.error('Error uploading avatar:', uploadError);
-      throw uploadError;
-    }
-    
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-      
-    // Update profile with new avatar URL
-    await profileService.updateProfile({ avatar_url: publicUrl });
-    
-    return publicUrl;
   },
 
   // Update or create profile

@@ -139,11 +139,13 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
 
                         {editing && iconSet && iconName && (
                             <button
-                                className="mt-2 text-xs text-indigo-600"
+                                className="mt-2 flex items-center gap-1 px-2 py-1 rounded-full bg-white shadow-sm hover:bg-indigo-50 active:bg-indigo-100 border border-indigo-200 text-indigo-700 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-indigo-300"
                                 type="button"
                                 onClick={() => setIconPickerOpen(true)}
+                                aria-label="Change Icon"
                             >
-                                Change Icon
+                                <FiEdit className="w-3.5 h-3.5" />
+                                <span>Change Icon</span>
                             </button>
                         )}
                     </div>
@@ -180,7 +182,7 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
                                     />
                                     <button
                                         onClick={() => handleRemoveBullet(i)}
-                                        className="absolute top-1 right-1 text-gray-400 hover:text-red-500 text-lg px-1"
+                                        className="absolute top-0 right-1 text-gray-400 hover:text-red-500 text-xl px-1"
                                         title="Remove"
                                         type="button"
                                     >
@@ -189,7 +191,15 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
                                 </div>
                             ))}
                             <div>
-                                <button onClick={handleAddBullet} className="text-indigo-600 hover:underline text-sm mt-2">+ Add Point</button>
+                                <button
+                                    onClick={handleAddBullet}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-700 text-sm active:bg-indigo-800 transition text-base mt-2 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    type="button"
+                                    aria-label="Add Point"
+                                >
+                                    <FiPlus className="w-3.5 h-3.5" />
+                                    <span>Add Point</span>
+                                </button>
                             </div>
                         </div>
                     ) : (

@@ -95,7 +95,6 @@ export const IdeaForm = ({ initialData, onSuccess }: IdeaFormProps) => {
 
       onSuccess?.();
       
-      // Navigate back to project if coming from there
       if (projectId) {
         navigate(`/projects/${projectId}`);
       } else if (initialData?.project_id) {

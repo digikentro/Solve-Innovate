@@ -121,9 +121,17 @@ export const ProjectDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="md:flex md:items-start md:justify-between">
+      <div className="flex items-start gap-3 flex-wrap">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200 mt-2"
+          type="button"
+          aria-label="Back"
+        >
+          <FiArrowLeft className="w-6 h-6" />
+        </button>
         <div className="flex-1 min-w-0">
-          <h2 className="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl break-words">
             {project.title}
           </h2>
           <div className="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
@@ -341,6 +349,36 @@ export const ProjectDetail = () => {
                   disabled={isGenerating}
                 >
                   {isGenerating ? 'Generating...' : 'Generate Presentable Slide'}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Project Canvas Section */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+        <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">Project Canvas</h3>
+        </div>
+        <div className="px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-gray-700 text-sm">
+            Create or view a collaborative canvas for brainstorming, mapping, or ideation using Excalidraw.
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {project && project.id && (
+              project.canvas ? (
+                <button
+                  className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                  onClick={() => navigate(`/projects/${project.id}/canvas`)}
+                >
+                  View Canvas
+                </button>
+              ) : (
+                <button
+                  className="px-4 py-2 rounded bg-yellow-500 text-white font-medium hover:bg-yellow-600 transition"
+                  onClick={() => navigate(`/projects/${project.id}/canvas`)}
+                >
+                  Create Canvas
                 </button>
               )
             )}

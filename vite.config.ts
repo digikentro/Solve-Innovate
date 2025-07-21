@@ -12,7 +12,10 @@ export default defineConfig({
   server: {
     port: 3001,
     allowedHosts: [
-      'scanner-readily-workshop-ribbon.trycloudflare.com'
+      'scanner-readily-workshop-ribbon.trycloudflare.com',
+      'angola-intranet-finance-sold.trycloudflare.com',
+      `investing-compound-provider-jul.trycloudflare.com`,
+      `enb-geek-evaluated-estonia.trycloudflare.com`
     ]
   },
 });

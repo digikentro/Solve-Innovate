@@ -20,7 +20,19 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signIn(formData.email, formData.password);
+      const { error } = await signIn(formData.email, formData.password);
+      if (error) {
+        if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+          toast.error('Please check your email and confirm your account before signing in.');
+        } else if (error.status === 400 && error.message && error.message.toLowerCase().includes('email')) {
+          toast.error('Please check your email and confirm your account before signing in.');
+        } else if (error.message && error.message.toLowerCase().includes('invalid login credentials')) {
+          toast.error('Invalid email or password.');
+        } else {
+          toast.error(error.message || 'Failed to sign in. Please check your credentials.');
+        }
+        return;
+      }
       toast.success('Successfully signed in!');
       navigate('/projects');
     } catch (error) {
