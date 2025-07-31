@@ -43,6 +43,7 @@ export default function ProjectSlidePage() {
   const [bullets, setBullets] = useState<string[]>([]);
   const [iconSet, setIconSet] = useState<string>(''); // '' means no icon
   const [iconName, setIconName] = useState<string>('');
+  const [backgroundColor, setBackgroundColor] = useState<string>('#FFD82B');
   const [saving, setSaving] = useState(false);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [iconSearch, setIconSearch] = useState('');
@@ -64,6 +65,7 @@ export default function ProjectSlidePage() {
           setBullets(data.presentable_slide.bullets || []);
           setIconSet(data.presentable_slide.iconSet || '');
           setIconName(data.presentable_slide.iconName || '');
+          setBackgroundColor(data.presentable_slide.backgroundColor || '#FFD82B');
         }
       } catch (e: any) {
         setError(e.message || 'Failed to load project');
@@ -81,6 +83,7 @@ export default function ProjectSlidePage() {
       setBullets(project.presentable_slide.bullets || []);
       setIconSet(project.presentable_slide.iconSet || '');
       setIconName(project.presentable_slide.iconName || '');
+      setBackgroundColor(project.presentable_slide.backgroundColor || '#FFD82B');
     }
     setEditing(false);
   };
@@ -93,7 +96,7 @@ export default function ProjectSlidePage() {
   const handleSave = async () => {
     if (!project) return;
     setSaving(true);
-    const newSlide = { hmw, bullets, iconSet, iconName };
+    const newSlide = { hmw, bullets, iconSet, iconName, backgroundColor };
     try {
       await supabase.from('projects').update({ presentable_slide: newSlide }).eq('id', project.id);
       setProject({ ...project, presentable_slide: newSlide });
@@ -108,7 +111,7 @@ export default function ProjectSlidePage() {
   if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
   if (error || !project) return <div className="text-center py-12 text-red-600">{error || 'Project not found'}</div>;
 
-  const slide: { hmw: string; bullets: string[]; iconSet?: string; iconName?: string } = project.presentable_slide || { hmw: '', bullets: [], iconSet: '', iconName: '' };
+  const slide: { hmw: string; bullets: string[]; iconSet?: string; iconName?: string; backgroundColor?: string } = project.presentable_slide || { hmw: '', bullets: [], iconSet: '', iconName: '', backgroundColor: '' };
   const SlideIcon = iconSet && iconName ? () => <DynamicIcon iconSet={iconSet as IconSetKey} iconName={iconName} className="w-16 h-16 text-gray-700" /> : null;
 
   return (
@@ -130,6 +133,7 @@ export default function ProjectSlidePage() {
           bullets={bullets}
           iconSet={iconSet as IconSetKey}
           iconName={iconName || ''}
+          backgroundColor={backgroundColor}
           editing={editing}
           saving={saving}
           iconPickerOpen={iconPickerOpen}
@@ -145,6 +149,7 @@ export default function ProjectSlidePage() {
           handleRemoveBullet={handleRemoveBullet}
           handleBulletChange={handleBulletChange}
           setHmw={setHmw}
+          setBackgroundColor={setBackgroundColor}
         />
       ) : (
         <div className="text-gray-500">No presentable slide has been generated for this project yet.</div>

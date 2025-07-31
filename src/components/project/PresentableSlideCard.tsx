@@ -30,6 +30,7 @@ interface PresentableSlideCardProps {
     bullets: string[];
     iconSet?: IconSetKey | '';
     iconName?: string;
+    backgroundColor?: string;
     editing?: boolean;
     saving?: boolean;
     iconPickerOpen?: boolean;
@@ -38,6 +39,7 @@ interface PresentableSlideCardProps {
     setIconSet?: (set: IconSetKey | '') => void;
     setIconName?: (name: string) => void;
     setIconSearch?: (search: string) => void;
+    setBackgroundColor?: (color: string) => void;
     handleEdit?: () => void;
     handleCancel?: () => void;
     handleSave?: () => void;
@@ -52,6 +54,7 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
     bullets,
     iconSet,
     iconName,
+    backgroundColor = '#FFD82B',
     editing = false,
     saving = false,
     iconPickerOpen = false,
@@ -60,6 +63,7 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
     setIconSet = () => { },
     setIconName = () => { },
     setIconSearch = () => { },
+    setBackgroundColor = () => { },
     handleEdit = () => { },
     handleCancel = () => { },
     handleSave = () => { },
@@ -81,11 +85,24 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
                     <FiEdit className="w-5 h-5" />
                 </button>
             )}
+
+            {/* Color Picker in Top Section */}
+            {editing && (
+                <div className="absolute top-2 right-2">
+                    <input
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-8 h-6 rounded border-2 border-white cursor-pointer"
+                        title="Change top section color"
+                    />
+                </div>
+            )}
             {/* HMW Statement */}
-            <div className="bg-[#FFD82B] text-gray-900 font-bold text-5xl px-12 py-8 leading-[1.2]">
+            <div className="text-gray-900 font-bold text-5xl px-12 py-8 leading-[1.2]" style={{ backgroundColor }}>
                 {editing ? (
                     <textarea
-                        className="w-full font-bold text-5xl bg-yellow-200 rounded resize-none px-2 leading-[1.2]"
+                        className="w-full font-bold text-5xl rounded resize-none px-2 leading-[1.2] bg-black bg-opacity-5"
                         value={hmw}
                         onChange={e => {
                             setHmw(e.target.value);
@@ -148,6 +165,8 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
                                 <span>Change Icon</span>
                             </button>
                         )}
+
+
                     </div>
                 ) : (
                     // ELSE: Placeholder content here
@@ -162,7 +181,7 @@ export const PresentableSlideCard: React.FC<PresentableSlideCardProps> = ({
                             {bullets.map((b, i) => (
                                 <div key={i} className="relative flex items-center">
                                     <textarea
-                                        className="w-full text-xl bg-gray-100 rounded p-2 resize-none pr-8"
+                                        className="w-full text-xl bg-black rounded p-2 resize-none pr-8 bg-opacity-10"
                                         value={b}
                                         onChange={e => {
                                             handleBulletChange(i, e.target.value);

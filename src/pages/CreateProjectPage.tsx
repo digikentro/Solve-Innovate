@@ -112,6 +112,17 @@ const SKILL_MATCH_MESSAGES = [
   'Connecting skills to impact…',
 ];
 
+// Simple loading messages for interest matching
+const INTEREST_MATCH_MESSAGES = [
+  'Analyzing your interests…',
+  'Finding the perfect match…',
+  'Comparing with generated problems…',
+  'Identifying best opportunities…',
+  'Matching interests to challenges…',
+  'Finding your ideal project…',
+  'Connecting passions to impact…',
+];
+
 function LoadingOverlay({ show }: { show: boolean }) {
   const [msgIdx, setMsgIdx] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,6 +185,37 @@ function SkillMatchOverlay({ show }: { show: boolean }) {
   );
 }
 
+function InterestMatchOverlay({ show }: { show: boolean }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (show) {
+      intervalRef.current = setInterval(() => {
+        setMsgIdx(idx => (idx + 1) % INTEREST_MATCH_MESSAGES.length);
+      }, 1500);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      setMsgIdx(0);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black bg-opacity-60">
+      <div className="flex flex-col items-center gap-6 p-8 bg-white bg-opacity-90 rounded-2xl shadow-2xl border-2 border-green-200">
+        <Loader2 className="w-16 h-16 text-green-600 animate-spin mb-2" />
+        <div className="text-xl font-semibold text-green-800 animate-pulse text-center min-h-[2.5em]">
+          {INTEREST_MATCH_MESSAGES[msgIdx]}
+        </div>
+        <div className="text-xs text-gray-500 mt-2">Finding your perfect match…</div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateProjectPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -191,7 +233,7 @@ export default function CreateProjectPage() {
   const [uploadedPdfs, setUploadedPdfs] = useState<File[]>([]);
   const [pdfContext, setPdfContext] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
-  const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
+  const [generatingSlides, setGeneratingSlides] = useState<Set<string>>(new Set());
   const [presentableSlide, setPresentableSlide] = useState<string>('');
   const [problemSlides, setProblemSlides] = useState<Record<string, { hmw: string; bullets: string[] }>>({});
   const [viewingSlide, setViewingSlide] = useState<{
@@ -210,6 +252,9 @@ export default function CreateProjectPage() {
   const [isSkillMatching, setIsSkillMatching] = useState(false);
   const [skillMatchReasoning, setSkillMatchReasoning] = useState<{ problemId: string; reasoning: string } | null>(null);
   const [showSkillMatchModal, setShowSkillMatchModal] = useState(false);
+  const [isInterestMatching, setIsInterestMatching] = useState(false);
+  const [interestMatchReasoning, setInterestMatchReasoning] = useState<{ problemId: string; reasoning: string } | null>(null);
+  const [showInterestMatchModal, setShowInterestMatchModal] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
@@ -373,10 +418,63 @@ export default function CreateProjectPage() {
     }
   };
 
+  const handleInterestMatch = async () => {
+    if (generatedProblems.length === 0) {
+      toast.error('Please generate problems first');
+      return;
+    }
+
+    let userInterests = profile?.interests;
+    if (!Array.isArray(userInterests)) userInterests = [];
+    if (userInterests.length === 0) {
+      toast.error('No interests found in your profile. Please update your interests first.');
+      return;
+    }
+
+    setIsInterestMatching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('match-interest', {
+        body: {
+          userInterests,
+          generatedProblems
+        }
+      });
+
+      if (error) throw error;
+
+      if (data && data.success && data.matchedProblem) {
+        setSelectedProblems(new Set([data.matchedProblem.id!]));
+        
+        // Store the reasoning for display
+        setInterestMatchReasoning({
+          problemId: data.matchedProblem.id!,
+          reasoning: data.matchedProblem.reasoning
+        });
+        
+        // Show simple success message with reasoning
+        toast.success(
+          `Matched: "${data.matchedProblem.title}"`,
+          { duration: 3000 }
+        );
+        
+        
+      } else if (data && !data.success) {
+        toast.error(data.message || 'No interests match found');
+      } else {
+        toast.error('No interests match found. Try updating your interests or generating more problems.');
+      }
+    } catch (error) {
+      console.error('Error matching interests:', error);
+      toast.error('Failed to match interests. Please try again.');
+    } finally {
+      setIsInterestMatching(false);
+    }
+  };
+
   const handleGenerateSlideForProblem = async (problem: ProblemStatement) => {
     if (!problem.id) return;
 
-    setIsGeneratingSlide(true);
+    setGeneratingSlides(prev => new Set([...prev, problem.id!]));
     try {
       const { data, error } = await supabase.functions.invoke('generate-presentable-slide', {
         body: {
@@ -406,7 +504,13 @@ export default function CreateProjectPage() {
       console.error('Error generating slide:', err);
       toast.error('Failed to generate slide.');
     } finally {
-      setIsGeneratingSlide(false);
+             setGeneratingSlides(prev => {
+         const newSet = new Set(prev);
+         if (problem.id) {
+           newSet.delete(problem.id);
+         }
+         return newSet;
+       });
     }
   };
 
@@ -491,6 +595,7 @@ export default function CreateProjectPage() {
       setGeneratedProblems(prev => [...prev, newProblem]);
       // Clear skill match reasoning when new problems are generated
       setSkillMatchReasoning(null);
+      setInterestMatchReasoning(null);
       toast.success('Problem generated successfully!');
     } catch (error) {
       console.error('Error generating problem:', error);
@@ -506,21 +611,11 @@ export default function CreateProjectPage() {
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <span className="text-gray-900 font-medium">Create New Project</span>
+          <span className="text-gray-500 ">Create New Project</span>
           {projectType && (
             <>
               <span>/</span>
-              <span
-                className="hover:text-gray-700 cursor-pointer"
-                onClick={() => {
-                  setProjectType(null);
-                  setSelectedSector(null);
-                  setGeneratedProblems([]);
-                  setProblemDescription('');
-                  setInputMode('predefined');
-                  setSelectedProblems(new Set());
-                }}
-              >
+              <span className="text-gray-500">
                 {projectType === 'social-impact' ? 'Social Impact' : 'Business'}
               </span>
             </>
@@ -528,20 +623,38 @@ export default function CreateProjectPage() {
           {selectedSector && (
             <>
               <span>/</span>
-              <span
-                className="hover:text-gray-700 cursor-pointer"
-                onClick={() => {
-                  setGeneratedProblems([]);
-                  setSelectedProblems(new Set());
-                }}
-              >
+              <span className="text-gray-500">
                 {getSectorName(selectedSector)}
               </span>
             </>
           )}
         </nav>
+        
 
-        <h1 className="text-3xl font-bold mb-8">Create New Project</h1>
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            onClick={() => {
+              if (projectType) {
+                // If we're in step 2 (Define Your Problem), go back to step 1 (Choose Project Type)
+                setProjectType(null);
+                setSelectedSector(null);
+                setGeneratedProblems([]);
+                setProblemDescription('');
+                setInputMode('predefined');
+                setSelectedProblems(new Set());
+              } else {
+                // If we're in step 1 (Choose Project Type), go back to projects page
+                navigate('/projects');
+              }
+            }}
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200"
+            type="button"
+            aria-label="Back"
+          >
+            <FiArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-3xl font-bold m-0 ">Create New Project</h1>
+        </div>
 
         {/* Project Type Selection */}
         {!projectType && (
@@ -841,6 +954,26 @@ export default function CreateProjectPage() {
                     </>
                   )}
                 </Button>
+                <Button
+                  onClick={handleInterestMatch}
+                  variant="outline"
+                  disabled={isInterestMatching}
+                  className="flex items-center gap-2"
+                >
+                  {isInterestMatching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Matching...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      Interest Match
+                    </>
+                  )}
+                </Button>
                 {selectedProblems.size > 0 && (
                   <Button
                     onClick={handleSaveSelectedProblems}
@@ -863,7 +996,7 @@ export default function CreateProjectPage() {
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
                 💡 Select the problem that best matches your interests and skills.
-                Use the "Skill Match" button to automatically find the best match for your profile.
+                Use the "Skill Match" button to automatically find the best match for your skills, or "Interest Match" to find problems that align with your passions.
                 Each problem includes a comprehensive Innovation Opportunity Score (IOS) assessment with verified sources from Tier 1-5 credibility framework.
               </p>
               <div className="mt-2 text-xs text-blue-600">
@@ -901,6 +1034,21 @@ export default function CreateProjectPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 Skill Match
+                              </button>
+                            )}
+                            {interestMatchReasoning && interestMatchReasoning.problemId === problem.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowInterestMatchModal(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-medium hover:bg-pink-200 transition-colors"
+                                title="Click to see why this problem matches your interests"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                                Interest Match
                               </button>
                             )}
                           </div>
@@ -972,9 +1120,9 @@ export default function CreateProjectPage() {
                                 e.stopPropagation();
                                 handleGenerateSlideForProblem(problem);
                               }}
-                              disabled={isGeneratingSlide}
+                              disabled={generatingSlides.has(problem.id!)}
                             >
-                              {isGeneratingSlide ? (
+                              {generatingSlides.has(problem.id!) ? (
                                 <>
                                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                                   Generating...
@@ -1204,11 +1352,62 @@ export default function CreateProjectPage() {
                 </div>
               </div>
             )}
+
+            {showInterestMatchModal && interestMatchReasoning && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <svg className="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        Interest Match Reasoning
+                      </h3>
+                      <Button
+                        onClick={() => setShowInterestMatchModal(false)}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </Button>
+                    </div>
+                    
+                    <div className="overflow-y-auto max-h-[70vh]">
+                      <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-pink-800 mb-2">Why this problem matches your interests:</h4>
+                        <p className="text-pink-700 text-sm leading-relaxed">
+                          {interestMatchReasoning.reasoning}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h4 className="font-medium text-purple-800 mb-2">Your Interests:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {profile?.interests?.map((interest: string, index: number) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                            >
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
       {/* Skill matching loading overlay */}
       <SkillMatchOverlay show={isSkillMatching} />
+      {/* Interest matching loading overlay */}
+      <InterestMatchOverlay show={isInterestMatching} />
     </div>
   );
 } 

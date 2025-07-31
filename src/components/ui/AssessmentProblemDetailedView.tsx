@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Button } from '../ui/button';
+import { Button } from './button';
 import { IOSAssessmentCard } from './IOSAssessmentCard';
 import { useRef, useEffect, useState, useLayoutEffect } from 'react';
 
@@ -135,7 +135,7 @@ export const AssessmentProblemDetailedView: React.FC<AssessmentProblemDetailedVi
                 borderRadius: 9999,
                 background: dragging ? 'rgba(255,255,255,0.5)' : 'rgb(255,255,255)',
                 opacity: dragging ? 0.95 : 0.7,
-                border: dragging ? '1.5px solid rgba(0, 0, 0, 0.6)' : '1.5px solid #fff',
+                border: dragging ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid #fff',
                 cursor: 'pointer',
                 transition: 'background 0.2s, box-shadow 0.2s, border 0.2s, opacity 0.2s',
                 zIndex: 2,

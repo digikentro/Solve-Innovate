@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 serve(async (req)=>{
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -192,6 +192,7 @@ Tier 3 - Moderate Credibility (75% credibility score):
 - The Energy and Resources Institute (TERI)
 - Development Alternatives, PRADAN, SELCO Foundation
 - International research institutes (ICRISAT, IRRI, IFPRI, IWMI)
+- Large international NGOs & foundations (Oxfam, Amnesty, WaterAid, Save the Children, Gates Foundation)  
 
 Tier 4 - Contextual Credibility (65% credibility score):
 - Expert interviews with domain specialists
@@ -200,7 +201,8 @@ Tier 4 - Contextual Credibility (65% credibility score):
 - Field research findings
 - Stakeholder consultation reports
 - Local knowledge documentation
-- Grassroots organization reports
+- Grassroots organization & local‑NGO field reports
+- Curated social‑media community data (Reddit sub‑threads, Twitter/X hashtags, LinkedIn group polls)  
 
 Tier 5 - Supporting Evidence (45% credibility score):
 - The Hindu, The Times of India, Hindustan Times
@@ -208,6 +210,7 @@ Tier 5 - Supporting Evidence (45% credibility score):
 - Scroll.in, The Wire, Newslaundry
 - YourStory, Inc42, TechCrunch India
 - Medium articles, LinkedIn posts, Twitter discussions
+- Individual expert tweets, LinkedIn posts, Instagram reels (with screenshot or permalink)
 
 For the problem statement, provide:
 1. A clear HMW question as the title
@@ -217,7 +220,8 @@ For the problem statement, provide:
 5. Required skills (3-5 specific skills)
 6. Cultural factors and considerations
 7. Trend analysis and momentum indicators
-8. VERIFIED SOURCES for each dimension with proper tier classification
+8. VERIFIED SOURCES for each dimension with proper tier classification, include NGO reports and/or social‑media evidence where relevant
+
 
 IMPORTANT: Generate one problem statement. It should be unique and address the given context.
 
@@ -755,6 +759,7 @@ Format the response as a JSON object with this exact structure:\n`;
         throw new Error("No valid JSON found in assistant response");
       }
     }
+    
     return new Response(JSON.stringify(problemsData), {
       headers: {
         'Content-Type': 'application/json',
