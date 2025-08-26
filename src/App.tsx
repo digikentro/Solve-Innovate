@@ -20,6 +20,7 @@ import ProjectEditPage from '@/pages/ProjectEditPage';
 import { EditProfilePage } from '@/pages/ProfilePage';
 import ProjectSlidePage from '@/pages/ProjectSlidePage';
 import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
+import SearchPage from '@/pages/SearchPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -138,7 +139,7 @@ const SetupProfile = () => {
                 name="name"
                 type="text"
                 required
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Full Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -249,6 +250,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SetupProfile />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="search"
+                element={
+                  <ProtectedRoute>
+                    <SearchPage />
                   </ProtectedRoute>
                 }
             />

@@ -37,16 +37,10 @@ export function Navbar() {
                 Intro
               </Link>
               <Link
-                to=""
+                to="/search"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
               >
-                Use Cases
-              </Link>
-              <Link
-                to=""
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                Benchmark
+                Search
               </Link>
             </div>
           </div>

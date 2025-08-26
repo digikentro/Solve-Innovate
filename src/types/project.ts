@@ -12,6 +12,7 @@ export interface ProjectInput {
   presentable_slide?: any;
   assessments?: any; // or IOSAssessment[] if you want to type it strictly
   canvas?: any; // Excalidraw data or null
+  metadata?: any; // JSONB field for storing additional data like AS-IS maps
 }
 
 export interface Project extends ProjectInput {
