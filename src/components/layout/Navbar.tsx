@@ -24,18 +24,19 @@ export function Navbar() {
               SOLVEINNOVATE
             </Link>
             <div className="ml-10 flex items-center space-x-4">
+            <Link
+                to=""
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                Intro
+              </Link>
               <Link
                 to="/projects"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
               >
                 Projects
               </Link>
-              <Link
-                to=""
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                Intro
-              </Link>
+
               <Link
                 to="/search"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectService } from '@/services/projectService';
-import { ErrorHandler, SmartSolveError } from '@/services/errorHandling';
+import { ErrorHandler } from '@/services/errorHandling';
 import { FiTrendingUp, FiTrendingDown, FiActivity, FiShield, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 
 interface IOSDashboardProps {
@@ -34,15 +34,9 @@ export const IOSDashboard: React.FC<IOSDashboardProps> = ({ className = '' }) =>
       setStats(projectStats);
       setProjects(userProjects);
     } catch (err) {
-      const smartSolveError = err instanceof SmartSolveError ? err : new SmartSolveError(
-        'Failed to load dashboard data',
-        { operation: 'load_dashboard_data', userId: user?.id, timestamp: new Date().toISOString() },
-        false,
-        'Unable to load dashboard. Please refresh the page.'
-      );
-      
-      setError(smartSolveError.userMessage);
-      ErrorHandler.logError(smartSolveError);
+      const errorMessage = err instanceof Error ? err.message : 'Unable to load dashboard. Please refresh the page.';
+      setError(errorMessage);
+      console.error('Dashboard loading error:', err);
     } finally {
       setLoading(false);
     }

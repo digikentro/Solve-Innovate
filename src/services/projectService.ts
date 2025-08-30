@@ -1,23 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { ErrorHandler, SmartSolveError, ErrorContext } from './errorHandling';
-import { CachingService, CACHE_NAMESPACES, CACHE_TTL } from './cachingService';
+import { ErrorHandler, ErrorContext } from './errorHandling';
 import { SecurityService } from './securityService';
-import type { Project, ProjectInput } from '@/types/project';
-
-export interface CreateProjectData {
-  title: string;
-  description?: string;
-  skills?: string[];
-  status?: string;
-  assessments?: any;
-  presentable_slide?: any;
-}
+import type { Project } from '@/types/project';
 
 export class ProjectService {
-  /**
-   * Create a new project with validation and security checks
-   */
-  static async createProject(data: CreateProjectData, userId: string): Promise<Project> {
+  static async createProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<Project> {
     const context: ErrorContext = {
       operation: 'create_project',
       userId,
@@ -34,10 +21,7 @@ export class ProjectService {
       });
 
       if (!securityValidation.valid) {
-        throw new SmartSolveError(
-          'Project validation failed',
-          context,
-          false,
+        throw new Error(
           `Please check your input: ${securityValidation.errors.join(', ')}`
         );
       }
@@ -45,12 +29,7 @@ export class ProjectService {
       // Rate limiting
       const rateLimit = SecurityService.checkRateLimit(userId, 'api');
       if (!rateLimit.allowed) {
-        throw new SmartSolveError(
-          'Rate limit exceeded',
-          context,
-          true,
-          'Too many requests. Please wait a moment and try again.'
-        );
+        throw new Error('Too many requests. Please wait a moment and try again.');
       }
 
       // Sanitize input
@@ -71,12 +50,7 @@ export class ProjectService {
       .single();
 
           if (error) {
-            throw new SmartSolveError(
-              'Failed to create project',
-              context,
-              true,
-              'Unable to create project. Please try again.'
-            );
+            throw new Error('Unable to create project. Please try again.');
           }
 
           return projectData;
@@ -84,20 +58,12 @@ export class ProjectService {
         context
       );
 
-      // Clear related cache
-      CachingService.clearNamespace(CACHE_NAMESPACES.PROJECTS);
-
       return project;
     } catch (error) {
-      if (error instanceof SmartSolveError) {
+      if (error instanceof Error) {
         throw error;
       }
-      throw new SmartSolveError(
-        'Project creation failed',
-        context,
-        true,
-        'An unexpected error occurred. Please try again.'
-      );
+      throw new Error('An unexpected error occurred. Please try again.');
     }
   }
 
@@ -120,12 +86,7 @@ export class ProjectService {
           .order('created_at', { ascending: false });
 
         if (error) {
-          throw new SmartSolveError(
-            'Failed to fetch projects',
-            context,
-            true,
-            'Unable to load projects. Please try again.'
-          );
+          throw new Error('Unable to load projects. Please try again.');
         }
 
         return data || [];
@@ -135,7 +96,7 @@ export class ProjectService {
   }
 
   /**
-   * Get project by ID (no caching)
+   * Get project by ID
    */
   static async getProjectById(projectId: string, userId: string): Promise<Project | null> {
     const context: ErrorContext = {
@@ -155,14 +116,9 @@ export class ProjectService {
 
         if (error) {
           if (error.code === 'PGRST116') {
-            return null; // Not found
+            return null; // Project not found
           }
-          throw new SmartSolveError(
-            'Failed to fetch project',
-            context,
-            true,
-            'Unable to load project. Please try again.'
-          );
+          throw new Error('Unable to load project. Please try again.');
         }
 
         return data;
@@ -172,11 +128,11 @@ export class ProjectService {
   }
 
   /**
-   * Update project with validation
+   * Update project
    */
   static async updateProject(
     projectId: string,
-    data: Partial<CreateProjectData>,
+    data: Partial<Omit<Project, 'id' | 'created_at' | 'user_id'>>,
     userId: string
   ): Promise<Project> {
     const context: ErrorContext = {
@@ -188,16 +144,14 @@ export class ProjectService {
     try {
       // Security validation
       const securityValidation = SecurityService.validateInput(data, {
+        required: [],
         maxLength: {
           title: 200
         }
       });
 
       if (!securityValidation.valid) {
-        throw new SmartSolveError(
-          'Project validation failed',
-          context,
-          false,
+        throw new Error(
           `Please check your input: ${securityValidation.errors.join(', ')}`
         );
       }
@@ -205,12 +159,7 @@ export class ProjectService {
       // Rate limiting
       const rateLimit = SecurityService.checkRateLimit(userId, 'api');
       if (!rateLimit.allowed) {
-        throw new SmartSolveError(
-          'Rate limit exceeded',
-          context,
-          true,
-          'Too many requests. Please wait a moment and try again.'
-        );
+        throw new Error('Too many requests. Please wait a moment and try again.');
       }
 
       // Sanitize input
@@ -231,12 +180,7 @@ export class ProjectService {
       .single();
 
           if (error) {
-            throw new SmartSolveError(
-              'Failed to update project',
-              context,
-              true,
-              'Unable to update project. Please try again.'
-            );
+            throw new Error('Unable to update project. Please try again.');
           }
 
           return projectData;
@@ -244,21 +188,12 @@ export class ProjectService {
         context
       );
 
-      // Clear related cache
-      CachingService.remove(`project_${projectId}`, CACHE_NAMESPACES.PROJECTS);
-      CachingService.invalidatePattern(`user_projects_${userId}`, CACHE_NAMESPACES.PROJECTS);
-
       return project;
     } catch (error) {
-      if (error instanceof SmartSolveError) {
+      if (error instanceof Error) {
         throw error;
       }
-      throw new SmartSolveError(
-        'Project update failed',
-        context,
-        true,
-        'An unexpected error occurred. Please try again.'
-      );
+      throw new Error('An unexpected error occurred. Please try again.');
     }
   }
 
@@ -276,12 +211,7 @@ export class ProjectService {
       // Rate limiting
       const rateLimit = SecurityService.checkRateLimit(userId, 'api');
       if (!rateLimit.allowed) {
-        throw new SmartSolveError(
-          'Rate limit exceeded',
-          context,
-          true,
-          'Too many requests. Please wait a moment and try again.'
-        );
+        throw new Error('Too many requests. Please wait a moment and try again.');
       }
 
       await ErrorHandler.withRetry(
@@ -293,40 +223,23 @@ export class ProjectService {
             .eq('user_id', userId);
 
           if (error) {
-            throw new SmartSolveError(
-              'Failed to delete project',
-              context,
-              true,
-              'Unable to delete project. Please try again.'
-            );
+            throw new Error('Unable to delete project. Please try again.');
           }
         },
         context
       );
-
-      // Clear related cache
-      CachingService.remove(`project_${projectId}`, CACHE_NAMESPACES.PROJECTS);
-      CachingService.invalidatePattern(`user_projects_${userId}`, CACHE_NAMESPACES.PROJECTS);
     } catch (error) {
-      if (error instanceof SmartSolveError) {
+      if (error instanceof Error) {
         throw error;
       }
-      throw new SmartSolveError(
-        'Project deletion failed',
-        context,
-        true,
-        'An unexpected error occurred. Please try again.'
-      );
+      throw new Error('An unexpected error occurred. Please try again.');
     }
   }
 
   /**
-   * Search projects with caching
+   * Search projects by title
    */
-  static async searchProjects(
-    userId: string,
-    query: string
-  ): Promise<Project[]> {
+  static async searchProjects(query: string, userId: string): Promise<Project[]> {
     const context: ErrorContext = {
       operation: 'search_projects',
       userId,
@@ -336,36 +249,22 @@ export class ProjectService {
     // Sanitize search query
     const sanitizedQuery = SecurityService.sanitizeInput(query);
 
-    return CachingService.withCache(
-      `search_${userId}_${sanitizedQuery}`,
-      {
-        namespace: CACHE_NAMESPACES.PROJECTS,
-        ttl: CACHE_TTL.SHORT
-      },
+    return ErrorHandler.withRetry(
       async () => {
-        return ErrorHandler.withRetry(
-          async () => {
-            const { data, error } = await supabase
-              .from('projects')
-              .select('*')
-              .eq('user_id', userId)
-              .ilike('title', `%${sanitizedQuery}%`)
-              .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('user_id', userId)
+          .ilike('title', `%${sanitizedQuery}%`)
+          .order('created_at', { ascending: false });
 
-            if (error) {
-              throw new SmartSolveError(
-                'Failed to search projects',
-                context,
-                true,
-                'Unable to search projects. Please try again.'
-              );
-            }
+        if (error) {
+          throw new Error('Unable to search projects. Please try again.');
+        }
 
-            return data || [];
-          },
-          context
-        );
-      }
+        return data || [];
+      },
+      context
     );
   }
 
@@ -383,50 +282,36 @@ export class ProjectService {
       timestamp: new Date().toISOString()
     };
 
-    return CachingService.withCache(
-      `project_stats_${userId}`,
-      {
-        namespace: CACHE_NAMESPACES.PROJECTS,
-        ttl: CACHE_TTL.MEDIUM
-      },
+    return ErrorHandler.withRetry(
       async () => {
-        return ErrorHandler.withRetry(
-          async () => {
-            const { data, error } = await supabase
-              .from('projects')
-              .select('status, created_at')
-              .eq('user_id', userId);
+        const { data, error } = await supabase
+          .from('projects')
+          .select('status, created_at')
+          .eq('user_id', userId);
 
-            if (error) {
-              throw new SmartSolveError(
-                'Failed to fetch project stats',
-                context,
-                true,
-                'Unable to load project statistics. Please try again.'
-              );
-            }
+        if (error) {
+          throw new Error('Unable to load project statistics. Please try again.');
+        }
 
-            const projects = data || [];
-            const byStatus = projects.reduce((acc, project) => {
-              acc[project.status] = (acc[project.status] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>);
+        const projects = data || [];
+        const byStatus = projects.reduce((acc, project) => {
+          acc[project.status] = (acc[project.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
 
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            const recentCount = projects.filter(project => 
-              new Date(project.created_at) > oneWeekAgo
-            ).length;
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const recentCount = projects.filter(project => 
+          new Date(project.created_at) > oneWeekAgo
+        ).length;
 
-            return {
-              total: projects.length,
-              byStatus,
-              recentCount
-            };
-          },
-          context
-        );
-      }
+        return {
+          total: projects.length,
+          byStatus,
+          recentCount
+        };
+      },
+      context
     );
   }
 }

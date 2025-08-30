@@ -13,8 +13,6 @@ export interface Profile {
   created_at: string;
   updated_at: string;
 };
-
-type CreateProfileInput = Omit<Profile, 'id' | 'created_at' | 'updated_at'>;
 type UpdateProfileInput = Partial<Omit<Profile, 'id' | 'user_id' | 'created_at'>>;
 
 export const profileService = {

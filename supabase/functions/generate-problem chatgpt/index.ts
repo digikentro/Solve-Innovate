@@ -1,6 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-serve(async (req) => {
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
+serve(async (req)=>{
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -11,7 +10,6 @@ serve(async (req) => {
       }
     });
   }
-
   try {
     // Verify request method
     if (req.method !== 'POST') {
@@ -25,10 +23,8 @@ serve(async (req) => {
         }
       });
     }
-
     // Get request body
     const { projectType, inputMode, sector, problemDescription, pdfContext, hmwType, previousHmws } = await req.json();
-
     // Validate required fields based on input mode
     if (inputMode === 'predefined' && !sector) {
       return new Response(JSON.stringify({
@@ -41,7 +37,6 @@ serve(async (req) => {
         }
       });
     }
-
     if (inputMode === 'custom' && !problemDescription) {
       return new Response(JSON.stringify({
         error: 'Problem description is required for custom mode'
@@ -53,11 +48,9 @@ serve(async (req) => {
         }
       });
     }
-
-    let prompt = ``;
-
+    let systemPrompt = `You are an expert at identifying and framing innovation opportunities using the Innovation Opportunity Score (IOS) Framework. Your task is to generate ONE specific, actionable, and impactful "How Might We" (HMW) problem statement.\n`;
     if (hmwType == "business") {
-      prompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
+      systemPrompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
 
 1. Market Opportunity (30% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
@@ -92,11 +85,9 @@ serve(async (req) => {
    - Financial Return (40%): ROI, NPV, IRR, profit margins, payback
    - Competitive Advantage (25%): IP, defensibility, market differentiation
    - Scalability & Resource Fit (20%): Operational scalability with existing resources
-   - Time-to-Impact (15%): Speed to revenue generation or cost reduction\n`
-
-    }
-    else if (hmwType == "system") {
-      prompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
+   - Time-to-Impact (15%): Speed to revenue generation or cost reduction\n`;
+    } else if (hmwType == "system") {
+      systemPrompt += `For the problem statement, provide a comprehensive assessment using the 7-dimensional IOS Framework:
 
 1. Market Opportunity (20% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
@@ -132,11 +123,9 @@ serve(async (req) => {
    - System Leverage (30%): Root-cause focus, structural shifts, system redesign potential
    - Stakeholder Alignment (30%): Multi-actor coordination, incentives alignment, stakeholder roles
    - Policy & Governance Feasibility (25%): Regulatory integration, institutional fit, government support
-   - Change-Management Risk (15%): Cultural inertia, resistance, legacy systems, adaptability\n`
-
-    }
-    else {
-      prompt += `For the problem statement, provide a comprehensive assessment using the 6-dimensional IOS Framework:
+   - Change-Management Risk (15%): Cultural inertia, resistance, legacy systems, adaptability\n`;
+    } else {
+      systemPrompt += `For the problem statement, provide a comprehensive assessment using the 6-dimensional IOS Framework:
 
 1. Market Opportunity (25% weight)
    - Market Size and Potential (30%): TAM, growth trajectory, market research
@@ -166,10 +155,9 @@ serve(async (req) => {
 6. Global Relevance (10% weight)
    - Cross-Cultural Adaptability and Global Scalability (40%): Cultural adaptation, international markets, global dynamics
    - Emerging Market Potential and Development Alignment (35%): International markets, SDG alignment, emerging dynamics
-   - Global Trend Alignment and Future Relevance (25%): Technology trends, social movements, future scenarios\n`
+   - Global Trend Alignment and Future Relevance (25%): Technology trends, social movements, future scenarios\n`;
     }
-
-    prompt += `CRITICAL SOURCE VERIFICATION REQUIREMENTS:
+    systemPrompt += `CRITICAL SOURCE VERIFICATION REQUIREMENTS:
 
 For each dimension, you MUST include verified sources from the following Tier 1-5 framework:
 
@@ -204,6 +192,7 @@ Tier 3 - Moderate Credibility (75% credibility score):
 - The Energy and Resources Institute (TERI)
 - Development Alternatives, PRADAN, SELCO Foundation
 - International research institutes (ICRISAT, IRRI, IFPRI, IWMI)
+- Large international NGOs & foundations (Oxfam, Amnesty, WaterAid, Save the Children, Gates Foundation)  
 
 Tier 4 - Contextual Credibility (65% credibility score):
 - Expert interviews with domain specialists
@@ -212,7 +201,8 @@ Tier 4 - Contextual Credibility (65% credibility score):
 - Field research findings
 - Stakeholder consultation reports
 - Local knowledge documentation
-- Grassroots organization reports
+- Grassroots organization & local‑NGO field reports
+- Curated social‑media community data (Reddit sub‑threads, Twitter/X hashtags, LinkedIn group polls)  
 
 Tier 5 - Supporting Evidence (45% credibility score):
 - The Hindu, The Times of India, Hindustan Times
@@ -220,6 +210,7 @@ Tier 5 - Supporting Evidence (45% credibility score):
 - Scroll.in, The Wire, Newslaundry
 - YourStory, Inc42, TechCrunch India
 - Medium articles, LinkedIn posts, Twitter discussions
+- Individual expert tweets, LinkedIn posts, Instagram reels (with screenshot or permalink)
 
 For the problem statement, provide:
 1. A clear HMW question as the title
@@ -229,7 +220,8 @@ For the problem statement, provide:
 5. Required skills (3-5 specific skills)
 6. Cultural factors and considerations
 7. Trend analysis and momentum indicators
-8. VERIFIED SOURCES for each dimension with proper tier classification
+8. VERIFIED SOURCES for each dimension with proper tier classification, include NGO reports and/or social‑media evidence where relevant
+
 
 IMPORTANT: Generate one problem statement. It should be unique and address the given context.
 
@@ -238,10 +230,8 @@ CRITICAL: You MUST respond with ONLY valid JSON. Do not include any markdown for
 CRITICAL: The "title" field should contain the actual HMW question (e.g., "How might we improve access to clean water in rural communities?"), NOT generic text like "HMW question 1". The "description" field should contain a brief explanation of the problem context and opportunity, NOT the HMW question again.
 
 CRITICAL: Each dimension MUST include at least 2-3 verified sources with proper tier classification, organization names, and credibility scores.\n
-Format the response as a JSON object with this exact structure:\n`
-
+Format the response as a JSON object with this exact structure:\n`;
     let example;
-    
     if (hmwType == "business") {
       example = {
         "title": "How might we improve access to clean water in rural communities?",
@@ -380,15 +370,26 @@ Format the response as a JSON object with this exact structure:\n`
               }
             }
           },
-          "culturalFactors": ["Strong community engagement potential", "Cultural alignment with local values"],
-          "trendAnalysis": ["Growing market demand", "Increasing regulatory support"],
-          "recommendations": ["Focus on community engagement", "Develop phased implementation plan"]
+          "culturalFactors": [
+            "Strong community engagement potential",
+            "Cultural alignment with local values"
+          ],
+          "trendAnalysis": [
+            "Growing market demand",
+            "Increasing regulatory support"
+          ],
+          "recommendations": [
+            "Focus on community engagement",
+            "Develop phased implementation plan"
+          ]
         },
-        "requiredSkills": ["Water Treatment Technology", "Community Development", "Project Management"]
-      }
-    }
-
-    else if (hmwType == "system") {
+        "requiredSkills": [
+          "Water Treatment Technology",
+          "Community Development",
+          "Project Management"
+        ]
+      };
+    } else if (hmwType == "system") {
       example = {
         "title": "How might we improve access to clean water in rural communities?",
         "description": "Rural communities face significant challenges accessing clean, safe drinking water, leading to health issues and economic burdens. This opportunity focuses on developing sustainable water purification and distribution solutions that can be implemented at the community level.",
@@ -526,15 +527,26 @@ Format the response as a JSON object with this exact structure:\n`
               }
             }
           },
-          "culturalFactors": ["Strong community engagement potential", "Cultural alignment with local values"],
-          "trendAnalysis": ["Growing market demand", "Increasing regulatory support"],
-          "recommendations": ["Focus on community engagement", "Develop phased implementation plan"]
+          "culturalFactors": [
+            "Strong community engagement potential",
+            "Cultural alignment with local values"
+          ],
+          "trendAnalysis": [
+            "Growing market demand",
+            "Increasing regulatory support"
+          ],
+          "recommendations": [
+            "Focus on community engagement",
+            "Develop phased implementation plan"
+          ]
         },
-        "requiredSkills": ["Water Treatment Technology", "Community Development", "Project Management"]
-      }
-
-    }
-    else {
+        "requiredSkills": [
+          "Water Treatment Technology",
+          "Community Development",
+          "Project Management"
+        ]
+      };
+    } else {
       example = {
         "title": "How might we improve access to clean water in rural communities?",
         "description": "Rural communities face significant challenges accessing clean, safe drinking water, leading to health issues and economic burdens. This opportunity focuses on developing sustainable water purification and distribution solutions that can be implemented at the community level.",
@@ -641,48 +653,55 @@ Format the response as a JSON object with this exact structure:\n`
               "sources": []
             }
           },
-          "culturalFactors": ["Strong community engagement potential", "Cultural alignment with local values"],
-          "trendAnalysis": ["Growing market demand", "Increasing regulatory support"],
-          "recommendations": ["Focus on community engagement", "Develop phased implementation plan"]
+          "culturalFactors": [
+            "Strong community engagement potential",
+            "Cultural alignment with local values"
+          ],
+          "trendAnalysis": [
+            "Growing market demand",
+            "Increasing regulatory support"
+          ],
+          "recommendations": [
+            "Focus on community engagement",
+            "Develop phased implementation plan"
+          ]
         },
-        "requiredSkills": ["Water Treatment Technology", "Community Development", "Project Management"]
-      }
+        "requiredSkills": [
+          "Water Treatment Technology",
+          "Community Development",
+          "Project Management"
+        ]
+      };
     }
-
-    prompt += JSON.stringify(example, null, 2);
-
-    prompt += `\nReplace the placeholder arrays [] with full evidence and at least three tiered sources for each dimension.
+    systemPrompt += JSON.stringify(example, null, 2);
+    systemPrompt += `\nReplace the placeholder arrays [] with full evidence and at least three tiered sources for each dimension.
   
   IMPORTANT SCORING GUIDANCE:
   - Score everything out of 10. 
   - Focus on the problem's inherent challenges and barriers, not just its potential.
-  - Lower scores can indicate problems that need more innovative solutions or face significant obstacles.`
-
+  - Lower scores can indicate problems that need more innovative solutions or face significant obstacles.`;
     // Add instruction to avoid previously generated HMWs and guide score generation
     if (previousHmws && Array.isArray(previousHmws) && previousHmws.length > 0) {
-      prompt += `\n\nCRITICAL: Avoid generating any of these previously created HMW statements:\n`;
+      systemPrompt += `\n\nCRITICAL: Avoid generating any of these previously created HMW statements:\n`;
       previousHmws.forEach((problem: any, index: number) => {
         const title = typeof problem === 'string' ? problem : problem.title;
         const iosScore = typeof problem === 'string' ? 'N/A' : problem.iosScore;
-        prompt += `${index + 1}. "${title}" (IOS Score: ${iosScore}%)\n`;
+        systemPrompt += `${index + 1}. "${title}" (IOS Score: ${iosScore}%)\n`;
       });
-
       // Calculate average IOS score of previous problems
       const validScores = previousHmws
         .filter((problem: any) => typeof problem === 'object' && problem.iosScore)
         .map((problem: any) => problem.iosScore);
 
       if (validScores.length > 0) {
-        prompt += `\n\nGenerate a NEW HMW statement with a LOWER IOS score (aim for 2-5% lower than the previous ones).`;
+        systemPrompt += `\n\nGenerate a NEW HMW statement with a LOWER IOS score (aim for 2-5% lower than the previous ones).`;
       }
-
-      prompt += `\nGenerate a COMPLETELY DIFFERENT HMW statement that addresses a different aspect, challenge, or opportunity within the same context. Do not repeat any of the above HMWs or their core concepts.`;
+      systemPrompt += `\nGenerate a COMPLETELY DIFFERENT HMW statement that addresses a different aspect, challenge, or opportunity within the same context. Do not repeat any of the above HMWs or their core concepts.`;
     }
-
+    let prompt="";
     if (projectType) {
       prompt += `\n\nProject Type: ${projectType === 'social-impact' ? 'Social Impact (SDG-focused)' : 'Business'}\n`;
     }
-
     if (inputMode === 'predefined') {
       prompt += `Sector: ${sector}\n`;
       if (projectType === 'social-impact') {
@@ -694,7 +713,6 @@ Format the response as a JSON object with this exact structure:\n`
       prompt += `Problem Description: ${problemDescription}\n`;
       prompt += `Context: Enhance and structure the provided problem description into ONE HMW statement using the IOS Framework, with comprehensive 6-dimensional assessment.\n`;
     }
-
     // Call OpenAI API directly
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -703,19 +721,20 @@ Format the response as a JSON object with this exact structure:\n`
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`
       },
       body: JSON.stringify({
-        "model": "gpt-4o-mini",
-        "tools": [{ "type": "web_search_preview" }],
-        "input": prompt,
+        model: "gpt-4o-mini",
+        tools: [{ "type": "web_search_preview" }],
+        input: [
+          { role: "system", content: [ { type: "input_text", text: systemPrompt } ] },
+          { role: "user", content: [ { type: "input_text", text: prompt } ] }
+        ],
+        
       })
     });
-
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`OpenAI API error: ${response.status} - ${errorBody}`);
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
-
-
     const data = await response.json();
 
     if (data.status !== "completed") {
@@ -730,6 +749,38 @@ Format the response as a JSON object with this exact structure:\n`
     }
 
     const content = messageObj.content[0].text;
+
+    // // Call OpenAI API directly
+    // const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'X-goog-api-key': `${Deno.env.get('GEMINI_API_KEY')}`
+    //   },
+    //   body: JSON.stringify({
+    //     contents: [
+    //       {
+    //         parts: [
+    //           {
+    //             text: prompt
+    //           }
+    //         ]
+    //       }
+    //     ]
+    //   })
+    // });
+    // if (!response.ok) {
+    //   const errorBody = await response.text();
+    //   console.error(`Gemini API error: ${response.status} - ${errorBody}`);
+    //   throw new Error(`Gemini API error: ${response.statusText}`);
+    // }
+    // const data = await response.json();
+    // const candidates = data.candidates;
+    // if (!candidates || !candidates.length) {
+    //   console.error("No candidates returned by Gemini:", data);
+    //   throw new Error("No valid output from Gemini");
+    // }
+    // const content = candidates[0].content.parts[0].text;
 
     let problemsData;
     try {
@@ -750,8 +801,7 @@ Format the response as a JSON object with this exact structure:\n`
         throw new Error("No valid JSON found in assistant response");
       }
     }
-
-
+    
     return new Response(JSON.stringify(problemsData), {
       headers: {
         'Content-Type': 'application/json',

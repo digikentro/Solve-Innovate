@@ -106,9 +106,6 @@ export default function ProjectCanvasPage() {
   if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
   if (error || !project) return <div className="text-center py-12 text-red-600">{error || 'Project not found'}</div>;
 
-  // Only allow editing for project owner
-  const isOwner = user && project.user_id === user.id;
-
   return (
     <div className="max-w-6xl mx-auto py-10 px-4">
       <div className="flex items-center mb-6 gap-3">
@@ -244,8 +241,7 @@ export default function ProjectCanvasPage() {
               }
             }}
             theme="light"
-            viewModeEnabled={!isOwner}
-            onChange={isOwner ? handleAutoSave : undefined}
+            onChange={handleAutoSave}
           />
         </div>
       </div>

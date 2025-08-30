@@ -683,13 +683,16 @@ Format the response as a JSON object with this exact structure:\n`;
     // Add instruction to avoid previously generated HMWs and guide score generation
     if (previousHmws && Array.isArray(previousHmws) && previousHmws.length > 0) {
       prompt += `\n\nCRITICAL: Avoid generating any of these previously created HMW statements:\n`;
-      previousHmws.forEach((problem, index)=>{
+      previousHmws.forEach((problem: any, index: number) => {
         const title = typeof problem === 'string' ? problem : problem.title;
         const iosScore = typeof problem === 'string' ? 'N/A' : problem.iosScore;
         prompt += `${index + 1}. "${title}" (IOS Score: ${iosScore}%)\n`;
       });
       // Calculate average IOS score of previous problems
-      const validScores = previousHmws.filter((problem)=>typeof problem === 'object' && problem.iosScore).map((problem)=>problem.iosScore);
+      const validScores = previousHmws
+        .filter((problem: any) => typeof problem === 'object' && problem.iosScore)
+        .map((problem: any) => problem.iosScore);
+
       if (validScores.length > 0) {
         prompt += `\n\nGenerate a NEW HMW statement with a LOWER IOS score (aim for 2-5% lower than the previous ones).`;
       }

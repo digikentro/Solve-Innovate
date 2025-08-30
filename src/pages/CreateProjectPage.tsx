@@ -3,17 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProblemStatement } from '@/services/iosFramework';
-import { IOSAssessmentCard, IOSAssessmentCardCompact } from '@/components/ui/IOSAssessmentCard';
 import { IOSFrameworkService } from '@/services/iosFramework';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, TrendingUp, Globe, Target, Users, Lightbulb, Shield } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { SourceVerificationInfo } from '@/components/ui/SourceVerificationInfo';
 import { SourceVerificationService } from '@/services/sourceVerificationService';
 import { ProjectService } from '@/services/projectService';
-import { FiArrowLeft, FiPlus, FiZap } from 'react-icons/fi';
+import { FiArrowLeft } from 'react-icons/fi';
 import Modal from '@/components/ui/Modal';
 import { profileService } from '@/services/profileService';
 import type { Profile } from '@/services/profileService';
@@ -90,7 +88,6 @@ const SDG_GOALS = [
   { id: 'sdg-17', name: 'Partnerships for the Goals', number: 17 }
 ];
 
-// Fun loading messages for the overlay
 const LOADING_MESSAGES = [
   'Brainstorming creative challenges…',
   'Scouting for innovation opportunities…',
@@ -101,7 +98,6 @@ const LOADING_MESSAGES = [
   'Turning problems into possibilities…',
 ];
 
-// Simple loading messages for skill matching
 const SKILL_MATCH_MESSAGES = [
   'Analyzing your skills…',
   'Finding the perfect match…',
@@ -112,7 +108,6 @@ const SKILL_MATCH_MESSAGES = [
   'Connecting skills to impact…',
 ];
 
-// Simple loading messages for interest matching
 const INTEREST_MATCH_MESSAGES = [
   'Analyzing your interests…',
   'Finding the perfect match…',
@@ -227,14 +222,12 @@ export default function CreateProjectPage() {
   const [selectedProblems, setSelectedProblems] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [inputMode, setInputMode] = useState<'predefined' | 'custom'>('predefined');
-  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
   const [detailedProblem, setDetailedProblem] = useState<ProblemStatementWithGeneratedAt | null>(null);
   const [sourcesProblem, setSourcesProblem] = useState<ProblemStatementWithGeneratedAt | null>(null);
   const [uploadedPdfs, setUploadedPdfs] = useState<File[]>([]);
   const [pdfContext, setPdfContext] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [generatingSlides, setGeneratingSlides] = useState<Set<string>>(new Set());
-  const [presentableSlide, setPresentableSlide] = useState<string>('');
   const [problemSlides, setProblemSlides] = useState<Record<string, { hmw: string; bullets: string[] }>>({});
   const [viewingSlide, setViewingSlide] = useState<{
     problemId: string;
@@ -284,20 +277,13 @@ export default function CreateProjectPage() {
     setInputMode('predefined');
     setSelectedProblems(new Set());
     setSkillMatchReasoning(null);
+
   };
 
   const handleSectorSelect = (sectorId: string) => {
     setSelectedSector(sectorId);
     setGeneratedProblems([]);
     setInputMode('predefined');
-    setSelectedProblems(new Set());
-    setSkillMatchReasoning(null);
-  };
-
-  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProblemDescription(e.target.value);
-    setInputMode('custom');
-    setGeneratedProblems([]);
     setSelectedProblems(new Set());
     setSkillMatchReasoning(null);
   };
@@ -314,8 +300,6 @@ export default function CreateProjectPage() {
 
     setIsProcessingPdf(true);
     try {
-      // For now, we'll simulate PDF processing
-      // In a real implementation, you'd send these to your backend for text extraction
       const newPdfs = [...uploadedPdfs, ...pdfFiles];
       setUploadedPdfs(newPdfs);
 
@@ -333,8 +317,6 @@ export default function CreateProjectPage() {
   };
 
   const simulatePdfTextExtraction = async (files: File[]): Promise<string> => {
-    // This is a placeholder - in real implementation, you'd use a PDF parsing library
-    // or send to backend for processing
     return new Promise((resolve) => {
       setTimeout(() => {
         const context = files.map(file =>
@@ -359,7 +341,12 @@ export default function CreateProjectPage() {
       if (newSet.has(problemId)) {
         newSet.delete(problemId);
       } else {
-        newSet.add(problemId);
+        // Limit to 3 selections
+        if (newSet.size < 3) {
+          newSet.add(problemId);
+        } else {
+          toast.error('You can only select up to 3 problems at a time');
+        }
       }
       return newSet;
     });
@@ -391,20 +378,20 @@ export default function CreateProjectPage() {
 
       if (data && data.success && data.matchedProblem) {
         setSelectedProblems(new Set([data.matchedProblem.id!]));
-        
+
         // Store the reasoning for display
         setSkillMatchReasoning({
           problemId: data.matchedProblem.id!,
           reasoning: data.matchedProblem.reasoning
         });
-        
+
         // Show simple success message with reasoning
         toast.success(
           `Matched: "${data.matchedProblem.title}"`,
           { duration: 3000 }
         );
-        
-        
+
+
       } else if (data && !data.success) {
         toast.error(data.message || 'No skills match found');
       } else {
@@ -444,20 +431,20 @@ export default function CreateProjectPage() {
 
       if (data && data.success && data.matchedProblem) {
         setSelectedProblems(new Set([data.matchedProblem.id!]));
-        
+
         // Store the reasoning for display
         setInterestMatchReasoning({
           problemId: data.matchedProblem.id!,
           reasoning: data.matchedProblem.reasoning
         });
-        
+
         // Show simple success message with reasoning
         toast.success(
           `Matched: "${data.matchedProblem.title}"`,
           { duration: 3000 }
         );
-        
-        
+
+
       } else if (data && !data.success) {
         toast.error(data.message || 'No interests match found');
       } else {
@@ -504,13 +491,13 @@ export default function CreateProjectPage() {
       console.error('Error generating slide:', err);
       toast.error('Failed to generate slide.');
     } finally {
-             setGeneratingSlides(prev => {
-         const newSet = new Set(prev);
-         if (problem.id) {
-           newSet.delete(problem.id);
-         }
-         return newSet;
-       });
+      setGeneratingSlides(prev => {
+        const newSet = new Set(prev);
+        if (problem.id) {
+          newSet.delete(problem.id);
+        }
+        return newSet;
+      });
     }
   };
 
@@ -523,25 +510,36 @@ export default function CreateProjectPage() {
     setIsSaving(true);
     try {
       const selectedProblemData = generatedProblems.filter(p => selectedProblems.has(p.id!));
+      const createdProjects = [];
+
       for (const problem of selectedProblemData) {
         // Remove HMW name/title from assessment if present
         let assessment = problem.iosAssessment ? { ...problem.iosAssessment } : undefined;
         if (assessment) {
-          (assessment as any).name = 'Initial Assessment';
+          (assessment as any).name = 'Initial Analysis';
           (assessment as any).createdAt = problem.createdAt || new Date().toISOString();
         }
-        await ProjectService.createProject({
+        const project = await ProjectService.createProject({
           title: problem.title,
           description: problem.description,
           skills: problem.requiredSkills,
           status: 'draft',
-          assessments: assessment ? [assessment] : [],
-          presentable_slide: problemSlides[problem.id!] || undefined, // <-- add this line
+          analysis: assessment ? [assessment] : [],
+          presentable_slide: problemSlides[problem.id!] || undefined,
         }, user.id);
+        createdProjects.push(project);
       }
 
       toast.success('Project(s) created successfully!');
-      navigate('/projects');
+
+      // Navigate based on number of projects created
+      if (createdProjects.length === 1) {
+        // Single project - navigate to project detail page
+        navigate(`/projects/${createdProjects[0].id}`);
+      } else {
+        // Multiple projects - navigate to projects list page
+        navigate('/projects');
+      }
     } catch (error) {
       console.error('Error saving problem:', error);
       alert('Failed to save problem. Please try again.');
@@ -555,18 +553,16 @@ export default function CreateProjectPage() {
     return sector?.name || sectorId;
   };
 
-  // Helper to generate a problem (used by both modal and Generate More)
-  const generateProblem = async (hmwTypeToUse: 'human' | 'system' | 'business') => {
+  const generateHMW = async (hmwTypeToUse: 'human' | 'system' | 'business') => {
     setIsGenerating(true);
     isGeneratingMoreRef.current = true;
     const now = new Date();
     try {
-      // Get previously generated HMW titles and their IOS scores to avoid duplicates and guide generation
       const previousHmws = generatedProblems.map(problem => ({
         title: problem.title,
         iosScore: problem.iosAssessment?.totalScore || problem.opportunityScore
       }));
-      const { data, error } = await supabase.functions.invoke('generate-problem', {
+      const { data, error } = await supabase.functions.invoke('generate-problem-test', {
         body: {
           projectType,
           inputMode,
@@ -606,6 +602,8 @@ export default function CreateProjectPage() {
     }
   };
 
+
+
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-7xl mx-auto">
@@ -629,7 +627,7 @@ export default function CreateProjectPage() {
             </>
           )}
         </nav>
-        
+
 
         <div className="flex items-center gap-3 mb-8">
           <button
@@ -709,10 +707,6 @@ export default function CreateProjectPage() {
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3 text-gray-700">Write your own problem:</h3>
               <div className="mb-3">
-                <p className="text-sm text-gray-600 mb-2">
-                  💡 <strong>Tip:</strong> Frame your problem as a "How Might We" statement for better results.
-                  Focus on the human experience and avoid prescribing solutions.
-                </p>
                 <details className="text-xs text-gray-500">
                   <summary className="cursor-pointer hover:text-gray-700">View HMW Framework Guidelines</summary>
                   <div className="mt-2 p-3 bg-gray-50 rounded-md space-y-2">
@@ -729,6 +723,10 @@ export default function CreateProjectPage() {
                       <li>Address genuine pain points experienced by real people</li>
                     </ul>
                   </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    💡 <strong>Tip:</strong> Frame your problem as a "How Might We" statement for better results.
+                    Focus on the human experience and avoid prescribing solutions.
+                  </p>
                 </details>
               </div>
 
@@ -910,7 +908,7 @@ export default function CreateProjectPage() {
                     setIsGenerating(true);
                     setLastHmwType(selectedHmwType); // Remember last used type
                     try {
-                      await generateProblem(selectedHmwType);
+                      await generateHMW(selectedHmwType);
                     } finally {
                       setIsGenerating(false);
                       setSelectedHmwType(null);
@@ -932,7 +930,7 @@ export default function CreateProjectPage() {
         {generatedProblems.length > 0 && (
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Generated Problem</h2>
+              <h2 className="text-xl font-semibold">Generated Problems</h2>
               <div className="flex gap-2">
                 <Button
                   onClick={handleSkillMatch}
@@ -974,33 +972,27 @@ export default function CreateProjectPage() {
                     </>
                   )}
                 </Button>
-                {selectedProblems.size > 0 && (
+                <div className="relative group">
                   <Button
                     onClick={handleSaveSelectedProblems}
-                    disabled={isSaving}
+                    disabled={selectedProblems.size === 0 || isSaving}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Creating Project...
                       </>
-                    ) : (
-                      `Save Drafts`
+                    ) : ('Create Project(s)'
                     )}
                   </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Selection Info */}
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
-                💡 Select the problem that best matches your interests and skills.
-                Use the "Skill Match" button to automatically find the best match for your skills, or "Interest Match" to find problems that align with your passions.
-                Each problem includes a comprehensive Innovation Opportunity Score (IOS) assessment with verified sources from Tier 1-5 credibility framework.
-              </p>
-              <div className="mt-2 text-xs text-blue-600">
-                <strong>Source Verification Framework:</strong> Tier 1 (Government/UN) → Tier 5 (News/Blogs). Higher tiers = higher credibility and trust.
+                  {selectedProblems.size === 0 && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      Select at least 1 problem to create project
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1094,7 +1086,7 @@ export default function CreateProjectPage() {
                       </div>
                       <div className="flex items-center justify-between mt-auto pt-2">
                         <div className="text-xs text-gray-500">
-                          {isSelected ? 'Selected' : 'Click to select'}
+                          {isSelected ? 'Selected' : `Click to select (${selectedProblems.size}/3 max)`}
                         </div>
                         <div className="flex gap-2">
                           {problemSlides[problem.id!] ? (
@@ -1167,7 +1159,7 @@ export default function CreateProjectPage() {
                   onClick={async () => {
                     if (lastHmwType) {
                       setIsGenerating(true);
-                      await generateProblem(lastHmwType);
+                      await generateHMW(lastHmwType);
                     } else {
                       setIsHmwTypeModalOpen(true);
                     }
@@ -1325,7 +1317,7 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    
+
                     <div className="overflow-y-auto max-h-[70vh]">
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                         <h4 className="font-medium text-green-800 mb-2">Why this problem matches your skills:</h4>
@@ -1333,7 +1325,7 @@ export default function CreateProjectPage() {
                           {skillMatchReasoning.reasoning}
                         </p>
                       </div>
-                      
+
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h4 className="font-medium text-blue-800 mb-2">Your Skills:</h4>
                         <div className="flex flex-wrap gap-2">
@@ -1374,7 +1366,7 @@ export default function CreateProjectPage() {
                         </svg>
                       </Button>
                     </div>
-                    
+
                     <div className="overflow-y-auto max-h-[70vh]">
                       <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4">
                         <h4 className="font-medium text-pink-800 mb-2">Why this problem matches your interests:</h4>
@@ -1382,7 +1374,7 @@ export default function CreateProjectPage() {
                           {interestMatchReasoning.reasoning}
                         </p>
                       </div>
-                      
+
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                         <h4 className="font-medium text-purple-800 mb-2">Your Interests:</h4>
                         <div className="flex flex-wrap gap-2">

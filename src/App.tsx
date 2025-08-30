@@ -21,6 +21,7 @@ import { EditProfilePage } from '@/pages/ProfilePage';
 import ProjectSlidePage from '@/pages/ProjectSlidePage';
 import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
+import AsIsMapPage from '@/pages/AsIsMapPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -234,6 +235,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProjectCanvasPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/as_is_map"
+                element={
+                  <ProtectedRoute>
+                    <AsIsMapPage />
                   </ProtectedRoute>
                 }
             />

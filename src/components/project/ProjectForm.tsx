@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectInput } from '@/types/project';
+import { Project } from '@/types/project';
 import { ProjectService } from '@/services/projectService';
 
 const projectSchema = z.object({
@@ -17,7 +17,7 @@ const projectSchema = z.object({
 type ProjectFormData = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
-  initialData?: ProjectInput;
+  initialData?: Project;
   onSuccess?: () => void;
 }
 

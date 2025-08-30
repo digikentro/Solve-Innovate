@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ProjectService } from '@/services/projectService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectForm } from '@/components/project/ProjectForm';
-import { ProjectInput } from '@/types/project';
+import { Project } from '@/types/project';
 
 export default function ProjectEditPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [project, setProject] = useState<ProjectInput | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,10 +19,6 @@ export default function ProjectEditPage() {
         setLoading(true);
         const data = await ProjectService.getProjectById(id, user.id);
         if (!data) {
-          navigate('/projects');
-          return;
-        }
-        if (data.user_id !== user.id) {
           navigate('/projects');
           return;
         }

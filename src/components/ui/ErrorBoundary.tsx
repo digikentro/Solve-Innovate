@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { ErrorHandler, SmartSolveError } from '@/services/errorHandling';
+import { ErrorHandler } from '@/services/errorHandling';
 
 interface Props {
   children: ReactNode;
@@ -24,23 +24,14 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // Log the error using our error handling service
-    const smartSolveError = new SmartSolveError(
-      error.message,
-      {
-        operation: 'react_error_boundary',
-        timestamp: new Date().toISOString(),
-        additionalData: {
-          componentStack: errorInfo.componentStack,
-          errorName: error.name,
-          errorStack: error.stack
-        }
-      },
-      false,
-      'Something went wrong. Please refresh the page and try again.'
-    );
-    
-    ErrorHandler.logError(smartSolveError);
+    // Log the error to console
+    console.error('ErrorBoundary caught an error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString()
+    });
   }
 
   public render() {

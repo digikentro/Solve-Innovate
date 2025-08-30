@@ -1,32 +1,16 @@
-export type ProjectStatus = 'draft' | 'active' | 'completed' | 'archived';
-
-export interface ProjectInput {
+export interface Project {
   id: string;
-  user_id: string;
   title: string;
-  description: string | null;
-  status: ProjectStatus;
+  description: string;
+  status: string;
   skills?: string[] | null;
   created_at: string;
   updated_at: string;
   presentable_slide?: any;
-  assessments?: any; // or IOSAssessment[] if you want to type it strictly
-  canvas?: any; // Excalidraw data or null
-  metadata?: any; // JSONB field for storing additional data like AS-IS maps
-}
-
-export interface Project extends ProjectInput {
-  // Additional fields or overrides can go here
-}
-
-export interface ProjectWithIdeas extends Project {
-  ideas?: ProjectIdea[];
-}
-
-export interface ProjectIdea {
-  id: string;
-  project_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
+  analysis?: any;
+  as_is_map?: any;
+  design_research?: any;
+  empathy_research_plan?: any;
+  canvas?: any;
+  metadata?: any;
 }

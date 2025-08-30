@@ -584,7 +584,7 @@ export class SourceVerificationService {
       'Consider adding higher-tier sources if score is low',
       'Validate all source URLs and information',
       'Update sources with current information',
-      'Seek expert review for critical assessments'
+      'Seek expert review for critical analysis'
     ];
     
     return {
