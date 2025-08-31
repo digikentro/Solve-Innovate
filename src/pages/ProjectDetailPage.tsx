@@ -442,10 +442,10 @@ export const ProjectDetailPage = () => {
         <div className="space-y-6">
           <div className="flex items-start gap-3 flex-wrap">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/projects')}
               className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200 mt-2"
               type="button"
-              aria-label="Back"
+              aria-label="Back to Projects"
             >
               <FiArrowLeft className="w-6 h-6" />
             </button>
@@ -1607,16 +1607,6 @@ export const ProjectDetailPage = () => {
               })()}
             </div>
           </HorizontalModal>
-
-          {/* AS-IS Map Modal */}
-          <AsIsMapModal
-            open={showAsIsMapModal}
-            onClose={() => setShowAsIsMapModal(false)}
-            asIsMapData={asIsMapData}
-            project={project}
-            setAsIsMapPrompt={setAsIsMapPrompt}
-            getAsIsMapContent={(data, projectData) => getAsIsMapContent(data, projectData)}
-          />
         </div>
       </div>
     </div>
