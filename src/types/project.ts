@@ -10,7 +10,16 @@ export interface Project {
   analysis?: any;
   as_is_map?: any;
   design_research?: any;
-  empathy_research_plan?: any;
+  extreme_user_data?: any;
+  deep_empathy_data?: any;
+  behavioral_insights_data?: any;
+  psychological_analysis?: any;
+  transformation_framework?: any;
   canvas?: any;
   metadata?: any;
+  chatbox?: Array<{
+    user: string;
+    assistant: string;
+    generated_at: string;
+  }> | null;
 }

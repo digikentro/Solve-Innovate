@@ -22,6 +22,11 @@ import ProjectSlidePage from '@/pages/ProjectSlidePage';
 import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
 import AsIsMapPage from '@/pages/AsIsMapPage';
+import ExtremeUserPage from '@/pages/ExtremeUserPage';
+import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
+import PsychologicalAnalysisPage from '@/pages/PsychologicalAnalysisPage';
+import { ChatPage } from '@/pages/ChatPage';
+import TransformationFrameworkPage from '@/pages/TransformationFrameworkPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -247,6 +252,46 @@ function App() {
                 }
             />
             <Route
+                path="projects/:id/extreme_user"
+                element={
+                  <ProtectedRoute>
+                    <ExtremeUserPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/deep_empathy"
+                element={
+                  <ProtectedRoute>
+                    <UniversalDeepEmpathyPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/psychological_analysis"
+                element={
+                  <ProtectedRoute>
+                    <PsychologicalAnalysisPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/transformation_framework"
+                element={
+                  <ProtectedRoute>
+                    <TransformationFrameworkPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/chat"
+                element={
+                  <ProtectedRoute>
+                    <ChatPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
                 path="dashboard"
                 element={
                   <ProtectedRoute>
@@ -270,7 +315,7 @@ function App() {
                   </ProtectedRoute>
                 }
             />
-            </Route>
+          </Route>
           </Routes>
         </AuthProvider>
       </Router>

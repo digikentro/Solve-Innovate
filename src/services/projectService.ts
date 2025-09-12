@@ -314,4 +314,41 @@ export class ProjectService {
       context
     );
   }
+
+  /**
+   * Get chat history for a project
+   */
+  static async getProjectChatHistory(projectId: string, userId: string): Promise<Array<{
+    user: string;
+    assistant: string;
+    generated_at: string;
+  }>> {
+    const context: ErrorContext = {
+      operation: 'get_project_chat_history',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            throw new Error('Project not found');
+          }
+          throw new Error('Unable to load chat history. Please try again.');
+        }
+
+        // Return the chatbox data or empty array if null
+        return data?.chatbox || [];
+      },
+      context
+    );
+  }
 }

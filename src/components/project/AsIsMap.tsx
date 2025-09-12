@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { HorizontalModal } from '@/components/ui/Modal';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 
 interface AsIsMapModalProps {
@@ -95,7 +94,7 @@ export const generateAsIsMap = async (prompt: string, projectId: string) => {
         throw new Error('Project ID not found. Please try again.');
     }
 
-    const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/Asismap', {
+    const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/Asismap', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -112,9 +111,6 @@ export const generateAsIsMap = async (prompt: string, projectId: string) => {
     }
 
     const data = await response.json();
-    console.log('AS-IS Map response data:', data);
-    console.log('Data type:', typeof data);
-    console.log('Data keys:', Object.keys(data || {}));
 
     return data;
 };
@@ -126,7 +122,8 @@ export const AsIsMapForm: React.FC<{
     onPromptChange: (prompt: string) => void;
     onGenerate: (data: any) => void;
     onGeneratingChange: (isGenerating: boolean) => void;
-}> = ({ projectId, prompt, onPromptChange, onGenerate, onGeneratingChange }) => {
+    isGenerating?: boolean;
+}> = ({ projectId, prompt, onPromptChange, onGenerate, onGeneratingChange, isGenerating = false }) => {
 
     const handleGenerate = async () => {
         onGeneratingChange(true);
@@ -166,9 +163,9 @@ export const AsIsMapForm: React.FC<{
                 <button
                     className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50"
                     onClick={handleGenerate}
-                    disabled={!prompt.trim()}
+                    disabled={!prompt.trim() || isGenerating}
                 >
-                    Generate AS-IS Map
+                    {isGenerating ? 'Generating...' : 'Generate AS-IS Map'}
                 </button>
             </div>
         </div>

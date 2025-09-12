@@ -84,6 +84,9 @@ export default function AsIsMapPage() {
   const [projectTitle, setProjectTitle] = useState<string>('');
 
   useEffect(() => {
+    // Scroll to top when page loads
+    window.scrollTo(0, 0);
+    
     const fetchAsIsMap = async () => {
       if (!projectId) return;
 
@@ -205,7 +208,7 @@ export default function AsIsMapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
+      <div className="w-[70vw] mx-auto py-8 px-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Button
@@ -223,31 +226,31 @@ export default function AsIsMapPage() {
         </div>
 
         {/* HMW Statement Analysis */}
-        <Card className="p-6 mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="p-6 mb-8 bg-gradient-to-r border-gray">
           <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Target className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 bg-gray rounded-full flex items-center justify-center">
+              <Target className="w-5 h-5 text-black-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-blue-900">How Might We Statement</h2>
-              <p className="text-blue-700 mt-1">{asIsMapData.content.hmw_statement_analysis.hmw[0]}</p>
+              <h2 className="text-xl font-semibold text-black-900">How Might We Statement</h2>
+              <p className="text-black-700 mt-1">{asIsMapData.content.hmw_statement_analysis.hmw[0]}</p>
             </div>
           </div>
           
           <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            <div className="bg-white p-4 rounded-lg border border-black-200">
+              <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Target Users
               </h3>
-              <p className="text-blue-700 text-sm">{asIsMapData.content.hmw_statement_analysis.target_users[0]}</p>
+              <p className="text-black-700 text-sm">{asIsMapData.content.hmw_statement_analysis.target_users[0]}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            <div className="bg-white p-4 rounded-lg border border-black-200">
+              <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4" />
                 Core Need
               </h3>
-              <p className="text-blue-700 text-sm">{asIsMapData.content.hmw_statement_analysis.core_need[0]}</p>
+              <p className="text-black-700 text-sm">{asIsMapData.content.hmw_statement_analysis.core_need[0]}</p>
             </div>
           </div>
         </Card>
@@ -297,10 +300,9 @@ export default function AsIsMapPage() {
           <div className="space-y-6">
             {asIsMapData.content.pain_point_analysis.steps.map((painPoint, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Stage {painPoint.stage_id}, Step {painPoint.step_id}</h3>
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Step {painPoint.step_id}</span>
+                <h3 className="font-semibold text-gray-900">Stage {painPoint.stage_id}, Step {painPoint.step_id}</h3>
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <div className="flex items-center justify-end mb-1">
                     <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getPainLevelColor(painPoint.pain_level.toString())}`}>
                       {getPainLevelIcon(painPoint.pain_level.toString())}
                       Pain Level: {painPoint.pain_level}/10

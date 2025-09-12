@@ -56,6 +56,32 @@ export const ProjectDetailPage = () => {
     painPointDescription: '',
     selectedExtremeUser: ''
   });
+  
+  // Behavioral Insights Generator states
+  const [behavioralInsightsData, setBehavioralInsightsData] = useState<any | null>(null);
+  const [isGeneratingBehavioralInsights, setIsGeneratingBehavioralInsights] = useState(false);
+  const [showBehavioralInsightsModal, setShowBehavioralInsightsModal] = useState(false);
+  const [behavioralInsightsForm, setBehavioralInsightsForm] = useState({
+    painPointInvestigated: '',
+    extremeUserType: ''
+  });
+  
+  // Psychological Analysis Generator states
+  const [psychologicalAnalysisData, setPsychologicalAnalysisData] = useState<any | null>(null);
+  const [isGeneratingPsychologicalAnalysis, setIsGeneratingPsychologicalAnalysis] = useState(false);
+  const [showPsychologicalAnalysisModal, setShowPsychologicalAnalysisModal] = useState(false);
+  const [psychologicalAnalysisForm, setPsychologicalAnalysisForm] = useState({
+    painPointInvestigated: '',
+    extremeUserType: ''
+  });
+  
+  // Transformation Framework Generator states
+  const [transformationFrameworkData, setTransformationFrameworkData] = useState<any | null>(null);
+  const [isGeneratingTransformationFramework, setIsGeneratingTransformationFramework] = useState(false);
+  const [transformationFrameworkForm, setTransformationFrameworkForm] = useState({
+    painPointInvestigated: '',
+    extremeUserType: ''
+  });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'express' | 'standard' | 'premium' | null>(null);
   const [viewAssessmentIdx, setViewAssessmentIdx] = useState<number | null>(null);
@@ -131,6 +157,128 @@ export const ProjectDetailPage = () => {
     return false;
   };
 
+  // Helper: check if extreme user data exists
+  const hasExtremeUserData = () => {
+    if (extremeUserData) return true;
+    
+    if (project?.extreme_user_data) {
+      // Handle case where extreme_user_data might be stored as a JSON string
+      if (typeof project.extreme_user_data === 'string') {
+        try {
+          const parsed = JSON.parse(project.extreme_user_data);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse extreme_user_data string:', error);
+          return false;
+        }
+      }
+      
+      // Handle case where extreme_user_data is an object
+      if (typeof project.extreme_user_data === 'object' && project.extreme_user_data.content) {
+        return Object.keys(project.extreme_user_data.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper: check if deep empathy data exists
+  const hasDeepEmpathyData = () => {
+    if (deepEmpathyData) return true;
+    
+    if (project?.deep_empathy_data) {
+      // Handle case where deep_empathy_data might be stored as a JSON string
+      if (typeof project.deep_empathy_data === 'string') {
+        try {
+          const parsed = JSON.parse(project.deep_empathy_data);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse deep_empathy_data string:', error);
+          return false;
+        }
+      }
+      
+      // Handle case where deep_empathy_data is an object
+      if (typeof project.deep_empathy_data === 'object' && project.deep_empathy_data.content) {
+        return Object.keys(project.deep_empathy_data.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper: check if behavioral insights data exists
+  const hasBehavioralInsightsData = () => {
+    if (behavioralInsightsData) return true;
+    
+    if (project?.behavioral_insights_data) {
+      // Handle case where behavioral_insights_data might be stored as a JSON string
+      if (typeof project.behavioral_insights_data === 'string') {
+        try {
+          const parsed = JSON.parse(project.behavioral_insights_data);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse behavioral_insights_data string:', error);
+          return false;
+        }
+      }
+      
+      // Handle case where behavioral_insights_data is an object
+      if (typeof project.behavioral_insights_data === 'object' && project.behavioral_insights_data.content) {
+        return Object.keys(project.behavioral_insights_data.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper: check if psychological analysis data exists
+  const hasPsychologicalAnalysisData = () => {
+    if (psychologicalAnalysisData) return true;
+    
+    if (project?.psychological_analysis) {
+      // Handle case where psychological_analysis might be stored as a JSON string
+      if (typeof project.psychological_analysis === 'string') {
+        try {
+          const parsed = JSON.parse(project.psychological_analysis);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse psychological_analysis string:', error);
+          return false;
+        }
+      }
+      
+      // Handle case where psychological_analysis is an object
+      if (typeof project.psychological_analysis === 'object' && project.psychological_analysis.content) {
+        return Object.keys(project.psychological_analysis.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper: check if transformation framework data exists
+  const hasTransformationFrameworkData = () => {
+    if (transformationFrameworkData) return true;
+    
+    if (project?.transformation_framework) {
+      if (typeof project.transformation_framework === 'string') {
+        try {
+          const parsed = JSON.parse(project.transformation_framework);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse transformation_framework string:', error);
+          return false;
+        }
+      }
+      if (typeof project.transformation_framework === 'object' && project.transformation_framework.content) {
+        return Object.keys(project.transformation_framework.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
   // Aliases for flexible schemas
   const USER_FIELD_ALIASES = {
     demographics: ['Demographics', 'Demographic', 'Profile', 'Demographic Details'],
@@ -168,11 +316,26 @@ export const ProjectDetailPage = () => {
         if (data.as_is_map?.content) {
           setAsIsMapData(data.as_is_map.content);
         }
-        if (data.design_research?.content) {
-          setExtremeUserData(data.design_research.content);
+        if (data.extreme_user_data?.content) {
+          setExtremeUserData(data.extreme_user_data.content);
         }
-        if (data.empathy_research_plan?.content) {
-          setDeepEmpathyData(data.empathy_research_plan.content);
+        if (data.deep_empathy_data?.content) {
+          setDeepEmpathyData(data.deep_empathy_data.content);
+        }
+        if (data.psychological_analysis) {
+          // Handle case where psychological_analysis might be stored as a JSON string
+          if (typeof data.psychological_analysis === 'string') {
+            try {
+              const parsed = JSON.parse(data.psychological_analysis);
+              if (parsed && parsed.content && Object.keys(parsed.content).length > 0) {
+                setPsychologicalAnalysisData(parsed);
+              }
+            } catch (error) {
+              console.error('Failed to parse psychological_analysis string:', error);
+            }
+          } else if (data.psychological_analysis.content) {
+            setPsychologicalAnalysisData(data.psychological_analysis);
+          }
         }
       } catch (error) {
         console.error('Error loading project:', error);
@@ -239,11 +402,14 @@ export const ProjectDetailPage = () => {
     setIsGeneratingExtremeUser(true);
     try {
       const requestBody = {
+        "project_id": project?.id || '',
         "Pain Point Step": extremeUserForm.painPointStep,
         "Pain Point Description": extremeUserForm.painPointDescription,
         "Target User Context": extremeUserForm.targetUserContext
       };
 
+      // Log the request to console
+      console.log('Sending Extreme User Generation Request:', requestBody);
 
       const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/UniversalExtreme', {
         method: 'POST',
@@ -260,43 +426,11 @@ export const ProjectDetailPage = () => {
 
       const data = await response.json();
 
-      // Save the extreme user data to the project
-      if (project && project.id) {
-        try {
-          const { error: updateError } = await supabase
-            .from('projects')
-            .update({
-              extreme_user_data: {
-                content: data,
-                generated_at: new Date().toISOString(),
-                form: extremeUserForm
-              }
-            })
-            .eq('id', project.id);
-
-          if (updateError) {
-            console.error('Error saving extreme user to database:', updateError);
-            toast.error('Extreme User generated but failed to save to project.');
-          } else {
-            // Update local project state
-            setProject({
-              ...project,
-              design_research: {
-                content: data,
-                generated_at: new Date().toISOString(),
-                form: extremeUserForm
-              }
-            });
-            toast.success('Extreme User generated and saved successfully!');
-          }
-        } catch (dbError) {
-          console.error('Error saving extreme user to database:', dbError);
-          toast.error('Extreme User generated but failed to save to project.');
-        }
-      }
-
-      setExtremeUserData(data); // Store the data
-      setShowExtremeUserModal(true); // Open the modal with the data
+      setExtremeUserData(data); // Store the data locally
+      toast.success('Extreme User generated successfully!');
+      
+      // Navigate to the dedicated Extreme User page
+      navigate(`/projects/${project?.id}/extreme_user`);
 
       // Clear the form after successful generation
       setExtremeUserForm({
@@ -333,12 +467,16 @@ export const ProjectDetailPage = () => {
     setIsGeneratingDeepEmpathy(true);
     try {
       const requestBody = {
+        "project_id": project?.id || '',
         "Prioritized Pain Point": deepEmpathyForm.prioritizedPainPoint,
         "Pain Point Description": deepEmpathyForm.painPointDescription,
         "Selected Extreme User": deepEmpathyForm.selectedExtremeUser
       };
 
-      const response = await fetch('http://localhost:4000/generate-deep-empathy', {
+      // Log the request to console
+      console.log('Sending Deep Empathy Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/UniversalDeepEmpathy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -351,46 +489,24 @@ export const ProjectDetailPage = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log('Deep Empathy response:', data);
-
-      // Save the deep empathy data to the project
-      if (project && project.id) {
-        try {
-          const { error: updateError } = await supabase
-            .from('projects')
-            .update({
-              deep_empathy_data: {
-                content: data,
-                generated_at: new Date().toISOString(),
-                form: deepEmpathyForm
-              }
-            })
-            .eq('id', project.id);
-
-          if (updateError) {
-            console.error('Error saving deep empathy research to database:', updateError);
-            toast.error('Deep Empathy generated but failed to save to project.');
-          } else {
-            setProject({
-              ...project,
-              empathy_research_plan: {
-                content: data,
-                generated_at: new Date().toISOString(),
-                form: deepEmpathyForm
-              }
-            });
-            toast.success('Deep Empathy Research generated and saved successfully!');
-          }
-        } catch (dbError) {
-          console.error('Error saving deep empathy research to database:', dbError);
-          toast.error('Deep Empathy generated but failed to save to project.');
-        }
+      let data;
+      try {
+        data = await response.json();
+        console.log('Deep Empathy response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const responseText = await response.text();
+        console.error('Raw response:', responseText);
+        throw new Error('Invalid JSON response from server');
       }
 
-      setDeepEmpathyData(data);
-      setShowDeepEmpathyModal(true);
+      setDeepEmpathyData(data); // Store the data locally
+      toast.success('Deep Empathy Research generated successfully!');
+      
+      // Navigate to the dedicated Deep Empathy page
+      navigate(`/projects/${project?.id}/deep_empathy`);
 
+      // Clear the form after successful generation
       setDeepEmpathyForm({
         prioritizedPainPoint: '',
         painPointDescription: '',
@@ -405,6 +521,190 @@ export const ProjectDetailPage = () => {
       }
     } finally {
       setIsGeneratingDeepEmpathy(false);
+    }
+  };
+
+  const handleGenerateBehavioralInsights = async () => {
+    if (!behavioralInsightsForm.painPointInvestigated.trim() || !behavioralInsightsForm.extremeUserType.trim()) {
+      toast.error('Please fill in all fields for behavioral insights generation.');
+      return;
+    }
+
+    setIsGeneratingBehavioralInsights(true);
+    try {
+      const requestBody = {
+        "project_id": project?.id || '',
+        "Pain Point Investigated": behavioralInsightsForm.painPointInvestigated,
+        "Extreme User Type": behavioralInsightsForm.extremeUserType
+      };
+
+      // Log the request to console
+      console.log('Sending Behavioral Insights Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/BehavioralInsights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('Behavioral Insights response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const responseText = await response.text();
+        console.error('Raw response:', responseText);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      setBehavioralInsightsData(data); // Store the dat a locally
+      toast.success('Behavioral Insights generated successfully!');
+      
+      // Show the modal with results
+      setShowBehavioralInsightsModal(true);
+
+      // Clear the form after successful generation
+      setBehavioralInsightsForm({
+        painPointInvestigated: '',
+        extremeUserType: ''
+      });
+    } catch (error) {
+      console.error('Error generating Behavioral Insights:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to generate Behavioral Insights: ${error.message}`);
+      } else {
+        toast.error('Failed to generate Behavioral Insights. Please try again.');
+      }
+    } finally {
+      setIsGeneratingBehavioralInsights(false);
+    }
+  };
+
+  const handleGeneratePsychologicalAnalysis = async () => {
+    if (!psychologicalAnalysisForm.painPointInvestigated.trim() || !psychologicalAnalysisForm.extremeUserType.trim()) {
+      toast.error('Please fill in all fields for psychological analysis generation.');
+      return;
+    }
+
+    setIsGeneratingPsychologicalAnalysis(true);
+    try {
+      const requestBody = {
+        "project_id": project?.id || '',
+        "painPointInvestigated": psychologicalAnalysisForm.painPointInvestigated,
+        "extremeUserType": psychologicalAnalysisForm.extremeUserType
+      };
+
+      // Log the request to console
+      console.log('Sending Psychological Analysis Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/psychological_analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('Psychological Analysis response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const responseText = await response.text();
+        console.error('Raw response:', responseText);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      setPsychologicalAnalysisData(data); // Store the data locally
+      toast.success('Psychological Analysis generated successfully!');
+      
+      // Navigate to the dedicated Psychological Analysis page
+      navigate(`/projects/${project?.id}/psychological_analysis`);
+
+      // Clear the form after successful generation
+      setPsychologicalAnalysisForm({
+        painPointInvestigated: '',
+        extremeUserType: ''
+      });
+    } catch (error) {
+      console.error('Error generating Psychological Analysis:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to generate Psychological Analysis: ${error.message}`);
+      } else {
+        toast.error('Failed to generate Psychological Analysis. Please try again.');
+      }
+    } finally {
+      setIsGeneratingPsychologicalAnalysis(false);
+    }
+  };
+
+  const handleGenerateTransformationFramework = async () => {
+    if (!transformationFrameworkForm.painPointInvestigated.trim() || !transformationFrameworkForm.extremeUserType.trim()) {
+      toast.error('Please fill in all fields for Transformation Framework generation.');
+      return;
+    }
+
+    setIsGeneratingTransformationFramework(true);
+    try {
+      const requestBody = {
+        project_id: project?.id || '',
+        painPointInvestigated: transformationFrameworkForm.painPointInvestigated,
+        extremeUserType: transformationFrameworkForm.extremeUserType
+      };
+
+      console.log('Sending Transformation Framework Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/Transformation Framework', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('Transformation Framework response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const responseText = await response.text();
+        console.error('Raw response:', responseText);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      setTransformationFrameworkData(data);
+      toast.success('Transformation Framework generated successfully!');
+      navigate(`/projects/${project?.id}/transformation_framework`);
+      setTransformationFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+    } catch (error) {
+      console.error('Error generating Transformation Framework:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to generate Transformation Framework: ${error.message}`);
+      } else {
+        toast.error('Failed to generate Transformation Framework. Please try again.');
+      }
+    } finally {
+      setIsGeneratingTransformationFramework(false);
     }
   };
 
@@ -541,18 +841,18 @@ export const ProjectDetailPage = () => {
                 )}
 
                 {/* Deep Empathy Research Metadata */}
-                {project.empathy_research_plan?.generated_at && (
+                {project.deep_empathy_data?.generated_at && (
                   <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">Deep Empathy Research</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                       <div className="space-y-1">
-                        <p>Generated on: {new Date(project.empathy_research_plan.generated_at).toLocaleString()}</p>
-                        {project.empathy_research_plan.form && (
+                        <p>Generated on: {new Date(project.deep_empathy_data.generated_at).toLocaleString()}</p>
+                        {project.deep_empathy_data.form && (
                           <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
                             <p className="font-medium text-purple-800 mb-2">Generation Parameters:</p>
-                            <p className="text-sm"><span className="font-medium">Prioritized Pain Point:</span> {project.empathy_research_plan.form.prioritizedPainPoint}</p>
-                            <p className="text-sm"><span className="font-medium">Description:</span> {project.empathy_research_plan.form.painPointDescription}</p>
-                            <p className="text-sm"><span className="font-medium">Selected Extreme User:</span> {project.empathy_research_plan.form.selectedExtremeUser}</p>
+                            <p className="text-sm"><span className="font-medium">Prioritized Pain Point:</span> {project.deep_empathy_data.form.prioritizedPainPoint}</p>
+                            <p className="text-sm"><span className="font-medium">Description:</span> {project.deep_empathy_data.form.painPointDescription}</p>
+                            <p className="text-sm"><span className="font-medium">Selected Extreme User:</span> {project.deep_empathy_data.form.selectedExtremeUser}</p>
                           </div>
                         )}
                       </div>
@@ -751,8 +1051,11 @@ export const ProjectDetailPage = () => {
                   onGenerate={(data) => {
                     setAsIsMapData(data);
                     setAsIsMapPrompt('');
+                    // Navigate to the dedicated As-Is Map page
+                    navigate(`/projects/${project?.id}/as_is_map`);
                   }}
                   onGeneratingChange={setIsGeneratingAsIsMap}
+                  isGenerating={isGeneratingAsIsMap}
                 />
               ) : (
                 <div className="flex gap-3">
@@ -798,64 +1101,83 @@ export const ProjectDetailPage = () => {
               </button>
             </div>
             <div className="px-8 py-5">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="painPointStep" className="block text-sm font-medium text-gray-700 mb-2">
-                    Pain Point Step
-                  </label>
-                  <input
-                    type="text"
-                    id="painPointStep"
-                    value={extremeUserForm.painPointStep}
-                    onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointStep: e.target.value })}
-                    placeholder="e.g., Step 2.1: Harvest timing decisions"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="painPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                    Pain Point Description
-                  </label>
-                  <textarea
-                    id="painPointDescription"
-                    value={extremeUserForm.painPointDescription}
-                    onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointDescription: e.target.value })}
-                    rows={3}
-                    placeholder="Describe the specific pain point or challenge..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="targetUserContext" className="block text-sm font-medium text-gray-700 mb-2">
-                    Target User Context
-                  </label>
-                  <textarea
-                    id="targetUserContext"
-                    value={extremeUserForm.targetUserContext}
-                    onChange={(e) => setExtremeUserForm({ ...extremeUserForm, targetUserContext: e.target.value })}
-                    rows={3}
-                    placeholder="Describe the user's context, constraints, and environment..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={handleGenerateExtremeUser}
-                    disabled={isGeneratingExtremeUser}
-                    className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
-                  >
-                    {isGeneratingExtremeUser ? 'Generating...' : 'Generate Extreme User'}
-                  </button>
-                  {extremeUserData && (
+              {!hasExtremeUserData() ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="painPointStep" className="block text-sm font-medium text-gray-700 mb-2">
+                      Pain Point Step
+                    </label>
+                    <input
+                      type="text"
+                      id="painPointStep"
+                      value={extremeUserForm.painPointStep}
+                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointStep: e.target.value })}
+                      placeholder="e.g., Step 2.1: Harvest timing decisions"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="painPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                      Pain Point Description
+                    </label>
+                    <textarea
+                      id="painPointDescription"
+                      value={extremeUserForm.painPointDescription}
+                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointDescription: e.target.value })}
+                      rows={3}
+                      placeholder="Describe the specific pain point or challenge..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="targetUserContext" className="block text-sm font-medium text-gray-700 mb-2">
+                      Target User Context
+                    </label>
+                    <textarea
+                      id="targetUserContext"
+                      value={extremeUserForm.targetUserContext}
+                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, targetUserContext: e.target.value })}
+                      rows={3}
+                      placeholder="Describe the user's context, constraints, and environment..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
                     <button
-                      className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                      onClick={() => setShowExtremeUserModal(true)}
+                      onClick={handleGenerateExtremeUser}
+                      disabled={isGeneratingExtremeUser}
+                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
                     >
-                      View Extreme User
+                      {isGeneratingExtremeUser ? 'Generating...' : 'Generate Extreme User'}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                    onClick={() => {
+                      // Navigate to the dedicated Extreme User page
+                      navigate(`/projects/${project?.id}/extreme_user`);
+                    }}
+                  >
+                    View Report
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
+                    onClick={() => {
+                      setExtremeUserData(null);
+                      setExtremeUserForm({
+                        painPointStep: '',
+                        painPointDescription: '',
+                        targetUserContext: ''
+                      });
+                    }}
+                  >
+                    Generate New
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -868,14 +1190,103 @@ export const ProjectDetailPage = () => {
               </p>
             </div>
             <div className="px-8 py-5">
+              {!hasDeepEmpathyData() ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="prioritizedPainPoint" className="block text-sm font-medium text-gray-700 mb-2">
+                      Prioritized Pain Point
+                    </label>
+                    <input
+                      type="text"
+                      id="prioritizedPainPoint"
+                      value={deepEmpathyForm.prioritizedPainPoint}
+                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
+                      placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="deepPainPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                      Pain Point Description
+                    </label>
+                    <textarea
+                      id="deepPainPointDescription"
+                      value={deepEmpathyForm.painPointDescription}
+                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, painPointDescription: e.target.value })}
+                      rows={3}
+                      placeholder="Transportation barriers, long distances, high costs preventing initial prenatal care access"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="selectedExtremeUser" className="block text-sm font-medium text-gray-700 mb-2">
+                      Selected Extreme User
+                    </label>
+                    <textarea
+                      id="selectedExtremeUser"
+                      value={deepEmpathyForm.selectedExtremeUser}
+                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
+                      rows={3}
+                      placeholder="The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleGenerateDeepEmpathy}
+                      disabled={isGeneratingDeepEmpathy}
+                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
+                    >
+                      {isGeneratingDeepEmpathy ? 'Generating...' : 'Generate Deep Empathy Research'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                    onClick={() => {
+                      // Navigate to the dedicated Deep Empathy page
+                      navigate(`/projects/${project?.id}/deep_empathy`);
+                    }}
+                  >
+                    View Deep Empathy Research
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
+                    onClick={() => {
+                      setDeepEmpathyData(null);
+                      setDeepEmpathyForm({
+                        prioritizedPainPoint: '',
+                        painPointDescription: '',
+                        selectedExtremeUser: ''
+                      });
+                    }}
+                  >
+                    Generate New
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Chat Section */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Start Chat</h3>
+              <p className="text-gray-700 text-sm mt-2">
+                Start a conversation about your project with the same input fields as the Deep Empathy Research Generator.
+              </p>
+            </div>
+            <div className="px-8 py-5">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="prioritizedPainPoint" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="chatPrioritizedPainPoint" className="block text-sm font-medium text-gray-700 mb-2">
                     Prioritized Pain Point
                   </label>
                   <input
                     type="text"
-                    id="prioritizedPainPoint"
+                    id="chatPrioritizedPainPoint"
                     value={deepEmpathyForm.prioritizedPainPoint}
                     onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
                     placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
@@ -883,24 +1294,11 @@ export const ProjectDetailPage = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="deepPainPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                    Pain Point Description
-                  </label>
-                  <textarea
-                    id="deepPainPointDescription"
-                    value={deepEmpathyForm.painPointDescription}
-                    onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, painPointDescription: e.target.value })}
-                    rows={3}
-                    placeholder="Transportation barriers, long distances, high costs preventing initial prenatal care access"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="selectedExtremeUser" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="chatSelectedExtremeUser" className="block text-sm font-medium text-gray-700 mb-2">
                     Selected Extreme User
                   </label>
                   <textarea
-                    id="selectedExtremeUser"
+                    id="chatSelectedExtremeUser"
                     value={deepEmpathyForm.selectedExtremeUser}
                     onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
                     rows={3}
@@ -910,25 +1308,160 @@ export const ProjectDetailPage = () => {
                 </div>
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={handleGenerateDeepEmpathy}
-                    disabled={isGeneratingDeepEmpathy}
-                    className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
+                    className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+                    onClick={() => {
+                      // Navigate to the chat page
+                      navigate(`/projects/${project?.id}/chat`);
+                    }}
                   >
-                    {isGeneratingDeepEmpathy ? 'Generating...' : 'Generate Deep Empathy Research'}
+                    Start Chat
                   </button>
-                  {deepEmpathyData && (
-                    <button
-                      className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                      onClick={() => setShowDeepEmpathyModal(true)}
-                    >
-                      View Deep Empathy Research
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
           </div>
 
+
+          {/* Psychological Analysis Section */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Psychological Analysis</h3>
+              <p className="text-gray-700 text-sm mt-2">
+                Transform unprocessed research data into deep behavioral insights through psychological analysis.
+              </p>
+            </div>
+            <div className="px-8 py-5">
+              {!hasPsychologicalAnalysisData() ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="psychologicalPainPointInvestigated" className="block text-sm font-medium text-gray-700 mb-2">
+                      Pain Point Investigated
+                    </label>
+                    <input
+                      type="text"
+                      id="psychologicalPainPointInvestigated"
+                      value={psychologicalAnalysisForm.painPointInvestigated}
+                      onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                      placeholder="e.g., Young student accessing online education from rural area"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="psychologicalExtremeUserType" className="block text-sm font-medium text-gray-700 mb-2">
+                      Extreme User Type
+                    </label>
+                    <input
+                      type="text"
+                      id="psychologicalExtremeUserType"
+                      value={psychologicalAnalysisForm.extremeUserType}
+                      onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                      placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleGeneratePsychologicalAnalysis}
+                      disabled={isGeneratingPsychologicalAnalysis}
+                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
+                    >
+                      {isGeneratingPsychologicalAnalysis ? 'Generating...' : 'Generate Psychological Analysis'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                    onClick={() => navigate(`/projects/${project?.id}/psychological_analysis`)}
+                  >
+                    View Psychological Analysis
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
+                    onClick={() => {
+                      setPsychologicalAnalysisData(null);
+                      setPsychologicalAnalysisForm({
+                        painPointInvestigated: '',
+                        extremeUserType: ''
+                      });
+                    }}
+                  >
+                    Generate New
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Transformation Framework Section */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Transformation Framework</h3>
+              <p className="text-gray-700 text-sm mt-2">
+                Convert insights into an actionable transformation framework tailored to the project.
+              </p>
+            </div>
+            <div className="px-8 py-5">
+              {!hasTransformationFrameworkData() ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="tfPainPointInvestigated" className="block text-sm font-medium text-gray-700 mb-2">
+                      Pain Point Investigated
+                    </label>
+                    <input
+                      type="text"
+                      id="tfPainPointInvestigated"
+                      value={transformationFrameworkForm.painPointInvestigated}
+                      onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                      placeholder="e.g., Young student accessing online education from rural area"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="tfExtremeUserType" className="block text-sm font-medium text-gray-700 mb-2">
+                      Extreme User Type
+                    </label>
+                    <input
+                      type="text"
+                      id="tfExtremeUserType"
+                      value={transformationFrameworkForm.extremeUserType}
+                      onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                      placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleGenerateTransformationFramework}
+                      disabled={isGeneratingTransformationFramework}
+                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
+                    >
+                      {isGeneratingTransformationFramework ? 'Generating...' : 'Generate Transformation Framework'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                    onClick={() => navigate(`/projects/${project?.id}/transformation_framework`)}
+                  >
+                    View Transformation Framework
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
+                    onClick={() => {
+                      setTransformationFrameworkData(null);
+                      setTransformationFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+                    }}
+                  >
+                    Generate New
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Assessment Modal */}
           <HorizontalModal open={showAssessmentModal} onClose={() => setShowAssessmentModal(false)}>
@@ -1315,9 +1848,9 @@ export const ProjectDetailPage = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">Deep Empathy Research</h2>
-                  {project?.empathy_research_plan?.generated_at && (
+                  {project?.deep_empathy_data?.generated_at && (
                     <p className="text-sm text-gray-500 mt-1">
-                      Generated on: {new Date(project.empathy_research_plan.generated_at).toLocaleString()}
+                      Generated on: {new Date(project.deep_empathy_data.generated_at).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -1605,6 +2138,243 @@ export const ProjectDetailPage = () => {
                   return <div className="text-gray-500">Unable to load pain points.</div>;
                 }
               })()}
+            </div>
+          </HorizontalModal>
+
+          {/* Behavioral Insights Modal */}
+          <HorizontalModal open={showBehavioralInsightsModal} onClose={() => setShowBehavioralInsightsModal(false)}>
+            <div className="p-6 max-w-6xl max-h-[70vh] overflow-y-auto pr-4 no-scrollbar">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Behavioral Insights</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Generated from your research data
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowBehavioralInsightsModal(false)}
+                    className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              {behavioralInsightsData ? (
+                <div className="space-y-6">
+                  {/* Attempt to render structured content if present; fallback to JSON */}
+                  {(() => {
+                    const content = behavioralInsightsData;
+                    if (!content || typeof content !== 'object') {
+                      return (
+                        <div className="bg-white p-4 rounded-lg border border-gray-200">
+                          <pre className="text-xs text-gray-700 overflow-auto max-h-96">{JSON.stringify(content || behavioralInsightsData, null, 2)}</pre>
+                        </div>
+                      );
+                    }
+
+                    const toArray = (val: any) => Array.isArray(val) ? val : (val ? [val] : []);
+
+                    return (
+                      <div className="space-y-6">
+                        {content['BEHAVIORAL_INSIGHTS'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-indigo-800 mb-4">💡 Behavioral Insights</h3>
+                            <div className="space-y-4">
+                              {Object.entries(content['BEHAVIORAL_INSIGHTS']).map(([key, value]) => (
+                                <div key={key}>
+                                  <h4 className="font-semibold text-gray-800 mb-2">{key.replace(/_/g, ' ')}</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    {toArray(value).map((item: any, i: number) => (
+                                      <li key={i} className="text-gray-700">• {renderDataValue(item)}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {content['DESIGN_IMPLICATIONS'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-green-800 mb-4">🎨 Design Implications</h3>
+                            <div className="space-y-4">
+                              {Object.entries(content['DESIGN_IMPLICATIONS']).map(([key, value]) => (
+                                <div key={key}>
+                                  <h4 className="font-semibold text-gray-800 mb-2">{key.replace(/_/g, ' ')}</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    {toArray(value).map((item: any, i: number) => (
+                                      <li key={i} className="text-gray-700">• {renderDataValue(item)}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {content['PATTERNS_AND_TRENDS'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-purple-800 mb-4">📊 Patterns and Trends</h3>
+                            <div className="space-y-4">
+                              {Object.entries(content['PATTERNS_AND_TRENDS']).map(([key, value]) => (
+                                <div key={key}>
+                                  <h4 className="font-semibold text-gray-800 mb-2">{key.replace(/_/g, ' ')}</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    {toArray(value).map((item: any, i: number) => (
+                                      <li key={i} className="text-gray-700">• {renderDataValue(item)}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {content['RECOMMENDATIONS'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-orange-800 mb-4">🚀 Recommendations</h3>
+                            <div className="space-y-4">
+                              {Object.entries(content['RECOMMENDATIONS']).map(([key, value]) => (
+                                <div key={key}>
+                                  <h4 className="font-semibold text-gray-800 mb-2">{key.replace(/_/g, ' ')}</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    {toArray(value).map((item: any, i: number) => (
+                                      <li key={i} className="text-gray-700">• {renderDataValue(item)}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Fallback: if none of the expected sections present, dump formatted JSON */}
+                        {!content['BEHAVIORAL_INSIGHTS'] &&
+                          !content['DESIGN_IMPLICATIONS'] &&
+                          !content['PATTERNS_AND_TRENDS'] &&
+                          !content['RECOMMENDATIONS'] && (
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                              <pre className="text-xs text-gray-700 overflow-auto max-h-96">{JSON.stringify(content, null, 2)}</pre>
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">No Behavioral Insights data available</div>
+              )}
+            </div>
+          </HorizontalModal>
+
+          {/* Psychological Analysis Modal */}
+          <HorizontalModal open={showPsychologicalAnalysisModal} onClose={() => setShowPsychologicalAnalysisModal(false)}>
+            <div className="p-6 max-w-6xl max-h-[70vh] overflow-y-auto pr-4 no-scrollbar">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Psychological Analysis</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Transforming unprocessed research data into behavioral insights
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowPsychologicalAnalysisModal(false)}
+                    className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              {psychologicalAnalysisData ? (
+                <div className="space-y-6">
+                  {/* Attempt to render structured content if present; fallback to JSON */}
+                  {(() => {
+                    const content = psychologicalAnalysisData;
+                    if (!content || typeof content !== 'object') {
+                      return (
+                        <div className="bg-white p-4 rounded-lg border border-gray-200">
+                          <pre className="text-xs text-gray-700 overflow-auto max-h-96">{JSON.stringify(content || psychologicalAnalysisData, null, 2)}</pre>
+                        </div>
+                      );
+                    }
+
+                    const toArray = (val: any) => Array.isArray(val) ? val : (val ? [val] : []);
+
+                    return (
+                      <div className="space-y-6">
+                        {content['clusters'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-blue-800 mb-4">🧠 Behavioral Clusters</h3>
+                            <div className="space-y-4">
+                              {toArray(content['clusters']).map((cluster: any, i: number) => (
+                                <div key={i} className="border border-gray-200 rounded-lg p-4 bg-blue-50">
+                                  <h4 className="font-semibold text-blue-800 mb-2">Cluster {i + 1}</h4>
+                                  <div className="space-y-2 text-sm">
+                                    <div>
+                                      <strong>Irrational Behavior:</strong> {cluster.irrationalBehavior}
+                                    </div>
+                                    <div>
+                                      <strong>Rational Counterpart:</strong> {cluster.rationalCounterpart}
+                                    </div>
+                                    <div>
+                                      <strong>Peculiarity Revealed:</strong> {cluster.peculiarityRevealed}
+                                    </div>
+                                    <div>
+                                      <strong>Innovation Insight:</strong> {cluster.innovationInsight}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {content['comprehensiveMetaAnalysis'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-purple-800 mb-4">📊 Comprehensive Meta Analysis</h3>
+                            <div className="space-y-4">
+                              {Object.entries(content['comprehensiveMetaAnalysis']).map(([key, value]) => (
+                                <div key={key}>
+                                  <h4 className="font-semibold text-gray-800 mb-2">{key.replace(/_/g, ' ')}</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    {toArray(value).map((item: any, i: number) => (
+                                      <li key={i} className="text-gray-700">• {renderDataValue(item)}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {content['criticalRequirements'] && (
+                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-orange-800 mb-4">⚡ Critical Requirements</h3>
+                            <ul className="space-y-2 text-sm">
+                              {toArray(content['criticalRequirements']).map((requirement: any, i: number) => (
+                                <li key={i} className="text-gray-700">• {renderDataValue(requirement)}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Fallback: if none of the expected sections present, dump formatted JSON */}
+                        {!content['clusters'] &&
+                          !content['comprehensiveMetaAnalysis'] &&
+                          !content['criticalRequirements'] && (
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                              <pre className="text-xs text-gray-700 overflow-auto max-h-96">{JSON.stringify(content, null, 2)}</pre>
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">No Psychological Analysis data available</div>
+              )}
             </div>
           </HorizontalModal>
         </div>

@@ -15,7 +15,8 @@ export default defineConfig({
       'scanner-readily-workshop-ribbon.trycloudflare.com',
       'angola-intranet-finance-sold.trycloudflare.com',
       `investing-compound-provider-jul.trycloudflare.com`,
-      `enb-geek-evaluated-estonia.trycloudflare.com`
+      `enb-geek-evaluated-estonia.trycloudflare.com`,
+      "stick-collected-cat-exams.trycloudflare.com"
     ]
   },
 });
