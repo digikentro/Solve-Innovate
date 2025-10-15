@@ -76,11 +76,16 @@ export default function TransformationFrameworkPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-black-600" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading Transformation Framework...</h2>
-          <p className="text-gray-500 mt-2">This may take a few moments</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6] flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="relative mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#d4af37] to-[#b8941f] rounded-full flex items-center justify-center mx-auto shadow-2xl">
+              <Loader2 className="w-10 h-10 animate-spin text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#1a1d29] rounded-full animate-pulse"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-[#1a1d29] mb-3">Loading Transformation Framework</h2>
+          <p className="text-[#2c2c2c]/70 text-lg">This may take a few moments</p>
         </div>
       </div>
     );
@@ -88,16 +93,30 @@ export default function TransformationFrameworkPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6] flex items-center justify-center">
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-black-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lightbulb className="w-8 h-8 text-black-600" />
+          <div className="relative mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] rounded-full flex items-center justify-center mx-auto shadow-2xl">
+              <Lightbulb className="w-10 h-10 text-[#d4af37]" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#d4af37] rounded-full animate-pulse"></div>
           </div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Transformation Framework Not Ready</h2>
-          <p className="text-gray-500 mb-6">The framework is still being generated. Try again shortly.</p>
-          <div className="space-y-3">
-            <Button onClick={() => window.location.reload()} className="w-full">Refresh Page</Button>
-            <Button variant="outline" onClick={() => navigate(`/projects/${projectId}`)} className="w-full">Back to Project</Button>
+          <h2 className="text-2xl font-bold text-[#1a1d29] mb-3">Transformation Framework Not Ready</h2>
+          <p className="text-[#2c2c2c]/70 text-lg mb-8">The framework is still being generated. Try again shortly.</p>
+          <div className="space-y-4">
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full bg-gradient-to-r from-[#d4af37] to-[#b8941f] hover:from-[#b8941f] hover:to-[#a0851a] text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
+            >
+              Refresh Page
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/projects/${projectId}`)} 
+              className="w-full border-[#1a1d29] text-[#1a1d29] hover:bg-[#1a1d29] hover:text-white font-semibold py-3 rounded-xl transition-all duration-200"
+            >
+              Back to Project
+            </Button>
           </div>
         </div>
       </div>
@@ -105,40 +124,53 @@ export default function TransformationFrameworkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6]">
       <div className="w-[70vw] mx-auto py-8 px-4">
-        <div className="flex items-center gap-3 mb-8">
-          <Button onClick={() => navigate(`/projects/${projectId}`)} variant="ghost" size="sm" className="p-2">
-            <FiArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-4 mb-10">
+          <Button 
+            onClick={() => navigate(`/projects/${projectId}`)} 
+            variant="ghost" 
+            size="sm" 
+            className="p-3 hover:bg-[#d4af37]/10 transition-all duration-200 rounded-xl"
+          >
+            <FiArrowLeft className="w-5 h-5 text-[#1a1d29]" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Transformation Framework</h1>
-            <p className="text-gray-600 mt-1">{projectTitle}</p>
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-[#1a1d29] mb-2 tracking-tight">Transformation Framework</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-b from-[#d4af37] to-[#b8941f] rounded-full"></div>
+              <p className="text-[#2c2c2c] text-lg font-medium">{projectTitle}</p>
+            </div>
           </div>
         </div>
 
         {/* Structured renderer for Transformation Framework */}
         {typeof data.content === 'string' ? (
-          <Card className="p-6 mb-8 bg-white border">
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">{data.content}</div>
+          <Card className="p-8 mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+            <div className="whitespace-pre-wrap text-[#2c2c2c] leading-relaxed text-base">{data.content}</div>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Project Context */}
             {data.content.projectContext && (
-              <Card className="p-6 bg-gradient-to-r from-black-50 to-black-50 border-black-200">
-                <div className="flex items-start gap-3 mb-4">
-                  <BarChart3 className="w-5 h-5 text-black-600" />
-                  <h2 className="text-xl font-semibold text-black-900">Project Context</h2>
-                </div>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Prioritized Pain Point</h3>
-                    <p className="text-gray-700 text-sm">{formatValue(data.content.projectContext.prioritizedPainPoint)}</p>
+              <Card className="p-8 bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] border-0 shadow-2xl rounded-2xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d4af37]/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="relative">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="p-3 bg-[#d4af37]/20 rounded-xl">
+                      <BarChart3 className="w-6 h-6 text-[#d4af37]" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">Project Context</h2>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Target User Type</h3>
-                    <p className="text-gray-700 text-sm">{formatValue(data.content.projectContext.targetUserType)}</p>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-[#d4af37] text-sm uppercase tracking-wide">Prioritized Pain Point</h3>
+                      <p className="text-white/90 text-base leading-relaxed">{formatValue(data.content.projectContext.prioritizedPainPoint)}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-[#d4af37] text-sm uppercase tracking-wide">Target User Type</h3>
+                      <p className="text-white/90 text-base leading-relaxed">{formatValue(data.content.projectContext.targetUserType)}</p>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -146,45 +178,47 @@ export default function TransformationFrameworkPage() {
 
             {/* Outcome Integration Analysis */}
             {data.content.outcomeIntegrationAnalysis && (
-              <Card className="p-6 bg-white border">
-                <div className="flex items-start gap-3 mb-4">
-                  <Globe className="w-5 h-5 text-black-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">Outcome Integration Analysis</h2>
+              <Card className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="p-3 bg-[#d4af37]/10 rounded-xl">
+                    <Globe className="w-6 h-6 text-[#d4af37]" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1a1d29]">Outcome Integration Analysis</h2>
                 </div>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Psychological Pattern Themes</h3>
-                    <ul className="space-y-2 text-sm">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-[#1a1d29] text-lg">Psychological Pattern Themes</h3>
+                    <ul className="space-y-3">
                       {data.content.outcomeIntegrationAnalysis.psychologicalPatternThemes?.map((t: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 bg-black-400 rounded-full mt-2 flex-shrink-0"></span>
-                          <span className="text-gray-700">{t}</span>
+                        <li key={i} className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-[#2c2c2c] text-base leading-relaxed">{t}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Innovation Opportunity Spaces</h3>
-                    <ul className="space-y-2 text-sm">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-[#1a1d29] text-lg">Innovation Opportunity Spaces</h3>
+                    <ul className="space-y-3">
                       {data.content.outcomeIntegrationAnalysis.innovationOpportunitySpaces?.map((s: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 bg-black-400 rounded-full mt-2 flex-shrink-0"></span>
-                          <span className="text-gray-700">{s}</span>
+                        <li key={i} className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-[#2c2c2c] text-base leading-relaxed">{s}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
                 {data.content.outcomeIntegrationAnalysis.painPointSolutionCoherence && (
-                  <div className="mt-6 bg-black-50 p-4 rounded border border-black-200">
-                    <h3 className="font-semibold text-black-900 mb-2">Pain-Point ⇄ Solution Coherence</h3>
-                    <p className="text-black-800 text-sm">{data.content.outcomeIntegrationAnalysis.painPointSolutionCoherence}</p>
+                  <div className="mt-8 bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 p-6 rounded-xl border border-[#d4af37]/20">
+                    <h3 className="font-semibold text-[#1a1d29] text-lg mb-3">Pain-Point ⇄ Solution Coherence</h3>
+                    <p className="text-[#2c2c2c] text-base leading-relaxed">{data.content.outcomeIntegrationAnalysis.painPointSolutionCoherence}</p>
                   </div>
                 )}
                 {data.content.outcomeIntegrationAnalysis.implementationPrioritySuggestions && (
-                  <div className="mt-4 bg-black-50 p-4 rounded border border-black-200">
-                    <h3 className="font-semibold text-black-900 mb-2">Implementation Priority Suggestions</h3>
-                    <p className="text-black-800 text-sm">{data.content.outcomeIntegrationAnalysis.implementationPrioritySuggestions}</p>
+                  <div className="mt-6 bg-gradient-to-r from-[#1a1d29]/5 to-[#1a1d29]/10 p-6 rounded-xl border border-[#1a1d29]/20">
+                    <h3 className="font-semibold text-[#1a1d29] text-lg mb-3">Implementation Priority Suggestions</h3>
+                    <p className="text-[#2c2c2c] text-base leading-relaxed">{data.content.outcomeIntegrationAnalysis.implementationPrioritySuggestions}</p>
                   </div>
                 )}
               </Card>
@@ -192,29 +226,31 @@ export default function TransformationFrameworkPage() {
 
             {/* Irrationality Clusters (if present) */}
             {Array.isArray(data.content.irrationalityClusters) && data.content.irrationalityClusters.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-5 h-5 text-black-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">Irrationality Clusters</h2>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-[#d4af37]/10 rounded-xl">
+                    <Users className="w-6 h-6 text-[#d4af37]" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1a1d29]">Irrationality Clusters</h2>
                 </div>
                 {data.content.irrationalityClusters.map((cluster: any, idx: number) => (
-                  <Card key={idx} className="p-6">
-                    <div className="space-y-4">
+                  <Card key={idx} className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+                    <div className="space-y-6">
                       {cluster.irrationality && (
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-1">Irrationality</h3>
-                          <p className="text-gray-700 text-sm">{formatValue(cluster.irrationality)}</p>
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-[#1a1d29] text-lg">Irrationality</h3>
+                          <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.irrationality)}</p>
                         </div>
                       )}
 
                       {Array.isArray(cluster.diagnosis) && cluster.diagnosis.length > 0 && (
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2">Diagnosis</h3>
-                          <ul className="space-y-1 text-sm">
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-[#1a1d29] text-lg">Diagnosis</h3>
+                          <ul className="space-y-3">
                             {cluster.diagnosis.map((d: string, dIdx: number) => (
-                              <li key={dIdx} className="flex items-start gap-2">
-                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                <span className="text-gray-700">{d}</span>
+                              <li key={dIdx} className="flex items-start gap-3">
+                                <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
+                                <span className="text-[#2c2c2c] text-base leading-relaxed">{d}</span>
                               </li>
                             ))}
                           </ul>
@@ -222,55 +258,55 @@ export default function TransformationFrameworkPage() {
                       )}
 
                       {cluster.psychologicalNeedAnalysis && (
-                        <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                          <h3 className="font-semibold text-gray-900 mb-2">Psychological Need Analysis</h3>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Core Need</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.psychologicalNeedAnalysis.coreNeed)}</p>
+                        <div className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 p-6 rounded-xl border border-[#d4af37]/20">
+                          <h3 className="font-semibold text-[#1a1d29] text-lg mb-4">Psychological Need Analysis</h3>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Core Need</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.coreNeed)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Bias-driven Motivation</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.psychologicalNeedAnalysis.biasDrivenMotivation)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Bias-driven Motivation</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.biasDrivenMotivation)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Persistence Factor</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.psychologicalNeedAnalysis.persistenceFactor)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Persistence Factor</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.persistenceFactor)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Pain Point Connection</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.psychologicalNeedAnalysis.painPointConnection)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Pain Point Connection</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.painPointConnection)}</p>
                             </div>
                           </div>
                         </div>
                       )}
 
                       {cluster.outcome && (
-                        <div className="bg-black-50 p-4 rounded border border-black-200">
-                          <h3 className="font-semibold text-black-900 mb-2">Outcome</h3>
-                          <p className="text-black-800 text-sm">{formatValue(cluster.outcome)}</p>
+                        <div className="bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] p-6 rounded-xl text-white">
+                          <h3 className="font-semibold text-[#d4af37] text-lg mb-3">Outcome</h3>
+                          <p className="text-white/90 text-base leading-relaxed">{formatValue(cluster.outcome)}</p>
                         </div>
                       )}
 
                       {cluster.outcomeValidation && (
-                        <div className="bg-black-50 p-4 rounded border border-black-200">
-                          <h3 className="font-semibold text-black-900 mb-2">Outcome Validation</h3>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Smart Psychology Use</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.outcomeValidation.smartPsychologyUse)}</p>
+                        <div className="bg-gradient-to-r from-[#1a1d29]/5 to-[#1a1d29]/10 p-6 rounded-xl border border-[#1a1d29]/20">
+                          <h3 className="font-semibold text-[#1a1d29] text-lg mb-4">Outcome Validation</h3>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Smart Psychology Use</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.smartPsychologyUse)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Pain Point Alignment</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.outcomeValidation.painPointAlignment)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Pain Point Alignment</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.painPointAlignment)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Specificity Level</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.outcomeValidation.specificityLevel)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Specificity Level</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.specificityLevel)}</p>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-800 mb-1">Direction Focus</h4>
-                              <p className="text-gray-700 text-sm">{formatValue(cluster.outcomeValidation.directionFocus)}</p>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Direction Focus</h4>
+                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.directionFocus)}</p>
                             </div>
                           </div>
                         </div>
@@ -283,16 +319,19 @@ export default function TransformationFrameworkPage() {
 
             {/* Fallback: show the raw content if nothing matched */}
             {!data.content.projectContext && !data.content.outcomeIntegrationAnalysis && !(Array.isArray(data.content.irrationalityClusters) && data.content.irrationalityClusters.length > 0) && (
-              <Card className="p-6 bg-white border">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Data</h2>
-                <pre className="text-xs text-gray-700 overflow-auto max-h-96">{JSON.stringify(data.content, null, 2)}</pre>
+              <Card className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+                <h2 className="text-2xl font-bold text-[#1a1d29] mb-6">Data</h2>
+                <pre className="text-sm text-[#2c2c2c] overflow-auto max-h-96 bg-[#f8f6f0] p-4 rounded-xl">{JSON.stringify(data.content, null, 2)}</pre>
               </Card>
             )}
           </div>
         )}
 
-        <div className="text-center text-gray-500 text-sm mb-8">
-          <p>Generated on {new Date(data.generated_at).toLocaleString()}</p>
+        <div className="text-center text-[#2c2c2c]/70 text-sm mb-8 mt-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-[#d4af37]/20">
+            <div className="w-2 h-2 bg-[#d4af37] rounded-full"></div>
+            <p>Generated on {new Date(data.generated_at).toLocaleString()}</p>
+          </div>
         </div>
       </div>
     </div>

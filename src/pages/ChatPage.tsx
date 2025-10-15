@@ -153,69 +153,103 @@ export const ChatPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50" style={{ width: '70vw', margin: '0 auto' }}>
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 w-full relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-indigo-400/20 to-purple-400/20"></div>
+        <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-l from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-gradient-to-r from-purple-400/10 to-transparent rounded-full blur-3xl"></div>
+      </div>
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+      <div className="bg-white/80 backdrop-blur-md shadow-lg border-b border-white/20 px-6 py-4 flex-shrink-0 w-full relative z-10">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate(`/projects/${id}`)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-3 hover:bg-indigo-50 rounded-xl transition-all duration-200 hover:scale-105 group"
             >
-              <FiArrowLeft className="w-5 h-5 text-gray-600" />
+              <FiArrowLeft className="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" />
             </button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Project Chat</h1>
-              <p className="text-sm text-gray-500">Chat about your project</p>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Project Chat
+              </h1>
+              <p className="text-sm text-gray-600 font-medium">Collaborate and discuss your project</p>
             </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-600 font-medium">Online</span>
           </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className={`flex-1 p-4 space-y-4 ${messages.length > 0 ? 'overflow-y-auto no-scrollbar' : 'flex items-center justify-center'}`} style={{ paddingBottom: messages.length > 0 ? '80px' : '0' }}>
+      <div className={`flex-1 p-8 space-y-6 ${messages.length > 0 ? 'overflow-y-auto no-scrollbar' : 'flex items-center justify-center'} relative z-10`} style={{ paddingBottom: messages.length > 0 ? '120px' : '0' }}>
+        <div className="max-w-4xl mx-auto w-full">
         {isLoadingHistory ? (
           <div className="text-center">
-            <FiMessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-pulse" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading chat history...</h3>
-            <p className="text-gray-500">Fetching your previous conversations.</p>
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl mx-auto mb-6 flex items-center justify-center animate-pulse">
+                <FiMessageCircle className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Loading chat history...</h3>
+            <p className="text-gray-600 font-medium">Fetching your previous conversations.</p>
+            <div className="mt-4 flex justify-center space-x-1">
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center">
-            <FiMessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Start a conversation</h3>
-            <p className="text-gray-500">Send a message to begin chatting about your project.</p>
+            <div className="relative">
+              <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg">
+                <FiMessageCircle className="w-10 h-10 text-white" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Start a conversation</h3>
+            <p className="text-gray-600 font-medium mb-6">Send a message to begin chatting about your project.</p>
+            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 rounded-full">
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-indigo-600 font-medium">AI Assistant Ready</span>
+            </div>
           </div>
         ) : (
           messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
             >
               <div
-                className={`flex max-w-xs lg:max-w-md ${
+                className={`flex max-w-md lg:max-w-2xl xl:max-w-3xl ${
                   message.isUser ? 'flex-row-reverse' : 'flex-row'
                 }`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${
                     message.isUser
-                      ? 'bg-indigo-600 text-white ml-2'
-                      : 'bg-gray-200 text-gray-600 mr-2'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white ml-3'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3'
                   }`}
                 >
-                  {message.isUser ? <FiUser className="w-4 h-4" /> : <FiMessageCircle className="w-4 h-4" />}
+                  {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
                 </div>
                  <div
-                   className={`px-4 py-2 rounded-lg ${
+                   className={`px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm ${
                      message.isUser
-                       ? 'bg-indigo-600 text-white'
-                       : 'bg-white text-gray-900 border border-gray-200'
+                       ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                       : 'bg-white/90 text-gray-900 border border-white/20'
                    }`}
                  >
-                   <div className="text-sm whitespace-pre-wrap">{message.text}</div>
+                   <div className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{message.text}</div>
                    <p
-                     className={`text-xs mt-1 ${
+                     className={`text-xs mt-2 font-medium ${
                        message.isUser ? 'text-indigo-100' : 'text-gray-500'
                      }`}
                    >
@@ -231,43 +265,53 @@ export const ChatPage = () => {
         )}
         
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="flex max-w-xs lg:max-w-md">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-600 mr-2 flex items-center justify-center">
-                <FiMessageCircle className="w-4 h-4" />
+          <div className="flex justify-start animate-fadeIn">
+            <div className="flex max-w-md lg:max-w-2xl xl:max-w-3xl">
+              <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 flex items-center justify-center shadow-lg">
+                <FiMessageCircle className="w-5 h-5" />
               </div>
-              <div className="bg-white text-gray-900 border border-gray-200 px-4 py-2 rounded-lg">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="bg-white/90 text-gray-900 border border-white/20 px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm">
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0" style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '70vw', zIndex: 10 }}>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            disabled={isTyping}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isTyping}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <FiSend className="w-4 h-4" />
-          </button>
+      <div className="bg-white/90 backdrop-blur-md border-t border-white/20 p-6 flex-shrink-0 shadow-2xl w-full relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex space-x-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                className="w-full px-6 py-4 bg-white/80 border border-gray-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 transition-all duration-200 shadow-lg backdrop-blur-sm text-gray-900 placeholder-gray-500 font-medium"
+                disabled={isTyping}
+              />
+              {inputMessage && (
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || isTyping}
+              className="px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl hover:from-indigo-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 group"
+            >
+              <FiSend className="w-5 h-5 group-hover:translate-x-0.5 transition-transform duration-200" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

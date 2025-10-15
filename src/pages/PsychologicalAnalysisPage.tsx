@@ -114,11 +114,13 @@ export default function PsychologicalAnalysisPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-black-600" />
-          <h2 className="text-xl font-semibold text-gray-700">Loading Psychological Analysis...</h2>
-          <p className="text-gray-500 mt-2">This may take a few moments</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-2xl border border-white/20">
+          <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Loading Psychological Analysis...</h2>
+          <p className="text-slate-600 text-lg">This may take a few moments</p>
         </div>
       </div>
     );
@@ -126,23 +128,26 @@ export default function PsychologicalAnalysisPage() {
 
   if (!psychologicalData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-black-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Brain className="w-8 h-8 text-black-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center max-w-lg bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-2xl border border-white/20">
+          <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Brain className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Psychological Analysis Not Ready</h2>
-          <p className="text-gray-500 mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 mb-3">Psychological Analysis Not Ready</h2>
+          <p className="text-slate-600 mb-8 text-lg leading-relaxed">
             The psychological analysis is still being generated. This process typically takes a few minutes.
           </p>
-          <div className="space-y-3">
-            <Button onClick={() => window.location.reload()} className="w-full">
+          <div className="space-y-4">
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
+            >
               Refresh Page
             </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate(`/projects/${projectId}`)}
-              className="w-full"
+              className="w-full border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-3 rounded-xl transition-all duration-200"
             >
               Back to Project
             </Button>
@@ -153,102 +158,116 @@ export default function PsychologicalAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-[70vw] mx-auto py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="w-[75vw] mx-auto py-12 px-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-4 mb-12">
           <Button
             onClick={() => navigate(`/projects/${projectId}`)}
             variant="ghost"
             size="sm"
-            className="p-2"
+            className="p-3 rounded-xl hover:bg-white/60 transition-all duration-200 shadow-sm"
           >
-            <FiArrowLeft className="w-5 h-5" />
+            <FiArrowLeft className="w-5 h-5 text-indigo-600" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Psychological Analysis</h1>
-            <p className="text-gray-600 mt-1">{projectTitle}</p>
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Psychological Analysis
+            </h1>
+            <p className="text-slate-600 mt-2 text-lg font-medium">{projectTitle}</p>
           </div>
         </div>
 
         {/* Comprehensive Meta Analysis */}
         {psychologicalData.content.comprehensiveMetaAnalysis && (
-          <Card className="p-6 mb-8 bg-gradient-to-r from-black-50 to-black-50 border-black-200">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-black-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-black-600" />
+          <Card className="p-8 mb-10 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-black-900">Comprehensive Meta Analysis</h2>
-                <p className="text-black-700 mt-1">
+                <h2 className="text-2xl font-bold text-slate-800">Comprehensive Meta Analysis</h2>
+                <p className="text-slate-600 mt-2 text-lg">
                   {psychologicalData.content.comprehensiveMetaAnalysis.totalClustersIdentified} behavioral clusters identified
                 </p>
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <Target className="w-4 h-4" />
+            <div className="grid md:grid-cols-2 gap-6 mt-8">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                    <Target className="w-4 h-4 text-white" />
+                  </div>
                   Behavioral Pattern Themes
                 </h3>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3">
                   {psychologicalData.content.comprehensiveMetaAnalysis.behavioralPatternThemes?.map((theme, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-black-400 rounded-full mt-2 flex-shrink-0"></span>
-                      <span className="text-black-700">{theme}</span>
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700 font-medium">{theme}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <Brain className="w-4 h-4" />
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-white" />
+                  </div>
                   Human Psychology Insights
                 </h3>
-                <p className="text-black-700 text-sm">{psychologicalData.content.comprehensiveMetaAnalysis.humanPsychologyInsights}</p>
+                <p className="text-slate-700 leading-relaxed">{psychologicalData.content.comprehensiveMetaAnalysis.humanPsychologyInsights}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-white" />
+                  </div>
                   Cognitive Bias Patterns
                 </h3>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3">
                   {psychologicalData.content.comprehensiveMetaAnalysis.cognitiveBiasPatterns?.map((bias, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-black-400 rounded-full mt-2 flex-shrink-0"></span>
-                      <span className="text-black-700">{bias}</span>
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700 font-medium">{bias}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <Heart className="w-4 h-4" />
+              <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-2xl border border-pink-100 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-white" />
+                  </div>
                   Emotional Driver Analysis
                 </h3>
-                <p className="text-black-700 text-sm">{psychologicalData.content.comprehensiveMetaAnalysis.emotionalDriverAnalysis}</p>
+                <p className="text-slate-700 leading-relaxed">{psychologicalData.content.comprehensiveMetaAnalysis.emotionalDriverAnalysis}</p>
               </div>
             </div>
 
-            <div className="mt-6 space-y-4">
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
+            <div className="mt-8 space-y-6">
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-6 rounded-2xl border border-slate-200 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-white" />
+                  </div>
                   System Level Implications
                 </h3>
-                <p className="text-black-700 text-sm">{psychologicalData.content.comprehensiveMetaAnalysis.systemLevelImplications}</p>
+                <p className="text-slate-700 leading-relaxed">{psychologicalData.content.comprehensiveMetaAnalysis.systemLevelImplications}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border border-black-200">
-                <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4" />
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100 hover:shadow-lg transition-all duration-300">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                    <Lightbulb className="w-4 h-4 text-white" />
+                  </div>
                   Innovation Opportunity Spaces
                 </h3>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3">
                   {psychologicalData.content.comprehensiveMetaAnalysis.innovationOpportunitySpaces?.map((opportunity, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-black-400 rounded-full mt-2 flex-shrink-0"></span>
-                      <span className="text-black-700">{opportunity}</span>
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700 font-medium">{opportunity}</span>
                     </li>
                   ))}
                 </ul>
@@ -259,102 +278,116 @@ export default function PsychologicalAnalysisPage() {
 
         {/* Behavioral Clusters */}
         {psychologicalData.content.clusters && (
-          <div className="space-y-6 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-black-100 rounded-full flex items-center justify-center">
-                <Users className="w-5 h-5 text-black-600" />
+          <div className="space-y-8 mb-12">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Users className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Behavioral Clusters Analysis</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Behavioral Clusters Analysis</h2>
             </div>
             
             {psychologicalData.content.clusters.map((cluster, clusterIndex) => (
-              <Card key={clusterIndex} className="p-6">
-                <div className="space-y-6">
+              <Card key={clusterIndex} className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300">
+                <div className="space-y-8">
                   {/* Irrational vs Rational Behavior */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                      <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
+                    <div className="bg-gradient-to-br from-red-50 to-pink-50 p-6 rounded-2xl border border-red-100 hover:shadow-lg transition-all duration-300">
+                      <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                        <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                          <AlertTriangle className="w-4 h-4 text-white" />
+                        </div>
                         Irrational Behavior
                       </h3>
-                      <p className="text-black-700 text-sm">{cluster.irrationalBehavior}</p>
+                      <p className="text-slate-700 leading-relaxed">{cluster.irrationalBehavior}</p>
                     </div>
-                    <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                      <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 hover:shadow-lg transition-all duration-300">
+                      <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
                         Rational Counterpart
                       </h3>
-                      <p className="text-black-700 text-sm">{cluster.rationalCounterpart}</p>
+                      <p className="text-slate-700 leading-relaxed">{cluster.rationalCounterpart}</p>
                     </div>
                   </div>
 
                   {/* Raw Evidence */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <Search className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-6 rounded-2xl border border-slate-200 hover:shadow-lg transition-all duration-300">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center">
+                        <Search className="w-4 h-4 text-white" />
+                      </div>
                       Raw Evidence from Student Data
                     </h3>
-                    <ul className="space-y-2 text-sm">
+                    <ul className="space-y-3">
                       {cluster.rawEvidenceFromStudentData?.map((evidence, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                          <span className="text-gray-700">{evidence}</span>
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="w-2 h-2 bg-gradient-to-r from-slate-500 to-gray-500 rounded-full mt-2 flex-shrink-0"></span>
+                          <span className="text-slate-700 font-medium">{evidence}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {/* Peculiarity Revealed */}
-                  <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                    <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-6 rounded-2xl border border-amber-100 hover:shadow-lg transition-all duration-300">
+                    <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
                       Peculiarity Revealed
                     </h3>
-                    <p className="text-black-700 text-sm">{cluster.peculiarityRevealed}</p>
+                    <p className="text-slate-700 leading-relaxed">{cluster.peculiarityRevealed}</p>
                   </div>
 
                   {/* Psychological Analysis */}
-                  <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                    <h3 className="font-semibold text-black-800 mb-3 flex items-center gap-2">
-                      <Brain className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100 hover:shadow-lg transition-all duration-300">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
+                        <Brain className="w-4 h-4 text-white" />
+                      </div>
                       Psychological Analysis
                     </h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="font-medium text-black-700 mb-1">Cognitive Biases</h4>
-                        <p className="text-black-600 text-sm">{cluster.psychologicalAnalysis.cognitiveBiases}</p>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="bg-white/60 p-4 rounded-xl">
+                        <h4 className="font-bold text-slate-700 mb-2 text-base">Cognitive Biases</h4>
+                        <p className="text-slate-600 leading-relaxed">{cluster.psychologicalAnalysis.cognitiveBiases}</p>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-black-700 mb-1">Emotional Drivers</h4>
-                        <p className="text-black-600 text-sm">{cluster.psychologicalAnalysis.emotionalDrivers}</p>
+                      <div className="bg-white/60 p-4 rounded-xl">
+                        <h4 className="font-bold text-slate-700 mb-2 text-base">Emotional Drivers</h4>
+                        <p className="text-slate-600 leading-relaxed">{cluster.psychologicalAnalysis.emotionalDrivers}</p>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-black-700 mb-1">Psychological Needs</h4>
-                        <p className="text-black-600 text-sm">{cluster.psychologicalAnalysis.psychologicalNeeds}</p>
+                      <div className="bg-white/60 p-4 rounded-xl">
+                        <h4 className="font-bold text-slate-700 mb-2 text-base">Psychological Needs</h4>
+                        <p className="text-slate-600 leading-relaxed">{cluster.psychologicalAnalysis.psychologicalNeeds}</p>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-black-700 mb-1">Why It Persists</h4>
-                        <p className="text-black-600 text-sm">{cluster.psychologicalAnalysis.whyItPersists}</p>
+                      <div className="bg-white/60 p-4 rounded-xl">
+                        <h4 className="font-bold text-slate-700 mb-2 text-base">Why It Persists</h4>
+                        <p className="text-slate-600 leading-relaxed">{cluster.psychologicalAnalysis.whyItPersists}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Behavioral Science Explanation */}
-                  <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                    <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-2xl border border-blue-100 hover:shadow-lg transition-all duration-300">
+                    <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
                       Behavioral Science Explanation
                     </h3>
-                    <p className="text-black-700 text-sm">{cluster.behavioralScienceExplanation}</p>
+                    <p className="text-slate-700 leading-relaxed">{cluster.behavioralScienceExplanation}</p>
                   </div>
 
                   {/* Innovation Insight */}
-                  <div className="bg-black-50 p-4 rounded-lg border border-black-200">
-                    <h3 className="font-semibold text-black-800 mb-2 flex items-center gap-2">
-                      <Zap className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100 hover:shadow-lg transition-all duration-300">
+                    <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-white" />
+                      </div>
                       Innovation Insight
                     </h3>
-                    <p className="text-black-700 text-sm">{cluster.innovationInsight}</p>
+                    <p className="text-slate-700 leading-relaxed">{cluster.innovationInsight}</p>
                   </div>
                 </div>
               </Card>
@@ -364,21 +397,21 @@ export default function PsychologicalAnalysisPage() {
 
         {/* Critical Requirements */}
         {psychologicalData.content.criticalRequirements && (
-          <Card className="p-6 mb-8 bg-gradient-to-r from-black-50 to-black-50 border-black-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-black-100 rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-black-600" />
+          <Card className="p-8 mb-12 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-black-900">Critical Requirements</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Critical Requirements</h2>
             </div>
             
-            <ul className="space-y-3">
+            <ul className="space-y-4">
               {psychologicalData.content.criticalRequirements?.map((requirement, idx) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-black-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-black-600 font-semibold text-sm">{idx + 1}</span>
+                <li key={idx} className="flex items-start gap-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 hover:shadow-md transition-all duration-300">
+                  <span className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
+                    <span className="text-white font-bold text-sm">{idx + 1}</span>
                   </span>
-                  <span className="text-black-700">{requirement}</span>
+                  <span className="text-slate-700 font-medium leading-relaxed">{requirement}</span>
                 </li>
               ))}
             </ul>
@@ -389,16 +422,16 @@ export default function PsychologicalAnalysisPage() {
         {(!psychologicalData.content.clusters && 
           !psychologicalData.content.comprehensiveMetaAnalysis && 
           !psychologicalData.content.criticalRequirements) && (
-          <Card className="p-6 mb-8 bg-black-50 border-black-200">
-            <h2 className="text-xl font-semibold text-black-800 mb-4">Raw Data Structure</h2>
-            <p className="text-black-700 mb-4">
+          <Card className="p-8 mb-12 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Raw Data Structure</h2>
+            <p className="text-slate-600 mb-6 text-lg">
               The data structure doesn't match the expected format. Here's the raw data:
             </p>
-            <div className="bg-white p-4 rounded border">
+            <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-6 rounded-2xl border border-slate-200">
               {typeof psychologicalData.content === 'string' ? (
-                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">{psychologicalData.content}</div>
+                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-mono text-sm">{psychologicalData.content}</div>
               ) : (
-                <pre className="text-xs text-gray-700 overflow-auto max-h-96">
+                <pre className="text-sm text-slate-700 overflow-auto max-h-96 font-mono">
                   {JSON.stringify(psychologicalData.content, null, 2)}
                 </pre>
               )}
@@ -407,8 +440,8 @@ export default function PsychologicalAnalysisPage() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm mb-8">
-          <p>Generated on {new Date(psychologicalData.generated_at).toLocaleString()}</p>
+        <div className="text-center text-slate-500 text-sm mb-8 p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200">
+          <p className="font-medium">Generated on {new Date(psychologicalData.generated_at).toLocaleString()}</p>
         </div>
       </div>
     </div>

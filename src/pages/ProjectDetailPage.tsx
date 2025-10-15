@@ -737,80 +737,90 @@ export const ProjectDetailPage = () => {
 
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-6">
-          <div className="flex items-start gap-3 flex-wrap">
-            <button
-              onClick={() => navigate('/projects')}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200 mt-2"
-              type="button"
-              aria-label="Back to Projects"
-            >
-              <FiArrowLeft className="w-6 h-6" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h2 className="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl break-words">
-                {project.title}
-              </h2>
-              <div className="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
-                <div className="mt-2 flex items-center text-sm text-gray-500">
-                  <span className="font-medium">Created:</span>
-                  <span className="ml-2">
-                    {new Date(project.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-                {project.updated_at !== project.created_at && (
-                  <div className="mt-2 flex items-center text-sm text-gray-500">
-                    <span className="font-medium">Last updated:</span>
-                    <span className="ml-2">
-                      {new Date(project.updated_at).toLocaleDateString()}
-                    </span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Modern Header */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl opacity-10"></div>
+            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+              <div className="flex items-start gap-4 flex-wrap">
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                  type="button"
+                  aria-label="Back to Projects"
+                >
+                  <FiArrowLeft className="w-6 h-6" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent leading-tight">
+                    {project.title}
+                  </h1>
+                  <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-8">
+                    <div className="mt-2 flex items-center text-sm text-gray-600 bg-gray-100/80 px-3 py-1.5 rounded-full">
+                      <span className="font-medium">Created:</span>
+                      <span className="ml-2 font-semibold">
+                        {new Date(project.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {project.updated_at !== project.created_at && (
+                      <div className="mt-2 flex items-center text-sm text-gray-600 bg-gray-100/80 px-3 py-1.5 rounded-full">
+                        <span className="font-medium">Updated:</span>
+                        <span className="ml-2 font-semibold">
+                          {new Date(project.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+                <div className="mt-4 flex flex-row space-x-3 md:mt-0 md:ml-4 items-start md:items-end">
+                  <Link
+                    to={`/projects/${project.id}/edit`}
+                    className="inline-flex items-center px-6 py-3 border border-gray-200 shadow-lg text-sm font-semibold rounded-2xl text-gray-700 bg-white/90 hover:bg-white hover:shadow-xl hover:scale-105 transition-all duration-200 backdrop-blur-sm"
+                  >
+                    <FiEdit className="mr-2 h-4 w-4" />
+                    Edit Project
+                  </Link>
+                  <button
+                    onClick={handleDelete}
+                    className="inline-flex items-center px-6 py-3 text-sm font-semibold rounded-2xl text-white bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                  >
+                    <FiTrash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 flex flex-row space-x-3 md:mt-0 md:ml-4 items-start md:items-end">
-              <Link
-                to={`/projects/${project.id}/edit`}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <FiEdit className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
-                Edit
-              </Link>
-              <button
-                onClick={handleDelete}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <FiTrash2 className="-ml-1 mr-2 h-5 w-5" />
-                Delete
-              </button>
             </div>
           </div>
 
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
+          {/* Project Information Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100">
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <FiTrendingUp className="w-5 h-5 text-white" />
+                </div>
                 Project Information
               </h3>
             </div>
-            <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-              <dl className="sm:divide-y sm:divide-gray-200">
-                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Description</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            <div className="p-8">
+              <dl className="space-y-8">
+                <div className="group">
+                  <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Description</dt>
+                  <dd className="text-gray-900 leading-relaxed bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
                     {project.description || 'No description provided'}
                   </dd>
                 </div>
                 {project.skills && project.skills.length > 0 && (
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">Skills</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      <div className="flex flex-wrap gap-2">
+                  <div className="group">
+                    <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Skills & Technologies</dt>
+                    <dd className="mt-1">
+                      <div className="flex flex-wrap gap-3">
                         {project.skills.map((skill) => (
                           <span
                             key={skill}
-                            className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                            className="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 border border-indigo-200 hover:shadow-md transition-all duration-200"
                           >
                             {skill}
                           </span>
@@ -822,17 +832,25 @@ export const ProjectDetailPage = () => {
 
                 {/* Extreme User Analysis Metadata */}
                 {project.design_research?.generated_at && (
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">Extreme User Analysis</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      <div className="space-y-1">
-                        <p>Generated on: {new Date(project.design_research.generated_at).toLocaleString()}</p>
+                  <div className="group">
+                    <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Extreme User Analysis</dt>
+                    <dd className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-green-700">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="font-semibold">Generated on: {new Date(project.design_research.generated_at).toLocaleString()}</span>
+                        </div>
                         {project.design_research.form && (
-                          <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                            <p className="font-medium text-green-800 mb-2">Generation Parameters:</p>
-                            <p className="text-sm"><span className="font-medium">Step:</span> {project.design_research.form.painPointStep}</p>
-                            <p className="text-sm"><span className="font-medium">Description:</span> {project.design_research.form.painPointDescription}</p>
-                            <p className="text-sm"><span className="font-medium">User Context:</span> {project.design_research.form.targetUserContext}</p>
+                          <div className="mt-4 p-4 bg-white/80 rounded-xl border border-green-300">
+                            <p className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                              Generation Parameters
+                            </p>
+                            <div className="space-y-2 text-sm">
+                              <p><span className="font-medium text-gray-700">Step:</span> <span className="text-gray-600">{project.design_research.form.painPointStep}</span></p>
+                              <p><span className="font-medium text-gray-700">Description:</span> <span className="text-gray-600">{project.design_research.form.painPointDescription}</span></p>
+                              <p><span className="font-medium text-gray-700">User Context:</span> <span className="text-gray-600">{project.design_research.form.targetUserContext}</span></p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -842,17 +860,25 @@ export const ProjectDetailPage = () => {
 
                 {/* Deep Empathy Research Metadata */}
                 {project.deep_empathy_data?.generated_at && (
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">Deep Empathy Research</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      <div className="space-y-1">
-                        <p>Generated on: {new Date(project.deep_empathy_data.generated_at).toLocaleString()}</p>
+                  <div className="group">
+                    <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Deep Empathy Research</dt>
+                    <dd className="bg-purple-50/80 p-6 rounded-2xl border border-purple-200">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-purple-700">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span className="font-semibold">Generated on: {new Date(project.deep_empathy_data.generated_at).toLocaleString()}</span>
+                        </div>
                         {project.deep_empathy_data.form && (
-                          <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                            <p className="font-medium text-purple-800 mb-2">Generation Parameters:</p>
-                            <p className="text-sm"><span className="font-medium">Prioritized Pain Point:</span> {project.deep_empathy_data.form.prioritizedPainPoint}</p>
-                            <p className="text-sm"><span className="font-medium">Description:</span> {project.deep_empathy_data.form.painPointDescription}</p>
-                            <p className="text-sm"><span className="font-medium">Selected Extreme User:</span> {project.deep_empathy_data.form.selectedExtremeUser}</p>
+                          <div className="mt-4 p-4 bg-white/80 rounded-xl border border-purple-300">
+                            <p className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                              Generation Parameters
+                            </p>
+                            <div className="space-y-2 text-sm">
+                              <p><span className="font-medium text-gray-700">Prioritized Pain Point:</span> <span className="text-gray-600">{project.deep_empathy_data.form.prioritizedPainPoint}</span></p>
+                              <p><span className="font-medium text-gray-700">Description:</span> <span className="text-gray-600">{project.deep_empathy_data.form.painPointDescription}</span></p>
+                              <p><span className="font-medium text-gray-700">Selected Extreme User:</span> <span className="text-gray-600">{project.deep_empathy_data.form.selectedExtremeUser}</span></p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -861,24 +887,32 @@ export const ProjectDetailPage = () => {
                 )}
 
                 {/* Presentable Slide */}
-                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Presentable Slide</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                <div className="group">
+                  <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Presentable Slide</dt>
+                  <dd className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600">
-                        {presentableSlide ? 'Slide generated and ready for viewing' : 'No slide generated yet'}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                          <FiTrendingUp className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {presentableSlide ? 'Slide generated and ready for viewing' : 'No slide generated yet'}
+                          </p>
+                          <p className="text-sm text-gray-600">Create professional presentations</p>
+                        </div>
+                      </div>
                       {project && project.id && (
                         presentableSlide ? (
                           <button
-                            className="px-3 py-1.5 rounded bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition"
+                            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
                             onClick={() => navigate(`/projects/${project.id}/slide`)}
                           >
                             View Slide
                           </button>
                         ) : (
                           <button
-                            className="px-3 py-1.5 rounded bg-yellow-500 text-white text-xs font-medium hover:bg-yellow-600 transition"
+                            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50"
                             onClick={handleGenerateSlide}
                             disabled={isGenerating}
                           >
@@ -891,16 +925,24 @@ export const ProjectDetailPage = () => {
                 </div>
 
                 {/* Project Canvas */}
-                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Project Canvas</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                <div className="group">
+                  <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Project Canvas</dt>
+                  <dd className="bg-indigo-50/80 p-6 rounded-2xl border border-indigo-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600">
-                        {project.canvas ? 'Canvas available for collaboration' : 'No canvas created yet'}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                          <FiPlus className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {project.canvas ? 'Canvas available for collaboration' : 'No canvas created yet'}
+                          </p>
+                          <p className="text-sm text-gray-600">Collaborative workspace for your team</p>
+                        </div>
+                      </div>
                       {project && project.id && (
                         <button
-                          className="px-3 py-1.5 rounded bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition"
+                          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
                           onClick={() => navigate(`/projects/${project.id}/canvas`)}
                         >
                           {project.canvas ? 'View Canvas' : 'Create Canvas'}
@@ -913,64 +955,64 @@ export const ProjectDetailPage = () => {
             </div>
           </div>
 
-          {/* analysis Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Analysis</h3>
+          {/* Analysis Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                    <FiTrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">Project Analysis</h3>
+                    <p className="text-sm text-gray-600">Comprehensive project assessments and insights</p>
+                  </div>
+                </div>
+                <button
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                  onClick={() => setShowAssessmentModal(true)}
+                >
+                  <FiTrendingUp className="mr-2 h-5 w-5" />
+                  Analyse Project
+                </button>
               </div>
-              <button
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowAssessmentModal(true)}
-              >
-                <FiTrendingUp className="-ml-1 mr-2 h-5 w-5" />
-                Analyse Project
-              </button>
             </div>
-            <div className="px-4 py-0">
+            <div className="p-8">
               {analysis.length > 0 ? (
-                <>
-                  <div className="mb-8">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment Name</th>
-                          <th className="px-4 py-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[...analysis]
-                          .map((a, idx) => ({ a, idx }))
-                          .sort((x, y) => {
-                            const d1 = new Date(x.a.createdAt || x.a.updatedAt || 0).getTime();
-                            const d2 = new Date(y.a.createdAt || y.a.updatedAt || 0).getTime();
-                            return d2 - d1;
-                          })
-                          .map(({ a, idx }, arrIdx, arr) => {
-                            // Determine assessment name
-                            let name = a.name;
-                            if (!name) {
-                              if (arr.length > 0 && arrIdx === arr.length - 1) {
-                                name = 'Initial Analysis';
-                              } else {
-                                name = `Assessment - ${a.randomId || Math.floor(1000 + Math.random() * 9000)}`;
-                                a.randomId = name.split(' - ')[1];
-                              }
-                            }
-                            return (
-                              <tr key={idx} className="border-b">
-                                <td className="px-4 py-3 text-sm text-gray-700">
-                                  {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
+                <div className="space-y-4">
+                  {[...analysis]
+                    .map((a, idx) => ({ a, idx }))
+                    .sort((x, y) => {
+                      const d1 = new Date(x.a.createdAt || x.a.updatedAt || 0).getTime();
+                      const d2 = new Date(y.a.createdAt || y.a.updatedAt || 0).getTime();
+                      return d2 - d1;
+                    })
+                    .map(({ a, idx }, arrIdx, arr) => {
+                      // Determine assessment name
+                      let name = a.name;
+                      if (!name) {
+                        if (arr.length > 0 && arrIdx === arr.length - 1) {
+                          name = 'Initial Analysis';
+                        } else {
+                          name = `Assessment - ${a.randomId || Math.floor(1000 + Math.random() * 9000)}`;
+                          a.randomId = name.split(' - ')[1];
+                        }
+                      }
+                      return (
+                        <div key={idx} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                                  <FiTrendingUp className="w-6 h-6 text-white" />
+                                </div>
+                                <div className="flex-1">
                                   {editingIdx === idx ? (
                                     <input
-                                      className="border rounded px-2 py-1 text-sm"
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                       value={editName}
                                       onChange={e => setEditName(e.target.value)}
                                       onBlur={() => {
-                                        // Save name on blur
                                         a.name = editName;
                                         setEditingIdx(null);
                                       }}
@@ -983,339 +1025,420 @@ export const ProjectDetailPage = () => {
                                       autoFocus
                                     />
                                   ) : (
-                                    name
+                                    <h4 className="text-lg font-semibold text-gray-900">{name}</h4>
                                   )}
-                                </td>
-                                <td className="px-4 py-3 flex gap-2">
-                                  <button
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded text-sm"
-                                    onClick={() => setViewAssessmentIdx(idx)}
-                                  >
-                                    View Analysis
-                                  </button>
-                                  <button
-                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded text-sm flex items-center"
-                                    onClick={() => {
-                                      setEditingIdx(idx);
-                                      setEditName(a.name || name);
-                                    }}
-                                    title="Edit Assessment Name"
-                                  >
-                                    <FiEdit className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-sm flex items-center"
-                                    onClick={() => {
-                                      // Remove assessment from list (frontend only)
-                                      if (window.confirm('Delete this assessment?')) {
-                                        const updated = [...analysis];
-                                        updated.splice(idx, 1);
-                                        if (project) project.analysis = updated;
-                                        setViewAssessmentIdx(null);
-                                        setEditingIdx(null);
-                                      }
-                                    }}
-                                    title="Delete Assessment"
-                                  >
-                                    <FiTrash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button
+                                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                                onClick={() => setViewAssessmentIdx(idx)}
+                              >
+                                View Analysis
+                              </button>
+                              <button
+                                className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200"
+                                onClick={() => {
+                                  setEditingIdx(idx);
+                                  setEditName(a.name || name);
+                                }}
+                                title="Edit Assessment Name"
+                              >
+                                <FiEdit className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200"
+                                onClick={() => {
+                                  if (window.confirm('Delete this assessment?')) {
+                                    const updated = [...analysis];
+                                    updated.splice(idx, 1);
+                                    if (project) project.analysis = updated;
+                                    setViewAssessmentIdx(null);
+                                    setEditingIdx(null);
+                                  }
+                                }}
+                                title="Delete Assessment"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               ) : (
-                <div className="text-gray-500 px-2 py-7">No analysis available for this project.</div>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <FiTrendingUp className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analysis Available</h3>
+                  <p className="text-gray-600">Start by analyzing your project to get insights and recommendations.</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* As is Map Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">As is Map</h3>
-            </div>
-            <div className="px-8 py-5">
-              <div className="text-gray-700 text-sm mb-4">
-                Generate an "As is Map" to visualize the current state of your project or process.
+          {/* As-Is Map Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">As-Is Map</h3>
+                  <p className="text-sm text-gray-600">Visualize the current state of your project or process</p>
+                </div>
               </div>
-
+            </div>
+            <div className="p-8">
               {!hasAsIsMapData() ? (
-                <AsIsMapForm
-                  projectId={project?.id || ''}
-                  prompt={asIsMapPrompt}
-                  onPromptChange={setAsIsMapPrompt}
-                  onGenerate={(data) => {
-                    setAsIsMapData(data);
-                    setAsIsMapPrompt('');
-                    // Navigate to the dedicated As-Is Map page
-                    navigate(`/projects/${project?.id}/as_is_map`);
-                  }}
-                  onGeneratingChange={setIsGeneratingAsIsMap}
-                  isGenerating={isGeneratingAsIsMap}
-                />
-              ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                    onClick={() => {
-                      // Navigate to the dedicated As-Is Map page
+                <div className="space-y-6">
+                  <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Generate an "As-Is Map" to visualize the current state of your project or process. This helps identify pain points and opportunities for improvement.
+                    </p>
+                  </div>
+                  <AsIsMapForm
+                    projectId={project?.id || ''}
+                    prompt={asIsMapPrompt}
+                    onPromptChange={setAsIsMapPrompt}
+                    onGenerate={(data) => {
+                      setAsIsMapData(data);
+                      setAsIsMapPrompt('');
                       navigate(`/projects/${project?.id}/as_is_map`);
                     }}
-                  >
-                    View AS-IS Map
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
-                    onClick={() => {
-                      setAsIsMapData(null);
-                      setAsIsMapPrompt('');
-                    }}
-                  >
-                    Generate New
-                  </button>
+                    onGeneratingChange={setIsGeneratingAsIsMap}
+                    isGenerating={isGeneratingAsIsMap}
+                  />
+                </div>
+              ) : (
+                <div className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">As-Is Map Generated</h4>
+                        <p className="text-sm text-gray-600">Your process visualization is ready for viewing</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/as_is_map`)}
+                      >
+                        View AS-IS Map
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setAsIsMapData(null);
+                          setAsIsMapPrompt('');
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Extreme User Generator for Design Research Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
-            <div className="px-4 py-5 sm:px-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Extreme User Generator for Design Research</h3>
-                <p className="text-gray-700 text-sm mt-2">
-                  Generate extreme user personas to identify edge cases and design opportunities for your project.
-                </p>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                    <FiPlus className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">Extreme User Generator</h3>
+                    <p className="text-sm text-gray-600">Generate extreme user personas to identify edge cases and design opportunities</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                  onClick={() => setShowPainPointsModal(true)}
+                  title="Choose from AS-IS Map Pain Points"
+                >
+                  Choose Pain Point
+                </button>
               </div>
-              <button
-                type="button"
-                className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-50"
-                onClick={() => setShowPainPointsModal(true)}
-                title="Choose from AS-IS Map Pain Points"
-              >
-                Choose
-              </button>
             </div>
-            <div className="px-8 py-5">
+            <div className="p-8">
               {!hasExtremeUserData() ? (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="painPointStep" className="block text-sm font-medium text-gray-700 mb-2">
-                      Pain Point Step
-                    </label>
-                    <input
-                      type="text"
-                      id="painPointStep"
-                      value={extremeUserForm.painPointStep}
-                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointStep: e.target.value })}
-                      placeholder="e.g., Step 2.1: Harvest timing decisions"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                <div className="space-y-6">
+                  <div className="bg-purple-50/80 p-6 rounded-2xl border border-purple-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Generate extreme user personas to identify edge cases and design opportunities for your project. This helps you understand the full spectrum of user needs.
+                    </p>
                   </div>
-                  <div>
-                    <label htmlFor="painPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                      Pain Point Description
-                    </label>
-                    <textarea
-                      id="painPointDescription"
-                      value={extremeUserForm.painPointDescription}
-                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointDescription: e.target.value })}
-                      rows={3}
-                      placeholder="Describe the specific pain point or challenge..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="targetUserContext" className="block text-sm font-medium text-gray-700 mb-2">
-                      Target User Context
-                    </label>
-                    <textarea
-                      id="targetUserContext"
-                      value={extremeUserForm.targetUserContext}
-                      onChange={(e) => setExtremeUserForm({ ...extremeUserForm, targetUserContext: e.target.value })}
-                      rows={3}
-                      placeholder="Describe the user's context, constraints, and environment..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleGenerateExtremeUser}
-                      disabled={isGeneratingExtremeUser}
-                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
-                    >
-                      {isGeneratingExtremeUser ? 'Generating...' : 'Generate Extreme User'}
-                    </button>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="painPointStep" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Step
+                      </label>
+                      <input
+                        type="text"
+                        id="painPointStep"
+                        value={extremeUserForm.painPointStep}
+                        onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointStep: e.target.value })}
+                        placeholder="e.g., Step 2.1: Harvest timing decisions"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="painPointDescription" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Description
+                      </label>
+                      <textarea
+                        id="painPointDescription"
+                        value={extremeUserForm.painPointDescription}
+                        onChange={(e) => setExtremeUserForm({ ...extremeUserForm, painPointDescription: e.target.value })}
+                        rows={3}
+                        placeholder="Describe the specific pain point or challenge..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="targetUserContext" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Target User Context
+                      </label>
+                      <textarea
+                        id="targetUserContext"
+                        value={extremeUserForm.targetUserContext}
+                        onChange={(e) => setExtremeUserForm({ ...extremeUserForm, targetUserContext: e.target.value })}
+                        rows={3}
+                        placeholder="Describe the user's context, constraints, and environment..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGenerateExtremeUser}
+                        disabled={isGeneratingExtremeUser}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingExtremeUser ? 'Generating...' : 'Generate Extreme User'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                    onClick={() => {
-                      // Navigate to the dedicated Extreme User page
-                      navigate(`/projects/${project?.id}/extreme_user`);
-                    }}
-                  >
-                    View Report
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
-                    onClick={() => {
-                      setExtremeUserData(null);
-                      setExtremeUserForm({
-                        painPointStep: '',
-                        painPointDescription: '',
-                        targetUserContext: ''
-                      });
-                    }}
-                  >
-                    Generate New
-                  </button>
+                <div className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Extreme User Analysis Generated</h4>
+                        <p className="text-sm text-gray-600">Your user personas and insights are ready for viewing</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/extreme_user`)}
+                      >
+                        View Report
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setExtremeUserData(null);
+                          setExtremeUserForm({
+                            painPointStep: '',
+                            painPointDescription: '',
+                            targetUserContext: ''
+                          });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Universal Deep Empathy Research Generator for Primary Research Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Universal Deep Empathy Research Generator for Primary Research</h3>
-              <p className="text-gray-700 text-sm mt-2">
-                Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow.
-              </p>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Deep Empathy Research Generator</h3>
+                  <p className="text-sm text-gray-600">Generate universal deep empathy insights for primary research</p>
+                </div>
+              </div>
             </div>
-            <div className="px-8 py-5">
+            <div className="p-8">
               {!hasDeepEmpathyData() ? (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="prioritizedPainPoint" className="block text-sm font-medium text-gray-700 mb-2">
-                      Prioritized Pain Point
-                    </label>
-                    <input
-                      type="text"
-                      id="prioritizedPainPoint"
-                      value={deepEmpathyForm.prioritizedPainPoint}
-                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
-                      placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                <div className="space-y-6">
+                  <div className="bg-indigo-50/80 p-6 rounded-2xl border border-indigo-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow. This helps you understand user motivations and behaviors at a deeper level.
+                    </p>
                   </div>
-                  <div>
-                    <label htmlFor="deepPainPointDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                      Pain Point Description
-                    </label>
-                    <textarea
-                      id="deepPainPointDescription"
-                      value={deepEmpathyForm.painPointDescription}
-                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, painPointDescription: e.target.value })}
-                      rows={3}
-                      placeholder="Transportation barriers, long distances, high costs preventing initial prenatal care access"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="selectedExtremeUser" className="block text-sm font-medium text-gray-700 mb-2">
-                      Selected Extreme User
-                    </label>
-                    <textarea
-                      id="selectedExtremeUser"
-                      value={deepEmpathyForm.selectedExtremeUser}
-                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
-                      rows={3}
-                      placeholder="The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleGenerateDeepEmpathy}
-                      disabled={isGeneratingDeepEmpathy}
-                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
-                    >
-                      {isGeneratingDeepEmpathy ? 'Generating...' : 'Generate Deep Empathy Research'}
-                    </button>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="prioritizedPainPoint" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Prioritized Pain Point
+                      </label>
+                      <input
+                        type="text"
+                        id="prioritizedPainPoint"
+                        value={deepEmpathyForm.prioritizedPainPoint}
+                        onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
+                        placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="deepPainPointDescription" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Description
+                      </label>
+                      <textarea
+                        id="deepPainPointDescription"
+                        value={deepEmpathyForm.painPointDescription}
+                        onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, painPointDescription: e.target.value })}
+                        rows={3}
+                        placeholder="Transportation barriers, long distances, high costs preventing initial prenatal care access"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="selectedExtremeUser" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Selected Extreme User
+                      </label>
+                      <textarea
+                        id="selectedExtremeUser"
+                        value={deepEmpathyForm.selectedExtremeUser}
+                        onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
+                        rows={3}
+                        placeholder="The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGenerateDeepEmpathy}
+                        disabled={isGeneratingDeepEmpathy}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingDeepEmpathy ? 'Generating...' : 'Generate Deep Empathy Research'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                    onClick={() => {
-                      // Navigate to the dedicated Deep Empathy page
-                      navigate(`/projects/${project?.id}/deep_empathy`);
-                    }}
-                  >
-                    View Deep Empathy Research
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
-                    onClick={() => {
-                      setDeepEmpathyData(null);
-                      setDeepEmpathyForm({
-                        prioritizedPainPoint: '',
-                        painPointDescription: '',
-                        selectedExtremeUser: ''
-                      });
-                    }}
-                  >
-                    Generate New
-                  </button>
+                <div className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Deep Empathy Research Generated</h4>
+                        <p className="text-sm text-gray-600">Your empathy insights and research framework are ready</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/deep_empathy`)}
+                      >
+                        View Deep Empathy Research
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setDeepEmpathyData(null);
+                          setDeepEmpathyForm({
+                            prioritizedPainPoint: '',
+                            painPointDescription: '',
+                            selectedExtremeUser: ''
+                          });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Chat Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Start Chat</h3>
-              <p className="text-gray-700 text-sm mt-2">
-                Start a conversation about your project with the same input fields as the Deep Empathy Research Generator.
-              </p>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Start Chat</h3>
+                  <p className="text-sm text-gray-600">Start a conversation about your project with AI assistance</p>
+                </div>
+              </div>
             </div>
-            <div className="px-8 py-5">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="chatPrioritizedPainPoint" className="block text-sm font-medium text-gray-700 mb-2">
-                    Prioritized Pain Point
-                  </label>
-                  <input
-                    type="text"
-                    id="chatPrioritizedPainPoint"
-                    value={deepEmpathyForm.prioritizedPainPoint}
-                    onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
-                    placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            <div className="p-8">
+              <div className="space-y-6">
+                <div className="bg-cyan-50/80 p-6 rounded-2xl border border-cyan-200">
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Start a conversation about your project with the same input fields as the Deep Empathy Research Generator. Get instant AI-powered insights and recommendations.
+                  </p>
                 </div>
-                <div>
-                  <label htmlFor="chatSelectedExtremeUser" className="block text-sm font-medium text-gray-700 mb-2">
-                    Selected Extreme User
-                  </label>
-                  <textarea
-                    id="chatSelectedExtremeUser"
-                    value={deepEmpathyForm.selectedExtremeUser}
-                    onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
-                    rows={3}
-                    placeholder="The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
-                    onClick={() => {
-                      // Navigate to the chat page
-                      navigate(`/projects/${project?.id}/chat`);
-                    }}
-                  >
-                    Start Chat
-                  </button>
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="chatPrioritizedPainPoint" className="block text-sm font-semibold text-gray-700 mb-3">
+                      Prioritized Pain Point
+                    </label>
+                    <input
+                      type="text"
+                      id="chatPrioritizedPainPoint"
+                      value={deepEmpathyForm.prioritizedPainPoint}
+                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, prioritizedPainPoint: e.target.value })}
+                      placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="chatSelectedExtremeUser" className="block text-sm font-semibold text-gray-700 mb-3">
+                      Selected Extreme User
+                    </label>
+                    <textarea
+                      id="chatSelectedExtremeUser"
+                      value={deepEmpathyForm.selectedExtremeUser}
+                      onChange={(e) => setDeepEmpathyForm({ ...deepEmpathyForm, selectedExtremeUser: e.target.value })}
+                      rows={3}
+                      placeholder="The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none transition-all duration-200"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+                      onClick={() => navigate(`/projects/${project?.id}/chat`)}
+                    >
+                      Start Chat
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1323,141 +1446,191 @@ export const ProjectDetailPage = () => {
 
 
           {/* Psychological Analysis Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Psychological Analysis</h3>
-              <p className="text-gray-700 text-sm mt-2">
-                Transform unprocessed research data into deep behavioral insights through psychological analysis.
-              </p>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-orange-50 to-red-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Psychological Analysis</h3>
+                  <p className="text-sm text-gray-600">Transform research data into deep behavioral insights</p>
+                </div>
+              </div>
             </div>
-            <div className="px-8 py-5">
+            <div className="p-8">
               {!hasPsychologicalAnalysisData() ? (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="psychologicalPainPointInvestigated" className="block text-sm font-medium text-gray-700 mb-2">
-                      Pain Point Investigated
-                    </label>
-                    <input
-                      type="text"
-                      id="psychologicalPainPointInvestigated"
-                      value={psychologicalAnalysisForm.painPointInvestigated}
-                      onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
-                      placeholder="e.g., Young student accessing online education from rural area"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                <div className="space-y-6">
+                  <div className="bg-orange-50/80 p-6 rounded-2xl border border-orange-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Transform unprocessed research data into deep behavioral insights through psychological analysis. This helps you understand the underlying motivations and patterns in user behavior.
+                    </p>
                   </div>
-                  <div>
-                    <label htmlFor="psychologicalExtremeUserType" className="block text-sm font-medium text-gray-700 mb-2">
-                      Extreme User Type
-                    </label>
-                    <input
-                      type="text"
-                      id="psychologicalExtremeUserType"
-                      value={psychologicalAnalysisForm.extremeUserType}
-                      onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
-                      placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleGeneratePsychologicalAnalysis}
-                      disabled={isGeneratingPsychologicalAnalysis}
-                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
-                    >
-                      {isGeneratingPsychologicalAnalysis ? 'Generating...' : 'Generate Psychological Analysis'}
-                    </button>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="psychologicalPainPointInvestigated" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Investigated
+                      </label>
+                      <input
+                        type="text"
+                        id="psychologicalPainPointInvestigated"
+                        value={psychologicalAnalysisForm.painPointInvestigated}
+                        onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                        placeholder="e.g., Young student accessing online education from rural area"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="psychologicalExtremeUserType" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Extreme User Type
+                      </label>
+                      <input
+                        type="text"
+                        id="psychologicalExtremeUserType"
+                        value={psychologicalAnalysisForm.extremeUserType}
+                        onChange={(e) => setPsychologicalAnalysisForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                        placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGeneratePsychologicalAnalysis}
+                        disabled={isGeneratingPsychologicalAnalysis}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingPsychologicalAnalysis ? 'Generating...' : 'Generate Psychological Analysis'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                    onClick={() => navigate(`/projects/${project?.id}/psychological_analysis`)}
-                  >
-                    View Psychological Analysis
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
-                    onClick={() => {
-                      setPsychologicalAnalysisData(null);
-                      setPsychologicalAnalysisForm({
-                        painPointInvestigated: '',
-                        extremeUserType: ''
-                      });
-                    }}
-                  >
-                    Generate New
-                  </button>
+                <div className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Psychological Analysis Generated</h4>
+                        <p className="text-sm text-gray-600">Your behavioral insights and analysis are ready for viewing</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/psychological_analysis`)}
+                      >
+                        View Psychological Analysis
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setPsychologicalAnalysisData(null);
+                          setPsychologicalAnalysisForm({
+                            painPointInvestigated: '',
+                            extremeUserType: ''
+                          });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Transformation Framework Section */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Transformation Framework</h3>
-              <p className="text-gray-700 text-sm mt-2">
-                Convert insights into an actionable transformation framework tailored to the project.
-              </p>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Transformation Framework</h3>
+                  <p className="text-sm text-gray-600">Convert insights into actionable transformation strategies</p>
+                </div>
+              </div>
             </div>
-            <div className="px-8 py-5">
+            <div className="p-8">
               {!hasTransformationFrameworkData() ? (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="tfPainPointInvestigated" className="block text-sm font-medium text-gray-700 mb-2">
-                      Pain Point Investigated
-                    </label>
-                    <input
-                      type="text"
-                      id="tfPainPointInvestigated"
-                      value={transformationFrameworkForm.painPointInvestigated}
-                      onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
-                      placeholder="e.g., Young student accessing online education from rural area"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                <div className="space-y-6">
+                  <div className="bg-teal-50/80 p-6 rounded-2xl border border-teal-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Convert insights into an actionable transformation framework tailored to the project. This helps you create a structured approach to implementing changes and improvements.
+                    </p>
                   </div>
-                  <div>
-                    <label htmlFor="tfExtremeUserType" className="block text-sm font-medium text-gray-700 mb-2">
-                      Extreme User Type
-                    </label>
-                    <input
-                      type="text"
-                      id="tfExtremeUserType"
-                      value={transformationFrameworkForm.extremeUserType}
-                      onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
-                      placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleGenerateTransformationFramework}
-                      disabled={isGeneratingTransformationFramework}
-                      className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
-                    >
-                      {isGeneratingTransformationFramework ? 'Generating...' : 'Generate Transformation Framework'}
-                    </button>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="tfPainPointInvestigated" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Investigated
+                      </label>
+                      <input
+                        type="text"
+                        id="tfPainPointInvestigated"
+                        value={transformationFrameworkForm.painPointInvestigated}
+                        onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                        placeholder="e.g., Young student accessing online education from rural area"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="tfExtremeUserType" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Extreme User Type
+                      </label>
+                      <input
+                        type="text"
+                        id="tfExtremeUserType"
+                        value={transformationFrameworkForm.extremeUserType}
+                        onChange={(e) => setTransformationFrameworkForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                        placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGenerateTransformationFramework}
+                        disabled={isGeneratingTransformationFramework}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingTransformationFramework ? 'Generating...' : 'Generate Transformation Framework'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="px-4 py-2 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                    onClick={() => navigate(`/projects/${project?.id}/transformation_framework`)}
-                  >
-                    View Transformation Framework
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded bg-gray-600 text-white font-medium hover:bg-gray-700 transition"
-                    onClick={() => {
-                      setTransformationFrameworkData(null);
-                      setTransformationFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
-                    }}
-                  >
-                    Generate New
-                  </button>
+                <div className="bg-green-50/80 p-6 rounded-2xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Transformation Framework Generated</h4>
+                        <p className="text-sm text-gray-600">Your actionable transformation strategies are ready for implementation</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/transformation_framework`)}
+                      >
+                        View Transformation Framework
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setTransformationFrameworkData(null);
+                          setTransformationFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1465,50 +1638,50 @@ export const ProjectDetailPage = () => {
 
           {/* Assessment Modal */}
           <HorizontalModal open={showAssessmentModal} onClose={() => setShowAssessmentModal(false)}>
-            <div className="p-6 no-scrollbar">
-              <h2 className="text-2xl font-bold mb-6 text-center">Assess Project</h2>          <ResourceFrameworkSelector
-                onTierSelect={setSelectedTier}
-                selectedTier={selectedTier as any}
-              />
-              <div className="flex justify-end mt-8">
-                <button
-                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded disabled:opacity-50"
-                  disabled={!selectedTier}
-                  onClick={async () => {
-                    if (!project) return;
-                    // Call the new Supabase function to assess the project
-                    // Example:
-                    // const { data, error } = await supabase.functions.invoke('assess-project', {
-                    //   body: {
-                    //     hmw: project.title,
-                    //     description: project.description,
-                    //     skills: project.skills,
-                    //     tier: selectedTier
-                    //   }
-                    // });
-                    // For now, simulate assessment result:
-                    const now = new Date();
-                    let newAssessment = {
-                      name: '',
-                      createdAt: now.toISOString(),
-                      ...project,
-                      tier: selectedTier,
-                      // ...other assessment fields from backend
-                    };
-                    if (!project.analysis || project.analysis.length === 0) {
-                      newAssessment.name = 'Initial Analysis';
-                      newAssessment.createdAt = project.created_at;
-                    } else {
-                      newAssessment.name = `Assessment - ${Math.floor(1000 + Math.random() * 9000)}`;
-                    }
-                    // Add to analysis array
-                    const updated = [...(project.analysis || []), newAssessment];
-                    project.analysis = updated;
-                    setShowAssessmentModal(false);
-                  }}
-                >
-                  Assess
-                </button>
+            <div className="p-8 no-scrollbar bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <FiTrendingUp className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Assess Project</h2>
+                  <p className="text-gray-600">Choose an assessment tier to analyze your project comprehensively</p>
+                </div>
+                
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
+                  <ResourceFrameworkSelector
+                    onTierSelect={setSelectedTier}
+                    selectedTier={selectedTier as any}
+                  />
+                </div>
+                
+                <div className="flex justify-center mt-8">
+                  <button
+                    className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!selectedTier}
+                    onClick={async () => {
+                      if (!project) return;
+                      const now = new Date();
+                      let newAssessment = {
+                        name: '',
+                        createdAt: now.toISOString(),
+                        ...project,
+                        tier: selectedTier,
+                      };
+                      if (!project.analysis || project.analysis.length === 0) {
+                        newAssessment.name = 'Initial Analysis';
+                        newAssessment.createdAt = project.created_at;
+                      } else {
+                        newAssessment.name = `Assessment - ${Math.floor(1000 + Math.random() * 9000)}`;
+                      }
+                      const updated = [...(project.analysis || []), newAssessment];
+                      project.analysis = updated;
+                      setShowAssessmentModal(false);
+                    }}
+                  >
+                    {selectedTier ? `Start ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Assessment` : 'Select Assessment Tier'}
+                  </button>
+                </div>
               </div>
             </div>
           </HorizontalModal>
