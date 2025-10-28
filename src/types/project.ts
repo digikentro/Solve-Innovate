@@ -15,6 +15,9 @@ export interface Project {
   behavioral_insights_data?: any;
   psychological_analysis?: any;
   transformation_framework?: any;
+  hmw_framework?: any;
+  Behaviour_Framework?: any;
+  HMW_Ideation_Framework?: any;
   canvas?: any;
   metadata?: any;
   chatbox?: Array<{

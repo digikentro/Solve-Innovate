@@ -45,7 +45,9 @@ export const ProjectDetailPage = () => {
   const [extremeUserForm, setExtremeUserForm] = useState({
     painPointStep: '',
     painPointDescription: '',
-    targetUserContext: ''
+    targetUserContext: '',
+    age: '',
+    location: ''
   });
   // Deep Empathy Research Generator states
   const [deepEmpathyData, setDeepEmpathyData] = useState<any | null>(null);
@@ -79,6 +81,22 @@ export const ProjectDetailPage = () => {
   const [transformationFrameworkData, setTransformationFrameworkData] = useState<any | null>(null);
   const [isGeneratingTransformationFramework, setIsGeneratingTransformationFramework] = useState(false);
   const [transformationFrameworkForm, setTransformationFrameworkForm] = useState({
+    painPointInvestigated: '',
+    extremeUserType: ''
+  });
+
+  // Outcome-to-Behavior HMW Framework Generator states
+  const [hmwFrameworkData, setHmwFrameworkData] = useState<any | null>(null);
+  const [isGeneratingHmwFramework, setIsGeneratingHmwFramework] = useState(false);
+  const [hmwFrameworkForm, setHmwFrameworkForm] = useState({
+    painPointInvestigated: '',
+    extremeUserType: ''
+  });
+
+  // HMW Ideation Framework Generator states
+  const [isGeneratingHmwIdeation, setIsGeneratingHmwIdeation] = useState(false);
+  const [hmwIdeationData, setHmwIdeationData] = useState<any | null>(null);
+  const [hmwIdeationForm, setHmwIdeationForm] = useState({
     painPointInvestigated: '',
     extremeUserType: ''
   });
@@ -279,6 +297,51 @@ export const ProjectDetailPage = () => {
     return false;
   };
 
+  // Helper: check if HMW framework data exists
+  const hasHMWFrameworkData = () => {
+    if (hmwFrameworkData) return true;
+    
+    if (project?.Behaviour_Framework) {
+      if (typeof project.Behaviour_Framework === 'string') {
+        try {
+          const parsed = JSON.parse(project.Behaviour_Framework);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse Behaviour_Framework string:', error);
+          return false;
+        }
+      }
+      if (typeof project.Behaviour_Framework === 'object' && project.Behaviour_Framework.content) {
+        return Object.keys(project.Behaviour_Framework.content).length > 0;
+      }
+    }
+    
+    console.log('ProjectDetailPage - hasHMWFrameworkData: false (no data found)');
+    return false;
+  };
+
+  // Helper: check if HMW Ideation framework data exists
+  const hasHMWIdeationData = () => {
+    if (hmwIdeationData) return true;
+    
+    if (project?.HMW_Ideation_Framework) {
+      if (typeof project.HMW_Ideation_Framework === 'string') {
+        try {
+          const parsed = JSON.parse(project.HMW_Ideation_Framework);
+          return parsed && parsed.content && Object.keys(parsed.content).length > 0;
+        } catch (error) {
+          console.error('Failed to parse HMW_Ideation_Framework string:', error);
+          return false;
+        }
+      }
+      if (typeof project.HMW_Ideation_Framework === 'object' && project.HMW_Ideation_Framework.content) {
+        return Object.keys(project.HMW_Ideation_Framework.content).length > 0;
+      }
+    }
+    
+    return false;
+  };
+
   // Aliases for flexible schemas
   const USER_FIELD_ALIASES = {
     demographics: ['Demographics', 'Demographic', 'Profile', 'Demographic Details'],
@@ -335,6 +398,56 @@ export const ProjectDetailPage = () => {
             }
           } else if (data.psychological_analysis.content) {
             setPsychologicalAnalysisData(data.psychological_analysis);
+          }
+        }
+        if (data.transformation_framework) {
+          // Handle case where transformation_framework might be stored as a JSON string
+          if (typeof data.transformation_framework === 'string') {
+            try {
+              const parsed = JSON.parse(data.transformation_framework);
+              if (parsed && parsed.content && Object.keys(parsed.content).length > 0) {
+                setTransformationFrameworkData(parsed);
+              }
+            } catch (error) {
+              console.error('Failed to parse transformation_framework string:', error);
+            }
+          } else if (data.transformation_framework.content) {
+            setTransformationFrameworkData(data.transformation_framework);
+          }
+        }
+        if (data.Behaviour_Framework) {
+          console.log('ProjectDetailPage - Raw Behaviour_Framework data:', data.Behaviour_Framework);
+          
+          // Handle case where Behaviour_Framework might be stored as a JSON string
+          if (typeof data.Behaviour_Framework === 'string') {
+            try {
+              const parsed = JSON.parse(data.Behaviour_Framework);
+              console.log('ProjectDetailPage - Parsed Behaviour_Framework:', parsed);
+              if (parsed && parsed.content && Object.keys(parsed.content).length > 0) {
+                setHmwFrameworkData(parsed);
+                console.log('ProjectDetailPage - Set HMW framework data (from string)');
+              }
+            } catch (error) {
+              console.error('Failed to parse Behaviour_Framework string:', error);
+            }
+          } else if (data.Behaviour_Framework.content) {
+            console.log('ProjectDetailPage - Setting HMW framework data (from object)');
+            setHmwFrameworkData(data.Behaviour_Framework);
+          }
+        }
+        if (data.HMW_Ideation_Framework) {
+          // Handle case where HMW_Ideation_Framework might be stored as a JSON string
+          if (typeof data.HMW_Ideation_Framework === 'string') {
+            try {
+              const parsed = JSON.parse(data.HMW_Ideation_Framework);
+              if (parsed && parsed.content && Object.keys(parsed.content).length > 0) {
+                setHmwIdeationData(parsed);
+              }
+            } catch (error) {
+              console.error('Failed to parse HMW_Ideation_Framework string:', error);
+            }
+          } else if (data.HMW_Ideation_Framework.content) {
+            setHmwIdeationData(data.HMW_Ideation_Framework);
           }
         }
       } catch (error) {
@@ -394,7 +507,7 @@ export const ProjectDetailPage = () => {
 
 
   const handleGenerateExtremeUser = async () => {
-    if (!extremeUserForm.painPointStep.trim() || !extremeUserForm.painPointDescription.trim() || !extremeUserForm.targetUserContext.trim()) {
+    if (!extremeUserForm.painPointStep.trim() || !extremeUserForm.painPointDescription.trim() || !extremeUserForm.targetUserContext.trim() || !extremeUserForm.age.trim() || !extremeUserForm.location.trim()) {
       toast.error('Please fill in all fields for extreme user generation.');
       return;
     }
@@ -405,7 +518,9 @@ export const ProjectDetailPage = () => {
         "project_id": project?.id || '',
         "Pain Point Step": extremeUserForm.painPointStep,
         "Pain Point Description": extremeUserForm.painPointDescription,
-        "Target User Context": extremeUserForm.targetUserContext
+        "Target User Context": extremeUserForm.targetUserContext,
+        "age": parseInt(extremeUserForm.age),
+        "location": extremeUserForm.location
       };
 
       // Log the request to console
@@ -436,7 +551,9 @@ export const ProjectDetailPage = () => {
       setExtremeUserForm({
         painPointStep: '',
         painPointDescription: '',
-        targetUserContext: ''
+        targetUserContext: '',
+        age: '',
+        location: ''
       });
     } catch (error) {
       console.error('Error generating Extreme User:', error);
@@ -705,6 +822,117 @@ export const ProjectDetailPage = () => {
       }
     } finally {
       setIsGeneratingTransformationFramework(false);
+    }
+  };
+
+  const handleGenerateHMWFramework = async () => {
+    if (!hmwFrameworkForm.painPointInvestigated.trim() || !hmwFrameworkForm.extremeUserType.trim()) {
+      toast.error('Please fill in all fields for Outcome-to-Behavior HMW Framework generation.');
+      return;
+    }
+
+    setIsGeneratingHmwFramework(true);
+    try {
+      const requestBody = {
+        project_id: project?.id || '',
+        painPointInvestigated: hmwFrameworkForm.painPointInvestigated,
+        extremeUserType: hmwFrameworkForm.extremeUserType
+      };
+
+      console.log('Sending HMW Framework Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/hmw_framework', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('HMW Framework response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        const responseText = await response.text();
+        console.error('Raw response:', responseText);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      setHmwFrameworkData(data);
+      toast.success('Outcome-to-Behavior HMW Framework generated successfully!');
+      navigate(`/projects/${project?.id}/hmw_framework`);
+      setHmwFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+    } catch (error) {
+      console.error('Error generating HMW Framework:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to generate HMW Framework: ${error.message}`);
+      } else {
+        toast.error('Failed to generate HMW Framework. Please try again.');
+      }
+    } finally {
+      setIsGeneratingHmwFramework(false);
+    }
+  };
+
+  const handleGenerateHMWIdeation = async () => {
+    if (!hmwIdeationForm.painPointInvestigated.trim() || !hmwIdeationForm.extremeUserType.trim()) {
+      toast.error('Please fill in all fields for HMW Ideation Framework generation.');
+      return;
+    }
+
+    setIsGeneratingHmwIdeation(true);
+    try {
+      const requestBody = {
+        "project_id": project?.id || '',
+        "Prioritized Pain Point": hmwIdeationForm.painPointInvestigated,
+        "Selected Extreme User": hmwIdeationForm.extremeUserType
+      };
+
+      // Log the request to console
+      console.log('Sending HMW Ideation Generation Request:', requestBody);
+
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/Ideation_Framework', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('HMW Ideation response:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      setHmwIdeationData(data);
+      toast.success('HMW Ideation Framework generated successfully!');
+      navigate(`/projects/${project?.id}/hmw_ideation`);
+      setHmwIdeationForm({ painPointInvestigated: '', extremeUserType: '' });
+    } catch (error) {
+      console.error('Error generating HMW Ideation Framework:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to generate HMW Ideation Framework: ${error.message}`);
+      } else {
+        toast.error('Failed to generate HMW Ideation Framework. Please try again.');
+      }
+    } finally {
+      setIsGeneratingHmwIdeation(false);
     }
   };
 
@@ -1223,6 +1451,34 @@ export const ProjectDetailPage = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
                       />
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="age" className="block text-sm font-semibold text-gray-700 mb-3">
+                          Age
+                        </label>
+                        <input
+                          type="number"
+                          id="age"
+                          value={extremeUserForm.age}
+                          onChange={(e) => setExtremeUserForm({ ...extremeUserForm, age: e.target.value })}
+                          placeholder="e.g., 34"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-3">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="location"
+                          value={extremeUserForm.location}
+                          onChange={(e) => setExtremeUserForm({ ...extremeUserForm, location: e.target.value })}
+                          placeholder="e.g., vadodara"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                        />
+                      </div>
+                    </div>
                     <div className="flex justify-end">
                       <button
                         onClick={handleGenerateExtremeUser}
@@ -1260,7 +1516,9 @@ export const ProjectDetailPage = () => {
                           setExtremeUserForm({
                             painPointStep: '',
                             painPointDescription: '',
-                            targetUserContext: ''
+                            targetUserContext: '',
+                            age: '',
+                            location: ''
                           });
                         }}
                       >
@@ -1625,6 +1883,194 @@ export const ProjectDetailPage = () => {
                         onClick={() => {
                           setTransformationFrameworkData(null);
                           setTransformationFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Outcome-to-Behavior HMW Framework Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Outcome-to-Behavior HMW Framework</h3>
+                  <p className="text-sm text-gray-600">Convert insights into actionable HMW (How Might We) questions</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-8">
+              {!hasHMWFrameworkData() ? (
+                <div className="space-y-6">
+                  <div className="bg-purple-50/80 p-6 rounded-2xl border border-purple-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Convert insights into actionable HMW (How Might We) questions tailored to the project. This helps you create a structured approach to problem-solving and innovation.
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="hmwPainPointInvestigated" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Pain Point Investigated
+                      </label>
+                      <input
+                        type="text"
+                        id="hmwPainPointInvestigated"
+                        value={hmwFrameworkForm.painPointInvestigated}
+                        onChange={(e) => setHmwFrameworkForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                        placeholder="e.g., Young student accessing online education from rural area"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="hmwExtremeUserType" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Extreme User Type
+                      </label>
+                      <input
+                        type="text"
+                        id="hmwExtremeUserType"
+                        value={hmwFrameworkForm.extremeUserType}
+                        onChange={(e) => setHmwFrameworkForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                        placeholder="e.g., Ravi, 16-year-old student in a remote village with unstable internet"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGenerateHMWFramework}
+                        disabled={isGeneratingHmwFramework}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingHmwFramework ? 'Generating...' : 'Generate HMW Framework'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-purple-50/80 p-6 rounded-2xl border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">HMW Framework Generated</h4>
+                        <p className="text-sm text-gray-600">Your actionable HMW questions are ready for implementation</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/outcome_to_behavior`)}
+                      >
+                        View HMW Report
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setHmwFrameworkData(null);
+                          setHmwFrameworkForm({ painPointInvestigated: '', extremeUserType: '' });
+                        }}
+                      >
+                        Generate New
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* HMW Ideation Framework Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">HMW Ideation Framework</h3>
+                  <p className="text-sm text-gray-600">Generate comprehensive ideation solutions using multiple creative approaches</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-8">
+              {!hasHMWIdeationData() ? (
+                <div className="space-y-6">
+                  <div className="bg-indigo-50/80 p-6 rounded-2xl border border-indigo-200">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Generate comprehensive ideation solutions using four distinct creative approaches: Simple Ideas, Outside Category Inspiration, Feature Addition, and Feature Removal. Each approach provides unique perspectives for solving the identified pain points.
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <label htmlFor="hmwIdeationPainPointInvestigated" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Prioritized Pain Point
+                      </label>
+                      <input
+                        type="text"
+                        id="hmwIdeationPainPointInvestigated"
+                        value={hmwIdeationForm.painPointInvestigated}
+                        onChange={(e) => setHmwIdeationForm(prev => ({ ...prev, painPointInvestigated: e.target.value }))}
+                        placeholder="e.g., Woman travels to healthcare facility or contacts healthcare provider"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="hmwIdeationExtremeUserType" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Selected Extreme User
+                      </label>
+                      <input
+                        type="text"
+                        id="hmwIdeationExtremeUserType"
+                        value={hmwIdeationForm.extremeUserType}
+                        onChange={(e) => setHmwIdeationForm(prev => ({ ...prev, extremeUserType: e.target.value }))}
+                        placeholder="e.g., The Remote Island Expectant Mother - 28-year-old woman living on river island"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleGenerateHMWIdeation}
+                        disabled={isGeneratingHmwIdeation}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingHmwIdeation ? 'Generating...' : 'Generate HMW Ideation Framework'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-indigo-50/80 p-6 rounded-2xl border border-indigo-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
+                        <FiTrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">HMW Ideation Framework Generated</h4>
+                        <p className="text-sm text-gray-600">Your comprehensive ideation solutions are ready for review</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => navigate(`/projects/${project?.id}/hmw_ideation`)}
+                      >
+                        View Ideation Report
+                      </button>
+                      <button
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        onClick={() => {
+                          setHmwIdeationData(null);
+                          setHmwIdeationForm({ painPointInvestigated: '', extremeUserType: '' });
                         }}
                       >
                         Generate New

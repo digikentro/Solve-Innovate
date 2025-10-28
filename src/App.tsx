@@ -27,6 +27,8 @@ import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
 import PsychologicalAnalysisPage from '@/pages/PsychologicalAnalysisPage';
 import { ChatPage } from '@/pages/ChatPage';
 import TransformationFrameworkPage from '@/pages/TransformationFrameworkPage';
+import OutcomeToBehaviorReport from '@/pages/OutcomeToBehaviorReport';
+import HMWIdeationReport from '@/pages/HMWIdeationReport';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -280,6 +282,30 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <TransformationFrameworkPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/outcome_to_behavior"
+                element={
+                  <ProtectedRoute>
+                    <OutcomeToBehaviorReport />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/hmw_framework"
+                element={
+                  <ProtectedRoute>
+                    <OutcomeToBehaviorReport />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path="projects/:id/hmw_ideation"
+                element={
+                  <ProtectedRoute>
+                    <HMWIdeationReport />
                   </ProtectedRoute>
                 }
             />
