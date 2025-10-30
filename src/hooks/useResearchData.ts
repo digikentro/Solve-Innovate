@@ -40,15 +40,25 @@ export const useResearchData = (project: Project | null) => {
     };
 
     // Check if data exists - either as direct value or nested in .content
-    const extractData = (data: any) => {
+    const extractData = (data: any, type?: string) => {
       const parsed = parseData(data);
-      if (!parsed) return null;
-      
+      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) return null;
       // If data has a .content property, use that, otherwise use the data itself
-      if (parsed.content !== undefined) {
-        return parsed.content;
+      const result = parsed.content !== undefined ? parsed.content : parsed;
+      // For psychological analysis, only return if valid report structure exists and not just placeholder/empty data
+      if (type === 'psychological') {
+        if (!result || typeof result !== 'object') return null;
+        // Check if comprehensiveMetaAnalysis exists and is all blank/zero
+        let meta = result.comprehensiveMetaAnalysis;
+        let clusters = result.clusters;
+        let criticalRequirements = result.criticalRequirements;
+        const metaIsEmpty = !meta || Object.values(meta).every(v => v === '' || v === 0 || v == null || (Array.isArray(v) && v.length === 0));
+        const clustersIsEmpty = !clusters || clusters.length === 0;
+        const criticalReqsIsEmpty = !criticalRequirements || (Array.isArray(criticalRequirements) && criticalRequirements.length === 0);
+        // If all are empty, treat as no data
+        if (metaIsEmpty && clustersIsEmpty && criticalReqsIsEmpty) return null;
       }
-      return parsed;
+      return result;
     };
 
     setResearchData({
@@ -56,7 +66,7 @@ export const useResearchData = (project: Project | null) => {
       extremeUserData: extractData(project.extreme_user_data),
       deepEmpathyData: extractData(project.deep_empathy_data),
       behavioralInsightsData: extractData(project.behavioral_insights_data),
-      psychologicalAnalysisData: extractData(project.psychological_analysis),
+      psychologicalAnalysisData: extractData(project.psychological_analysis, 'psychological'),
       transformationFrameworkData: extractData(project.transformation_framework),
       hmwFrameworkData: extractData(project.Behaviour_Framework),
       hmwIdeationData: extractData(project.HMW_Ideation_Framework),
