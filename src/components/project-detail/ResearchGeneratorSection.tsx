@@ -8,7 +8,17 @@ interface FormField {
   placeholder: string;
   type?: 'text' | 'textarea' | 'number';
   rows?: number;
+  width?: 'full' | '1/3' | '2/3' | '1/2'; // Add width support
+  inline?: boolean; // Add inline support
+  showCustomButton?: boolean; // Add support for custom field buttons
 }
+
+interface InlineFieldGroup {
+  type: 'inline';
+  fields: FormField[];
+}
+
+type FormElement = FormField | InlineFieldGroup;
 
 interface ResearchGeneratorSectionProps {
   title: string;
@@ -17,7 +27,7 @@ interface ResearchGeneratorSectionProps {
   gradientTo: string;
   iconBgFrom: string;
   iconBgTo: string;
-  formFields: FormField[];
+  formFields: FormElement[];
   formData: any;
   setFormData: (data: any) => void;
   data: any | null;
@@ -27,7 +37,10 @@ interface ResearchGeneratorSectionProps {
   apiEndpoint: string;
   requestBodyMapper?: (formData: any, projectId: string) => Record<string, any>;
   onShowPainPointsModal?: () => void;
+  onShowUsersModal?: () => void; // Add callback for user selection modal
+  onGenerate?: () => void; // Add callback for when Generate button is clicked
   renderReport?: (data: any, onGenerateNew: () => void) => React.ReactNode; // Updated: Accepts handler
+  onRefreshProject?: () => void; // Add this to refresh project data after generation
 }
 
 export const ResearchGeneratorSection = ({
@@ -47,7 +60,10 @@ export const ResearchGeneratorSection = ({
   apiEndpoint,
   requestBodyMapper,
   onShowPainPointsModal,
+  onShowUsersModal,
+  onGenerate,
   renderReport,
+  onRefreshProject,
 }: ResearchGeneratorSectionProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -63,8 +79,21 @@ export const ResearchGeneratorSection = ({
   }, [hasData, isLoading]);
 
   const handleGenerate = async () => {
+    // Call onGenerate callback if provided (for syncing data between forms)
+    if (onGenerate) {
+      onGenerate();
+    }
+    
     // Validate all fields
-    const missingFields = formFields.filter(field => !formData[field.id]?.trim());
+    const allFields: FormField[] = [];
+    formFields.forEach(element => {
+      if ('type' in element && element.type === 'inline') {
+        allFields.push(...element.fields);
+      } else {
+        allFields.push(element as FormField);
+      }
+    });
+    const missingFields = allFields.filter(field => !formData[field.id]?.trim());
     if (missingFields.length > 0) {
       toast.error(`Please fill in all fields for ${title.toLowerCase()}.`);
       return;
@@ -91,19 +120,45 @@ export const ResearchGeneratorSection = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const responseData = await response.json();
-      console.log(`${title} response:`, responseData);
+      let responseData = await response.json();
+      console.log(`${title} raw response:`, responseData);
+
+      // Handle different response formats
+      if (typeof responseData === 'string') {
+        try {
+          responseData = JSON.parse(responseData);
+        } catch (parseError) {
+          console.error('Failed to parse string response:', parseError);
+          throw new Error('Invalid response format');
+        }
+      }
+
+
 
       setData(responseData);
-      setShowReport(true); // Auto-show report after generation
+      setShowReport(true);
       
-      // Show success message
+      // Refresh project data to get the latest from database
+      if (onRefreshProject) {
+        setTimeout(() => {
+          onRefreshProject();
+        }, 2000);
+      }
+      
       toast.success(`${title} generated successfully!`, {
         duration: 3000,
       });
       
       // Clear form
-      const clearedForm = formFields.reduce((acc, field) => {
+      const allFields: FormField[] = [];
+      formFields.forEach(element => {
+        if ('type' in element && element.type === 'inline') {
+          allFields.push(...element.fields);
+        } else {
+          allFields.push(element as FormField);
+        }
+      });
+      const clearedForm = allFields.reduce((acc, field) => {
         acc[field.id] = '';
         return acc;
       }, {} as any);
@@ -121,13 +176,28 @@ export const ResearchGeneratorSection = ({
   };
 
   const handleReset = () => {
+    // Trigger regeneration instead of clearing form
     setData(null);
-    setShowReport(false); // Hide report when resetting
-    const clearedForm = formFields.reduce((acc, field) => {
-      acc[field.id] = '';
-      return acc;
-    }, {} as any);
-    setFormData(clearedForm);
+    setShowReport(false);
+    // Keep form data and trigger regeneration
+    if (Object.values(formData).some(value => value && value.toString().trim())) {
+      handleGenerate();
+    } else {
+      // Only clear form if no data exists
+      const allFields: FormField[] = [];
+      formFields.forEach(element => {
+        if ('type' in element && element.type === 'inline') {
+          allFields.push(...element.fields);
+        } else {
+          allFields.push(element as FormField);
+        }
+      });
+      const clearedForm = allFields.reduce((acc, field) => {
+        acc[field.id] = '';
+        return acc;
+      }, {} as any);
+      setFormData(clearedForm);
+    }
   };
 
   return (
@@ -164,32 +234,100 @@ export const ResearchGeneratorSection = ({
                 <p className="text-gray-700 text-sm leading-relaxed">{description}</p>
               </div>
               <div className="space-y-6">
-                {formFields.map((field) => (
-                  <div key={field.id}>
-                    <label htmlFor={field.id} className="block text-sm font-semibold text-gray-700 mb-3">
-                      {field.label}
-                    </label>
-                    {field.type === 'textarea' ? (
-                      <textarea
-                        id={field.id}
-                        value={formData[field.id] || ''}
-                        onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                        rows={field.rows || 3}
-                        placeholder={field.placeholder}
-                        className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent resize-none transition-all duration-200`}
-                      />
-                    ) : (
-                      <input
-                        type={field.type || 'text'}
-                        id={field.id}
-                        value={formData[field.id] || ''}
-                        onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                        placeholder={field.placeholder}
-                        className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent transition-all duration-200`}
-                      />
-                    )}
-                  </div>
-                ))}
+                {formFields.map((element, index) => {
+                  if ('type' in element && element.type === 'inline') {
+                    // Render inline field group
+                    return (
+                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
+                        {element.fields.map((field) => {
+                          const widthClass = field.width === '1/3' ? 'col-span-4' : 
+                                           field.width === '2/3' ? 'col-span-8' : 
+                                           field.width === '1/2' ? 'col-span-6' : 'col-span-12';
+                          
+                          return (
+                            <div key={field.id} className={widthClass}>
+                              <div className="flex items-center justify-between mb-3">
+                                <label htmlFor={field.id} className="block text-sm font-semibold text-gray-700">
+                                  {field.label}
+                                </label>
+                                {field.id === 'selectedExtremeUser' && onShowUsersModal && (
+                                  <button
+                                    type="button"
+                                    className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                                    onClick={onShowUsersModal}
+                                    title="Choose from Extreme User Analysis"
+                                  >
+                                    Choose User
+                                  </button>
+                                )}
+                              </div>
+                              {field.type === 'textarea' ? (
+                                <textarea
+                                  id={field.id}
+                                  value={formData[field.id] || ''}
+                                  onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                                  rows={field.rows || 3}
+                                  placeholder={field.placeholder}
+                                  className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent resize-none transition-all duration-200`}
+                                />
+                              ) : (
+                                <input
+                                  type={field.type || 'text'}
+                                  id={field.id}
+                                  value={formData[field.id] || ''}
+                                  onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                                  placeholder={field.placeholder}
+                                  className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent transition-all duration-200`}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  } else {
+                    // Render regular field
+                    const field = element as FormField;
+                    return (
+                      <div key={field.id}>
+                        <div className="flex items-center justify-between mb-3">
+                          <label htmlFor={field.id} className="block text-sm font-semibold text-gray-700">
+                            {field.label}
+                          </label>
+                          {field.id === 'selectedExtremeUser' && onShowUsersModal && (
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                              onClick={onShowUsersModal}
+                              title="Choose from Extreme User Analysis"
+                            >
+                              Choose User
+                            </button>
+                          )}
+                        </div>
+                        {field.type === 'textarea' ? (
+                          <textarea
+                            id={field.id}
+                            value={formData[field.id] || ''}
+                            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                            rows={field.rows || 3}
+                            placeholder={field.placeholder}
+                            className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent resize-none transition-all duration-200`}
+                          />
+                        ) : (
+                          <input
+                            type={field.type || 'text'}
+                            id={field.id}
+                            value={formData[field.id] || ''}
+                            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                            placeholder={field.placeholder}
+                            className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent transition-all duration-200`}
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+                })}
                 <div className="flex justify-end">
                   <button
                     onClick={handleGenerate}
@@ -206,7 +344,7 @@ export const ResearchGeneratorSection = ({
       ) : (
         <div>
           {/* Inline Report Display */}
-          {showReport && renderReport && (
+          {renderReport && (
             <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
               {renderReport(data, handleReset)}
             </div>

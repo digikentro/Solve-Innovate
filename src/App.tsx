@@ -25,8 +25,9 @@ import AsIsMapPage from '@/pages/AsIsMapPage';
 import ExtremeUserPage from '@/pages/ExtremeUserPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
 import PsychologicalAnalysisPage from '@/pages/PsychologicalAnalysisPage';
-import { ChatPage } from '@/pages/ChatPage';
 import TransformationFrameworkPage from '@/pages/TransformationFrameworkPage';
+import { ChatPage } from '@/pages/ChatPage';
+
 import OutcomeToBehaviorReport from '@/pages/OutcomeToBehaviorReport';
 import HMWIdeationReport from '@/pages/HMWIdeationReport';
 
@@ -285,6 +286,7 @@ function App() {
                   </ProtectedRoute>
                 }
             />
+
             <Route
                 path="projects/:id/outcome_to_behavior"
                 element={

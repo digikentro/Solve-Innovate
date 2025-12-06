@@ -1,5 +1,5 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
@@ -16,8 +16,12 @@ import { ExtremeUserReportViewer } from '@/components/project-detail/ExtremeUser
 import { DeepEmpathyReportViewer } from '@/components/project-detail/DeepEmpathyReportViewer';
 import { PsychologicalAnalysisReportViewer } from '@/components/project-detail/PsychologicalAnalysisReportViewer';
 import { TransformationFrameworkReportViewer } from '@/components/project-detail/TransformationFrameworkReportViewer';
+import { PainPointSelectionModal } from '@/components/project-detail/PainPointSelectionModal';
+import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUserSelectionModal';
+
 import { OutcomeToBehaviorHMWReportViewer } from '@/components/project-detail/OutcomeToBehaviorHMWReportViewer';
 import { HMWIdeationFrameworkReportViewer } from '@/components/project-detail/HMWIdeationFrameworkReportViewer';
+import { EmbeddedChatSection } from '@/components/project-detail/EmbeddedChatSection';
 
 // Section navigation items
 const SECTIONS = [
@@ -44,6 +48,12 @@ export const ProjectDetailPage = () => {
 
   // State for presentable slide
   const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
+  
+  // Pain Point Modal state
+  const [isPainPointModalOpen, setIsPainPointModalOpen] = useState(false);
+  
+  // Extreme User Modal state
+  const [isExtremeUserModalOpen, setIsExtremeUserModalOpen] = useState(false);
 
   // Form states for each research generator
   const [extremeUserForm, setExtremeUserForm] = useState({
@@ -64,11 +74,13 @@ export const ProjectDetailPage = () => {
     painPointInvestigated: '',
     extremeUserType: ''
   });
-
+  
   const [transformationFrameworkForm, setTransformationFrameworkForm] = useState({
     painPointInvestigated: '',
     extremeUserType: ''
   });
+
+
 
   const [hmwFrameworkForm, setHmwFrameworkForm] = useState({
     painPointInvestigated: '',
@@ -80,6 +92,38 @@ export const ProjectDetailPage = () => {
     extremeUserType: ''
   });
 
+  // Pain Point Modal handlers
+  const handleShowPainPointsModal = () => {
+    setIsPainPointModalOpen(true);
+  };
+
+  const handleSelectPainPoint = (painPoint: { step: string; description: string }) => {
+    setExtremeUserForm(prev => ({
+      ...prev,
+      painPointStep: painPoint.step,
+      painPointDescription: painPoint.description
+    }));
+    
+    // Also update Deep Empathy form immediately when pain point is selected
+    setDeepEmpathyForm(prev => ({
+      ...prev,
+      prioritizedPainPoint: painPoint.step,
+      painPointDescription: painPoint.description
+    }));
+  };
+
+  // Extreme User Modal handlers
+  const handleShowUsersModal = () => {
+    setIsExtremeUserModalOpen(true);
+  };
+
+  const handleSelectExtremeUser = (userSummary: string) => {
+    setDeepEmpathyForm(prev => ({
+      ...prev,
+      selectedExtremeUser: userSummary
+    }));
+  };
+
   // Auth guards
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -90,7 +134,7 @@ export const ProjectDetailPage = () => {
   }
 
   // Custom hooks
-  const { project, setProject, isLoading, error, handleDelete } = useProjectData(id, user.id);
+  const { project, setProject, isLoading, error, handleDelete, refetchProject } = useProjectData(id, user.id);
   
   const {
     asIsMapData,
@@ -108,6 +152,22 @@ export const ProjectDetailPage = () => {
     setHmwFrameworkData,
     setHmwIdeationData,
   } = useResearchData(project);
+
+  // Function to sync Extreme User data to Deep Empathy (called on Generate)
+  const syncExtremeUserToDeepEmpathy = () => {
+    if (extremeUserForm.painPointStep && extremeUserForm.painPointDescription) {
+      const extremeUserSummary = extremeUserForm.targetUserContext && extremeUserForm.age && extremeUserForm.location
+        ? `${extremeUserForm.targetUserContext.slice(0, 100)}... - Age: ${extremeUserForm.age}, Location: ${extremeUserForm.location}`
+        : '';
+
+      setDeepEmpathyForm(prev => ({
+        ...prev,
+        prioritizedPainPoint: extremeUserForm.painPointStep,
+        painPointDescription: extremeUserForm.painPointDescription,
+        selectedExtremeUser: extremeUserSummary || prev.selectedExtremeUser
+      }));
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -140,7 +200,7 @@ export const ProjectDetailPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -250,6 +310,7 @@ export const ProjectDetailPage = () => {
                     project={project}
                     asIsMapData={asIsMapData}
                     setAsIsMapData={setAsIsMapData}
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => (
                       <AsIsMapReportViewer 
                         data={data} 
@@ -272,17 +333,24 @@ export const ProjectDetailPage = () => {
                     iconBgTo="pink-600"
                     formFields={[
                       {
-                        id: 'painPointStep',
-                        label: 'Pain Point Step',
-                        placeholder: 'e.g., Step 2.1: Harvest timing decisions',
-                        type: 'text'
-                      },
-                      {
-                        id: 'painPointDescription',
-                        label: 'Pain Point Description',
-                        placeholder: 'Describe the specific pain point or challenge...',
-                        type: 'textarea',
-                        rows: 3
+                        type: 'inline',
+                        fields: [
+                          {
+                            id: 'painPointStep',
+                            label: 'Pain Point Step',
+                            placeholder: 'e.g., Step 2.1: Harvest timing decisions',
+                            type: 'text',
+                            width: '1/3'
+                          },
+                          {
+                            id: 'painPointDescription',
+                            label: 'Pain Point Description',
+                            placeholder: 'Describe the specific pain point or challenge...',
+                            type: 'textarea',
+                            rows: 3,
+                            width: '2/3'
+                          }
+                        ]
                       },
                       {
                         id: 'targetUserContext',
@@ -292,16 +360,23 @@ export const ProjectDetailPage = () => {
                         rows: 3
                       },
                       {
-                        id: 'age',
-                        label: 'Age',
-                        placeholder: 'e.g., 34',
-                        type: 'number'
-                      },
-                      {
-                        id: 'location',
-                        label: 'Location',
-                        placeholder: 'e.g., vadodara',
-                        type: 'text'
+                        type: 'inline',
+                        fields: [
+                          {
+                            id: 'age',
+                            label: 'Age',
+                            placeholder: 'e.g., 34',
+                            type: 'number',
+                            width: '1/2'
+                          },
+                          {
+                            id: 'location',
+                            label: 'Location',
+                            placeholder: 'e.g., vadodara',
+                            type: 'text',
+                            width: '1/2'
+                          }
+                        ]
                       }
                     ]}
                     formData={extremeUserForm}
@@ -319,6 +394,9 @@ export const ProjectDetailPage = () => {
                       age: parseInt(formData.age),
                       location: formData.location
                     })}
+                    onShowPainPointsModal={handleShowPainPointsModal}
+                    onGenerate={syncExtremeUserToDeepEmpathy}
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <ExtremeUserReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -329,7 +407,7 @@ export const ProjectDetailPage = () => {
                 <div className="animate-fadeIn">
                   <ResearchGeneratorSection
                     title="Deep Empathy Research Generator"
-                    description="Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow. This helps you understand user motivations and behaviors at a deeper level."
+                    description="Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow. Pain points will be automatically copied from the Extreme User Generator when you click 'Generate' above. You can edit any field as needed."
                     gradientFrom="indigo-50"
                     gradientTo="purple-50"
                     iconBgFrom="indigo-500"
@@ -369,6 +447,8 @@ export const ProjectDetailPage = () => {
                       "Pain Point Description": formData.painPointDescription,
                       "Selected Extreme User": formData.selectedExtremeUser
                     })}
+                    onRefreshProject={refetchProject}
+                    onShowUsersModal={handleShowUsersModal}
                     renderReport={(data, onGenerateNew) => <DeepEmpathyReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -377,38 +457,7 @@ export const ProjectDetailPage = () => {
               {/* Chat Section */}
               {activeSection === 'chat' && (
                 <div className="animate-fadeIn">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-                    <div className="px-8 py-6 bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-                          <FiMessageCircle className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900">Chat with Your Project</h3>
-                          <p className="text-sm text-gray-600">Interactive conversation about your project details and insights</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-8">
-                      <div className="space-y-6">
-                        <div className="bg-cyan-50/80 p-6 rounded-2xl border border-cyan-200">
-                          <p className="text-gray-700 text-sm leading-relaxed">
-                            Engage in an interactive conversation about your project. Ask questions, get insights, and explore different aspects of your project through AI-powered chat.
-                          </p>
-                        </div>
-                        <div className="space-y-6">
-                          <div className="flex justify-center">
-                            <Link
-                              to={`/projects/${project.id}/chat`}
-                              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
-                            >
-                              Start Chat
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <EmbeddedChatSection projectId={project.id} />
                 </div>
               )}
 
@@ -443,6 +492,7 @@ export const ProjectDetailPage = () => {
                     isGenerating={false}
                     projectId={project.id}
                     apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/psychological_analysis"
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <PsychologicalAnalysisReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -451,25 +501,56 @@ export const ProjectDetailPage = () => {
               {/* Transformation Framework */}
               {activeSection === 'transformation' && (
                 <div className="animate-fadeIn">
+                  {/* Debug Panel */}
+                  <div className="bg-yellow-100 border border-yellow-400 p-4 mb-6 rounded-lg">
+                    <h4 className="font-bold text-yellow-800 mb-2">Debug Info:</h4>
+                    <div className="text-sm text-yellow-700 space-y-1">
+                      <div>Project ID: {project?.id}</div>
+                      <div>Has project.transformation_framework: {project?.transformation_framework ? 'YES' : 'NO'}</div>
+                      <div>transformation_framework type: {typeof project?.transformation_framework}</div>
+                      <div>transformation_framework value (first 200 chars): {JSON.stringify(project?.transformation_framework)?.substring(0, 200)}...</div>
+                      <div>transformationFrameworkData from hook: {JSON.stringify(transformationFrameworkData, null, 2)}</div>
+                      <div>transformationFrameworkData is null: {transformationFrameworkData === null ? 'YES' : 'NO'}</div>
+                      <div>transformationFrameworkData is undefined: {transformationFrameworkData === undefined ? 'YES' : 'NO'}</div>
+                      <div>
+                        <button 
+                          onClick={() => {
+                            console.log('MANUAL TEST - Raw data:', project?.transformation_framework);
+                            if (project?.transformation_framework) {
+                              try {
+                                const parsed = JSON.parse(project.transformation_framework);
+                                console.log('MANUAL TEST - Parsed:', parsed);
+                                console.log('MANUAL TEST - Content:', parsed.content);
+                              } catch (e) {
+                                console.log('MANUAL TEST - Parse error:', e);
+                              }
+                            }
+                          }}
+                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Test Parse Manually
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <ResearchGeneratorSection
                     title="Transformation Framework"
-                    description="Convert insights into an actionable transformation framework tailored to the project. This helps you create a structured approach to implementing changes and improvements."
-                    gradientFrom="teal-50"
-                    gradientTo="emerald-50"
-                    iconBgFrom="teal-500"
-                    iconBgTo="emerald-600"
+                    description="Transform psychological insights into actionable transformation strategies. This bridges the gap between analysis and behavior change implementation."
+                    gradientFrom="indigo-50"
+                    gradientTo="purple-50"
+                    iconBgFrom="indigo-500"
+                    iconBgTo="purple-600"
                     formFields={[
                       {
                         id: 'painPointInvestigated',
                         label: 'Pain Point Investigated',
-                        placeholder: 'e.g., Young student accessing online education from rural area',
-                        type: 'text'
+                        placeholder: 'Enter the main pain point you want to investigate'
                       },
                       {
                         id: 'extremeUserType',
                         label: 'Extreme User Type',
-                        placeholder: 'e.g., Ravi, 16-year-old student in a remote village with unstable internet',
-                        type: 'text'
+                        placeholder: 'Describe the extreme user type for this analysis'
                       }
                     ]}
                     formData={transformationFrameworkForm}
@@ -479,6 +560,7 @@ export const ProjectDetailPage = () => {
                     isGenerating={false}
                     projectId={project.id}
                     apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/Transformation Framework"
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <TransformationFrameworkReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -515,6 +597,7 @@ export const ProjectDetailPage = () => {
                     isGenerating={false}
                     projectId={project.id}
                     apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/hmw_framework"
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <OutcomeToBehaviorHMWReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -556,6 +639,7 @@ export const ProjectDetailPage = () => {
                       "Prioritized Pain Point": formData.painPointInvestigated,
                       "Selected Extreme User": formData.extremeUserType
                     })}
+                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <HMWIdeationFrameworkReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -563,6 +647,23 @@ export const ProjectDetailPage = () => {
             </div>
           </main>
         </div>
+
+        {/* Pain Point Selection Modal */}
+        <PainPointSelectionModal
+          isOpen={isPainPointModalOpen}
+          onClose={() => setIsPainPointModalOpen(false)}
+          onSelectPainPoint={handleSelectPainPoint}
+          asIsMapData={asIsMapData}
+          project={project}
+        />
+
+        {/* Extreme User Selection Modal */}
+        <ExtremeUserSelectionModal
+          isOpen={isExtremeUserModalOpen}
+          onClose={() => setIsExtremeUserModalOpen(false)}
+          onSelectUser={handleSelectExtremeUser}
+          extremeUserData={extremeUserData}
+        />
       </div>
   );
 };

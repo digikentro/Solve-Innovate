@@ -9,13 +9,10 @@ export interface Project {
   presentable_slide?: any;
   analysis?: any;
   as_is_map?: any;
-  design_research?: any;
   extreme_user_data?: any;
   deep_empathy_data?: any;
-  behavioral_insights_data?: any;
   psychological_analysis?: any;
   transformation_framework?: any;
-  hmw_framework?: any;
   Behaviour_Framework?: any;
   HMW_Ideation_Framework?: any;
   canvas?: any;

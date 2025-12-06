@@ -5,3 +5,4 @@ export { ProjectCanvasSection } from './ProjectCanvasSection';
 export { ProjectAnalysisSection } from './ProjectAnalysisSection';
 export { AsIsMapSection } from './AsIsMapSection';
 export { ResearchGeneratorSection } from './ResearchGeneratorSection';
+export { TransformationFrameworkReportViewer } from './TransformationFrameworkReportViewer';

@@ -5,7 +5,6 @@ interface ResearchDataState {
   asIsMapData: any | null;
   extremeUserData: any | null;
   deepEmpathyData: any | null;
-  behavioralInsightsData: any | null;
   psychologicalAnalysisData: any | null;
   transformationFrameworkData: any | null;
   hmwFrameworkData: any | null;
@@ -17,7 +16,6 @@ export const useResearchData = (project: Project | null) => {
     asIsMapData: null,
     extremeUserData: null,
     deepEmpathyData: null,
-    behavioralInsightsData: null,
     psychologicalAnalysisData: null,
     transformationFrameworkData: null,
     hmwFrameworkData: null,
@@ -27,12 +25,43 @@ export const useResearchData = (project: Project | null) => {
   useEffect(() => {
     if (!project) return;
 
+    console.log('useResearchData - full project:', project);
+    console.log('useResearchData - all project keys:', Object.keys(project));
+    console.log('useResearchData - transformation_framework field specifically:', project.transformation_framework);
+    
+    // DIRECT TEST - Simple parsing of transformation framework
+    console.log('=== DIRECT TRANSFORMATION TEST ===');
+    const directTF = project.transformation_framework;
+    if (directTF) {
+      console.log('Direct TF exists, type:', typeof directTF);
+      console.log('Direct TF first 100 chars:', typeof directTF === 'string' ? directTF.substring(0, 100) : directTF);
+      
+      if (typeof directTF === 'string') {
+        try {
+          const directParsed = JSON.parse(directTF);
+          console.log('Direct parsing SUCCESS, keys:', Object.keys(directParsed));
+          console.log('Direct parsing content exists:', !!directParsed.content);
+          if (directParsed.content) {
+            console.log('Direct content keys:', Object.keys(directParsed.content));
+          }
+        } catch (e) {
+          console.error('Direct parsing FAILED:', e);
+        }
+      }
+    } else {
+      console.log('Direct TF is null/undefined');
+    }
+    console.log('=== END DIRECT TEST ===');
+
     const parseData = (data: any) => {
       if (!data) return null;
       if (typeof data === 'string') {
         try {
-          return JSON.parse(data);
-        } catch {
+          const parsed = JSON.parse(data);
+          console.log('parseData - successfully parsed string to:', parsed);
+          return parsed;
+        } catch (e) {
+          console.log('parseData - failed to parse string:', data, e);
           return null;
         }
       }
@@ -41,10 +70,34 @@ export const useResearchData = (project: Project | null) => {
 
     // Check if data exists - either as direct value or nested in .content
     const extractData = (data: any, type?: string) => {
+      console.log(`extractData for ${type}:`, { raw: data, type: typeof data });
+      
       const parsed = parseData(data);
-      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) return null;
-      // If data has a .content property, use that, otherwise use the data itself
-      const result = parsed.content !== undefined ? parsed.content : parsed;
+      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) {
+        console.log(`extractData for ${type}: no parsed data`);
+        return null;
+      }
+      
+      // For transformation framework, use special extraction logic
+      let result;
+      if (type === 'transformation') {
+        console.log(`extractData for ${type}: parsed data structure:`, parsed);
+        
+        // Try to get the content field
+        if (parsed && parsed.content) {
+          result = parsed.content;
+          console.log(`extractData for ${type}: extracted content field:`, result);
+        } else {
+          result = parsed;
+          console.log(`extractData for ${type}: using full parsed data:`, result);
+        }
+      } else {
+        // Standard logic for other types
+        result = parsed.content !== undefined ? parsed.content : parsed;
+      }
+      
+      console.log(`extractData for ${type}: final extracted result:`, result);
+      
       // For psychological analysis, only return if valid report structure exists and not just placeholder/empty data
       if (type === 'psychological') {
         if (!result || typeof result !== 'object') return null;
@@ -58,14 +111,31 @@ export const useResearchData = (project: Project | null) => {
         // If all are empty, treat as no data
         if (metaIsEmpty && clustersIsEmpty && criticalReqsIsEmpty) return null;
       }
+
+      // For transformation framework, be extremely lenient with validation
+      if (type === 'transformation') {
+        console.log('Transformation validation - input result:', result);
+        
+        // Allow almost anything that's not null/undefined
+        if (result === null || result === undefined) {
+          console.log('Transformation validation - rejected: null/undefined');
+          return null;
+        }
+        
+        // Always accept any non-null/undefined data for transformation framework
+        console.log('Transformation validation - accepted:', result);
+        return result;
+      }
+
       return result;
     };
+
+
 
     setResearchData({
       asIsMapData: extractData(project.as_is_map),
       extremeUserData: extractData(project.extreme_user_data),
       deepEmpathyData: extractData(project.deep_empathy_data),
-      behavioralInsightsData: extractData(project.behavioral_insights_data),
       psychologicalAnalysisData: extractData(project.psychological_analysis, 'psychological'),
       transformationFrameworkData: extractData(project.transformation_framework),
       hmwFrameworkData: extractData(project.Behaviour_Framework),
@@ -78,7 +148,6 @@ export const useResearchData = (project: Project | null) => {
     setAsIsMapData: (data: any) => setResearchData(prev => ({ ...prev, asIsMapData: data })),
     setExtremeUserData: (data: any) => setResearchData(prev => ({ ...prev, extremeUserData: data })),
     setDeepEmpathyData: (data: any) => setResearchData(prev => ({ ...prev, deepEmpathyData: data })),
-    setBehavioralInsightsData: (data: any) => setResearchData(prev => ({ ...prev, behavioralInsightsData: data })),
     setPsychologicalAnalysisData: (data: any) => setResearchData(prev => ({ ...prev, psychologicalAnalysisData: data })),
     setTransformationFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, transformationFrameworkData: data })),
     setHmwFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, hmwFrameworkData: data })),

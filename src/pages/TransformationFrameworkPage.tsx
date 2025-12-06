@@ -1,341 +1,168 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { FiArrowLeft } from 'react-icons/fi';
-import { Loader2, Lightbulb, BarChart3, Users, AlertTriangle, CheckCircle, Globe, Zap } from 'lucide-react';
+import { TransformationFrameworkReportViewer } from '@/components/project-detail';
 import { toast } from 'react-hot-toast';
 
-interface TransformationFrameworkData {
-  content: {
-    projectContext?: {
-      prioritizedPainPoint?: string;
-      targetUserType?: string;
-    };
-    irrationalityClusters?: any[];
-    outcomeIntegrationAnalysis?: {
-      psychologicalPatternThemes?: string[];
-      painPointSolutionCoherence?: string;
-      innovationOpportunitySpaces?: string[];
-      implementationPrioritySuggestions?: string;
-    };
-    [key: string]: any;
-  } | string;
-  generated_at: string;
-  prompt?: string;
+interface Project {
+  id: string;
+  title: string;
+  transformation_framework?: any;
 }
 
-export default function TransformationFrameworkPage() {
-  const params = useParams();
-  const projectId = params.id;
+const TransformationFrameworkPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<TransformationFrameworkData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [projectTitle, setProjectTitle] = useState<string>('');
-  const formatValue = (v: any) => {
-    if (v === null || v === undefined) return '—';
-    if (typeof v === 'string' && v.trim().toLowerCase() === 'undefined') return '—';
-    return v;
-  };
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    const fetchData = async () => {
-      if (!projectId) return;
+    const fetchProject = async () => {
+      if (!id) {
+        setError('No project ID provided');
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        setLoading(true);
-        const { data: projectData, error } = await supabase
+        const { data, error } = await supabase
           .from('projects')
-          .select('title, transformation_framework')
-          .eq('id', projectId)
+          .select('id, title, transformation_framework')
+          .eq('id', id)
           .single();
+
         if (error) throw error;
-        setProjectTitle(projectData.title);
-        let tf = projectData.transformation_framework;
-        if (typeof tf === 'string') {
-          try { tf = JSON.parse(tf); } catch (e) { /* ignore parse error */ }
-        }
-        if (tf && typeof tf === 'object' && tf.content && Object.keys(tf.content).length > 0) {
-          setData(tf as TransformationFrameworkData);
-        } else {
-          toast('Transformation Framework is still being generated. Please refresh soon.', {
-            icon: '⏳',
-            duration: 4000
-          });
-        }
-      } catch (e) {
-        console.error('Error loading Transformation Framework:', e);
-        toast.error('Failed to load Transformation Framework');
+        setProject(data);
+      } catch (err) {
+        console.error('Error fetching project:', err);
+        setError('Failed to load project');
+        toast.error('Failed to load project');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-    fetchData();
-  }, [projectId]);
 
-  if (loading) {
+    fetchProject();
+  }, [id]);
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6] flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="relative mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#d4af37] to-[#b8941f] rounded-full flex items-center justify-center mx-auto shadow-2xl">
-              <Loader2 className="w-10 h-10 animate-spin text-white" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#1a1d29] rounded-full animate-pulse"></div>
-          </div>
-          <h2 className="text-2xl font-bold text-[#1a1d29] mb-3">Loading Transformation Framework</h2>
-          <p className="text-[#2c2c2c]/70 text-lg">This may take a few moments</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading transformation framework...</p>
         </div>
       </div>
     );
   }
 
-  if (!data) {
+  if (error || !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6] flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="relative mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] rounded-full flex items-center justify-center mx-auto shadow-2xl">
-              <Lightbulb className="w-10 h-10 text-[#d4af37]" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#d4af37] rounded-full animate-pulse"></div>
-          </div>
-          <h2 className="text-2xl font-bold text-[#1a1d29] mb-3">Transformation Framework Not Ready</h2>
-          <p className="text-[#2c2c2c]/70 text-lg mb-8">The framework is still being generated. Try again shortly.</p>
-          <div className="space-y-4">
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="w-full bg-gradient-to-r from-[#d4af37] to-[#b8941f] hover:from-[#b8941f] hover:to-[#a0851a] text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
-            >
-              Refresh Page
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate(`/projects/${projectId}`)} 
-              className="w-full border-[#1a1d29] text-[#1a1d29] hover:bg-[#1a1d29] hover:text-white font-semibold py-3 rounded-xl transition-all duration-200"
-            >
-              Back to Project
-            </Button>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Error loading project or transformation framework data.</p>
+          <button
+            onClick={() => navigate('/projects')}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Back to Projects
+          </button>
         </div>
       </div>
     );
   }
+
+  const getTransformationFrameworkContent = () => {
+    if (!project.transformation_framework) return null;
+
+    // Handle string format
+    if (typeof project.transformation_framework === 'string') {
+      try {
+        const parsed = JSON.parse(project.transformation_framework);
+        return parsed.content || parsed;
+      } catch (error) {
+        console.error('Failed to parse transformation_framework string:', error);
+        return null;
+      }
+    }
+
+    // Handle object format
+    if (typeof project.transformation_framework === 'object') {
+      return project.transformation_framework.content || project.transformation_framework;
+    }
+
+    return null;
+  };
+
+  const transformationFrameworkContent = getTransformationFrameworkContent();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f6f0] via-[#f5f3ed] to-[#f0ede6]">
-      <div className="w-[70vw] mx-auto py-8 px-4">
-        <div className="flex items-center gap-4 mb-10">
-          <Button 
-            onClick={() => navigate(`/projects/${projectId}`)} 
-            variant="ghost" 
-            size="sm" 
-            className="p-3 hover:bg-[#d4af37]/10 transition-all duration-200 rounded-xl"
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate(`/projects/${id}`)}
+            className="p-2 hover:bg-white/50 rounded-xl transition-all duration-200 group"
           >
-            <FiArrowLeft className="w-5 h-5 text-[#1a1d29]" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-[#1a1d29] mb-2 tracking-tight">Transformation Framework</h1>
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-6 bg-gradient-to-b from-[#d4af37] to-[#b8941f] rounded-full"></div>
-              <p className="text-[#2c2c2c] text-lg font-medium">{projectTitle}</p>
-            </div>
+            <FiArrowLeft className="w-6 h-6 text-gray-600 group-hover:text-gray-900" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Transformation Framework</h1>
+            <p className="text-gray-600 mt-1">Actionable transformation strategies for {project.title}</p>
           </div>
         </div>
 
-        {/* Structured renderer for Transformation Framework */}
-        {typeof data.content === 'string' ? (
-          <Card className="p-8 mb-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-            <div className="whitespace-pre-wrap text-[#2c2c2c] leading-relaxed text-base">{data.content}</div>
-          </Card>
-        ) : (
-          <div className="space-y-8">
-            {/* Project Context */}
-            {data.content.projectContext && (
-              <Card className="p-8 bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] border-0 shadow-2xl rounded-2xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d4af37]/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="relative">
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="p-3 bg-[#d4af37]/20 rounded-xl">
-                      <BarChart3 className="w-6 h-6 text-[#d4af37]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-white">Project Context</h2>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-[#d4af37] text-sm uppercase tracking-wide">Prioritized Pain Point</h3>
-                      <p className="text-white/90 text-base leading-relaxed">{formatValue(data.content.projectContext.prioritizedPainPoint)}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-[#d4af37] text-sm uppercase tracking-wide">Target User Type</h3>
-                      <p className="text-white/90 text-base leading-relaxed">{formatValue(data.content.projectContext.targetUserType)}</p>
-                    </div>
-                  </div>
+        {/* Content */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+          <div className="px-8 py-6 bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Transformation Framework Results</h2>
+                <p className="text-sm text-gray-600">
+                  Generated insights and strategies for behavioral transformation
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {transformationFrameworkContent ? (
+              <TransformationFrameworkReportViewer 
+                data={transformationFrameworkContent}
+                onGenerateNew={() => navigate(`/projects/${id}`)}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-              </Card>
-            )}
-
-            {/* Outcome Integration Analysis */}
-            {data.content.outcomeIntegrationAnalysis && (
-              <Card className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="p-3 bg-[#d4af37]/10 rounded-xl">
-                    <Globe className="w-6 h-6 text-[#d4af37]" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#1a1d29]">Outcome Integration Analysis</h2>
-                </div>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-[#1a1d29] text-lg">Psychological Pattern Themes</h3>
-                    <ul className="space-y-3">
-                      {data.content.outcomeIntegrationAnalysis.psychologicalPatternThemes?.map((t: string, i: number) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-[#2c2c2c] text-base leading-relaxed">{t}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-[#1a1d29] text-lg">Innovation Opportunity Spaces</h3>
-                    <ul className="space-y-3">
-                      {data.content.outcomeIntegrationAnalysis.innovationOpportunitySpaces?.map((s: string, i: number) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-[#2c2c2c] text-base leading-relaxed">{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                {data.content.outcomeIntegrationAnalysis.painPointSolutionCoherence && (
-                  <div className="mt-8 bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 p-6 rounded-xl border border-[#d4af37]/20">
-                    <h3 className="font-semibold text-[#1a1d29] text-lg mb-3">Pain-Point ⇄ Solution Coherence</h3>
-                    <p className="text-[#2c2c2c] text-base leading-relaxed">{data.content.outcomeIntegrationAnalysis.painPointSolutionCoherence}</p>
-                  </div>
-                )}
-                {data.content.outcomeIntegrationAnalysis.implementationPrioritySuggestions && (
-                  <div className="mt-6 bg-gradient-to-r from-[#1a1d29]/5 to-[#1a1d29]/10 p-6 rounded-xl border border-[#1a1d29]/20">
-                    <h3 className="font-semibold text-[#1a1d29] text-lg mb-3">Implementation Priority Suggestions</h3>
-                    <p className="text-[#2c2c2c] text-base leading-relaxed">{data.content.outcomeIntegrationAnalysis.implementationPrioritySuggestions}</p>
-                  </div>
-                )}
-              </Card>
-            )}
-
-            {/* Irrationality Clusters (if present) */}
-            {Array.isArray(data.content.irrationalityClusters) && data.content.irrationalityClusters.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-[#d4af37]/10 rounded-xl">
-                    <Users className="w-6 h-6 text-[#d4af37]" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#1a1d29]">Irrationality Clusters</h2>
-                </div>
-                {data.content.irrationalityClusters.map((cluster: any, idx: number) => (
-                  <Card key={idx} className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-                    <div className="space-y-6">
-                      {cluster.irrationality && (
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-[#1a1d29] text-lg">Irrationality</h3>
-                          <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.irrationality)}</p>
-                        </div>
-                      )}
-
-                      {Array.isArray(cluster.diagnosis) && cluster.diagnosis.length > 0 && (
-                        <div className="space-y-3">
-                          <h3 className="font-semibold text-[#1a1d29] text-lg">Diagnosis</h3>
-                          <ul className="space-y-3">
-                            {cluster.diagnosis.map((d: string, dIdx: number) => (
-                              <li key={dIdx} className="flex items-start gap-3">
-                                <div className="w-2 h-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="text-[#2c2c2c] text-base leading-relaxed">{d}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {cluster.psychologicalNeedAnalysis && (
-                        <div className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 p-6 rounded-xl border border-[#d4af37]/20">
-                          <h3 className="font-semibold text-[#1a1d29] text-lg mb-4">Psychological Need Analysis</h3>
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Core Need</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.coreNeed)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Bias-driven Motivation</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.biasDrivenMotivation)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Persistence Factor</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.persistenceFactor)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Pain Point Connection</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.psychologicalNeedAnalysis.painPointConnection)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {cluster.outcome && (
-                        <div className="bg-gradient-to-br from-[#1a1d29] to-[#2a2d3a] p-6 rounded-xl text-white">
-                          <h3 className="font-semibold text-[#d4af37] text-lg mb-3">Outcome</h3>
-                          <p className="text-white/90 text-base leading-relaxed">{formatValue(cluster.outcome)}</p>
-                        </div>
-                      )}
-
-                      {cluster.outcomeValidation && (
-                        <div className="bg-gradient-to-r from-[#1a1d29]/5 to-[#1a1d29]/10 p-6 rounded-xl border border-[#1a1d29]/20">
-                          <h3 className="font-semibold text-[#1a1d29] text-lg mb-4">Outcome Validation</h3>
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Smart Psychology Use</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.smartPsychologyUse)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Pain Point Alignment</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.painPointAlignment)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Specificity Level</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.specificityLevel)}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-[#1a1d29] text-sm uppercase tracking-wide">Direction Focus</h4>
-                              <p className="text-[#2c2c2c] text-base leading-relaxed">{formatValue(cluster.outcomeValidation.directionFocus)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Transformation Framework Available</h3>
+                <p className="text-gray-600 mb-6">
+                  Generate a transformation framework to see actionable insights and strategies.
+                </p>
+                <button
+                  onClick={() => navigate(`/projects/${id}`)}
+                  className="px-6 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                >
+                  Generate Transformation Framework
+                </button>
               </div>
             )}
-
-            {/* Fallback: show the raw content if nothing matched */}
-            {!data.content.projectContext && !data.content.outcomeIntegrationAnalysis && !(Array.isArray(data.content.irrationalityClusters) && data.content.irrationalityClusters.length > 0) && (
-              <Card className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-                <h2 className="text-2xl font-bold text-[#1a1d29] mb-6">Data</h2>
-                <pre className="text-sm text-[#2c2c2c] overflow-auto max-h-96 bg-[#f8f6f0] p-4 rounded-xl">{JSON.stringify(data.content, null, 2)}</pre>
-              </Card>
-            )}
-          </div>
-        )}
-
-        <div className="text-center text-[#2c2c2c]/70 text-sm mb-8 mt-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-[#d4af37]/20">
-            <div className="w-2 h-2 bg-[#d4af37] rounded-full"></div>
-            <p>Generated on {new Date(data.generated_at).toLocaleString()}</p>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
-
+export default TransformationFrameworkPage;

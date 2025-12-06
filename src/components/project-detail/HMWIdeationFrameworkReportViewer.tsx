@@ -62,8 +62,8 @@ export const HMWIdeationFrameworkReportViewer = ({ data, onGenerateNew }: HMWIde
                 className="w-full text-left mb-4"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">HMW {idx + 1}: {hmw.hmw_statement?.slice(0, 40) || 'HMW Statement'}</h3>
-                  <span className="text-2xl">{expandedIdeation[idx] ? '−' : '+'}</span>
+                  <h3 className="text-lg font-semibold pr-4">HMW {idx + 1}: {hmw.hmw_statement || 'HMW Statement'}</h3>
+                  <span className="text-2xl flex-shrink-0">{expandedIdeation[idx] ? '−' : '+'}</span>
                 </div>
               </button>
               {expandedIdeation[idx] && (

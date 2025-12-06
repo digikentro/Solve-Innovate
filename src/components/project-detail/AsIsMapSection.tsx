@@ -9,9 +9,10 @@ interface AsIsMapSectionProps {
   asIsMapData: any | null;
   setAsIsMapData: (data: any) => void;
   renderReport?: (data: any, onGenerateNew: () => void) => React.ReactNode;
+  onRefreshProject?: () => void;
 }
 
-export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderReport }: AsIsMapSectionProps) => {
+export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderReport, onRefreshProject }: AsIsMapSectionProps) => {
   const [asIsMapPrompt, setAsIsMapPrompt] = useState<string>('');
   const [isGeneratingAsIsMap, setIsGeneratingAsIsMap] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -63,6 +64,13 @@ export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderRep
                   setAsIsMapData(data);
                   setAsIsMapPrompt('');
                   setShowReport(true);
+                  // Refresh project data to get the latest from database
+                  if (onRefreshProject) {
+                    // Add a small delay to ensure backend has finished updating
+                    setTimeout(() => {
+                      onRefreshProject();
+                    }, 2000);
+                  }
                 }}
                 onGeneratingChange={setIsGeneratingAsIsMap}
                 isGenerating={isGeneratingAsIsMap}
@@ -76,9 +84,10 @@ export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderRep
           {showReport && renderReport && (
             <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
               {renderReport(asIsMapData, () => {
-                setAsIsMapData(null);
-                setAsIsMapPrompt('');
+                // Trigger regeneration with current prompt
+                setIsGeneratingAsIsMap(true);
                 setShowReport(false);
+                setAsIsMapData(null);
               })}
             </div>
           )}

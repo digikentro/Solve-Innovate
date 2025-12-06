@@ -52,11 +52,25 @@ export const useProjectData = (projectId: string | undefined, userId: string) =>
     }
   };
 
+  const refetchProject = async () => {
+    if (!projectId || !userId) return;
+
+    try {
+      const data = await ProjectService.getProjectById(projectId, userId);
+      if (data) {
+        setProject(data);
+      }
+    } catch (error) {
+      console.error('Error refetching project:', error);
+    }
+  };
+
   return {
     project,
     setProject,
     isLoading,
     error,
     handleDelete,
+    refetchProject,
   };
 };
