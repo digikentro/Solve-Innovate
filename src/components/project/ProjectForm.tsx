@@ -49,7 +49,7 @@ export const ProjectForm = ({ initialData, onSuccess }: ProjectFormProps) => {
       
       const projectData = {
         title: data.title,
-        description: data.description || undefined,
+        description: data.description || '',
         skills: data.skills ? data.skills.split(',').map(skill => skill.trim()) : [],
         status: 'draft' as const,
       };

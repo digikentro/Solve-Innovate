@@ -138,9 +138,9 @@ function LoadingOverlay({ show }: { show: boolean }) {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black bg-opacity-60">
-      <div className="flex flex-col items-center gap-6 p-8 bg-white bg-opacity-90 rounded-2xl shadow-2xl border-2 border-indigo-200">
+      <div className="flex flex-col items-center gap-6 p-8 bg-white bg-opacity-90 rounded-2xl shadow-2xl border-2 border-indigo-200 w-96 h-64">
         <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-2" />
-        <div className="text-xl font-semibold text-indigo-800 animate-pulse text-center min-h-[2.5em]">
+        <div className="text-xl font-semibold text-indigo-800 animate-pulse text-center h-16 w-full flex items-center justify-center px-4">
           {LOADING_MESSAGES[msgIdx]}
         </div>
         <div className="text-xs text-gray-500 mt-2">This may take a few seconds…</div>
@@ -562,7 +562,7 @@ export default function CreateProjectPage() {
         title: problem.title,
         iosScore: problem.iosAssessment?.totalScore || problem.opportunityScore
       }));
-      const { data, error } = await supabase.functions.invoke('generate-problem-test', {
+      const { data, error } = await supabase.functions.invoke('generate-problem', {
         body: {
           projectType,
           inputMode,

@@ -17,6 +17,14 @@ export interface Project {
   HMW_Ideation_Framework?: any;
   canvas?: any;
   metadata?: any;
+  design_research?: {
+    generated_at?: string;
+    form?: {
+      painPointStep?: string;
+      painPointDescription?: string;
+      targetUserContext?: string;
+    };
+  };
   chatbox?: Array<{
     user: string;
     assistant: string;
