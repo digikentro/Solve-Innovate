@@ -471,20 +471,7 @@ export const ProjectDetailPage = () => {
                     gradientTo="red-50"
                     iconBgFrom="orange-500"
                     iconBgTo="red-600"
-                    formFields={[
-                      {
-                        id: 'painPointInvestigated',
-                        label: 'Pain Point Investigated',
-                        placeholder: 'e.g., Young student accessing online education from rural area',
-                        type: 'text'
-                      },
-                      {
-                        id: 'extremeUserType',
-                        label: 'Extreme User Type',
-                        placeholder: 'e.g., Ravi, 16-year-old student in a remote village with unstable internet',
-                        type: 'text'
-                      }
-                    ]}
+                    formFields={[]}
                     formData={psychologicalAnalysisForm}
                     setFormData={setPsychologicalAnalysisForm}
                     data={psychologicalAnalysisData}
@@ -501,39 +488,6 @@ export const ProjectDetailPage = () => {
               {/* Transformation Framework */}
               {activeSection === 'transformation' && (
                 <div className="animate-fadeIn">
-                  {/* Debug Panel */}
-                  <div className="bg-yellow-100 border border-yellow-400 p-4 mb-6 rounded-lg">
-                    <h4 className="font-bold text-yellow-800 mb-2">Debug Info:</h4>
-                    <div className="text-sm text-yellow-700 space-y-1">
-                      <div>Project ID: {project?.id}</div>
-                      <div>Has project.transformation_framework: {project?.transformation_framework ? 'YES' : 'NO'}</div>
-                      <div>transformation_framework type: {typeof project?.transformation_framework}</div>
-                      <div>transformation_framework value (first 200 chars): {JSON.stringify(project?.transformation_framework)?.substring(0, 200)}...</div>
-                      <div>transformationFrameworkData from hook: {JSON.stringify(transformationFrameworkData, null, 2)}</div>
-                      <div>transformationFrameworkData is null: {transformationFrameworkData === null ? 'YES' : 'NO'}</div>
-                      <div>transformationFrameworkData is undefined: {transformationFrameworkData === undefined ? 'YES' : 'NO'}</div>
-                      <div>
-                        <button 
-                          onClick={() => {
-                            console.log('MANUAL TEST - Raw data:', project?.transformation_framework);
-                            if (project?.transformation_framework) {
-                              try {
-                                const parsed = JSON.parse(project.transformation_framework);
-                                console.log('MANUAL TEST - Parsed:', parsed);
-                                console.log('MANUAL TEST - Content:', parsed.content);
-                              } catch (e) {
-                                console.log('MANUAL TEST - Parse error:', e);
-                              }
-                            }
-                          }}
-                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Test Parse Manually
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  
                   <ResearchGeneratorSection
                     title="Transformation Framework"
                     description="Transform psychological insights into actionable transformation strategies. This bridges the gap between analysis and behavior change implementation."
@@ -541,18 +495,7 @@ export const ProjectDetailPage = () => {
                     gradientTo="purple-50"
                     iconBgFrom="indigo-500"
                     iconBgTo="purple-600"
-                    formFields={[
-                      {
-                        id: 'painPointInvestigated',
-                        label: 'Pain Point Investigated',
-                        placeholder: 'Enter the main pain point you want to investigate'
-                      },
-                      {
-                        id: 'extremeUserType',
-                        label: 'Extreme User Type',
-                        placeholder: 'Describe the extreme user type for this analysis'
-                      }
-                    ]}
+                    formFields={[]}
                     formData={transformationFrameworkForm}
                     setFormData={setTransformationFrameworkForm}
                     data={transformationFrameworkData}
@@ -576,20 +519,7 @@ export const ProjectDetailPage = () => {
                     gradientTo="pink-50"
                     iconBgFrom="purple-500"
                     iconBgTo="pink-600"
-                    formFields={[
-                      {
-                        id: 'painPointInvestigated',
-                        label: 'Pain Point Investigated',
-                        placeholder: 'e.g., Young student accessing online education from rural area',
-                        type: 'text'
-                      },
-                      {
-                        id: 'extremeUserType',
-                        label: 'Extreme User Type',
-                        placeholder: 'e.g., Ravi, 16-year-old student in a remote village with unstable internet',
-                        type: 'text'
-                      }
-                    ]}
+                    formFields={[]}
                     formData={hmwFrameworkForm}
                     setFormData={setHmwFrameworkForm}
                     data={hmwFrameworkData}
@@ -613,20 +543,7 @@ export const ProjectDetailPage = () => {
                     gradientTo="blue-50"
                     iconBgFrom="indigo-500"
                     iconBgTo="blue-600"
-                    formFields={[
-                      {
-                        id: 'painPointInvestigated',
-                        label: 'Prioritized Pain Point',
-                        placeholder: 'e.g., Woman travels to healthcare facility or contacts healthcare provider',
-                        type: 'text'
-                      },
-                      {
-                        id: 'extremeUserType',
-                        label: 'Selected Extreme User',
-                        placeholder: 'e.g., The Remote Island Expectant Mother - 28-year-old woman living on river island',
-                        type: 'text'
-                      }
-                    ]}
+                    formFields={[]}
                     formData={hmwIdeationForm}
                     setFormData={setHmwIdeationForm}
                     data={hmwIdeationData}

@@ -62,8 +62,10 @@ export const OutcomeToBehaviorHMWReportViewer = ({ data, onGenerateNew }: Outcom
                 className="w-full text-left mb-4"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Transformation {idx + 1}: {trans.outcome?.slice(0, 40) || 'Transformation'}</h3>
-                  <span className="text-2xl">{expandedTransformations[idx] ? '−' : '+'}</span>
+                  <h3 className="text-lg font-semibold pr-4">
+                    Transformation {idx + 1}: {trans.outcome || 'Transformation'}
+                  </h3>
+                  <span className="text-2xl flex-shrink-0">{expandedTransformations[idx] ? '−' : '+'}</span>
                 </div>
               </button>
               {expandedTransformations[idx] && (

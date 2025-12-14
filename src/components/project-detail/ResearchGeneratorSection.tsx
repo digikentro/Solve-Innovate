@@ -84,19 +84,21 @@ export const ResearchGeneratorSection = ({
       onGenerate();
     }
     
-    // Validate all fields
-    const allFields: FormField[] = [];
-    formFields.forEach(element => {
-      if ('type' in element && element.type === 'inline') {
-        allFields.push(...element.fields);
-      } else {
-        allFields.push(element as FormField);
+    // Validate all fields - only if there are form fields
+    if (formFields.length > 0) {
+      const allFields: FormField[] = [];
+      formFields.forEach(element => {
+        if ('type' in element && element.type === 'inline') {
+          allFields.push(...element.fields);
+        } else {
+          allFields.push(element as FormField);
+        }
+      });
+      const missingFields = allFields.filter(field => !formData[field.id]?.trim());
+      if (missingFields.length > 0) {
+        toast.error(`Please fill in all fields for ${title.toLowerCase()}.`);
+        return;
       }
-    });
-    const missingFields = allFields.filter(field => !formData[field.id]?.trim());
-    if (missingFields.length > 0) {
-      toast.error(`Please fill in all fields for ${title.toLowerCase()}.`);
-      return;
     }
 
     setIsLoading(true);
@@ -149,20 +151,22 @@ export const ResearchGeneratorSection = ({
         duration: 3000,
       });
       
-      // Clear form
-      const allFields: FormField[] = [];
-      formFields.forEach(element => {
-        if ('type' in element && element.type === 'inline') {
-          allFields.push(...element.fields);
-        } else {
-          allFields.push(element as FormField);
-        }
-      });
-      const clearedForm = allFields.reduce((acc, field) => {
-        acc[field.id] = '';
-        return acc;
-      }, {} as any);
-      setFormData(clearedForm);
+      // Clear form - only if there are form fields
+      if (formFields.length > 0) {
+        const allFields: FormField[] = [];
+        formFields.forEach(element => {
+          if ('type' in element && element.type === 'inline') {
+            allFields.push(...element.fields);
+          } else {
+            allFields.push(element as FormField);
+          }
+        });
+        const clearedForm = allFields.reduce((acc, field) => {
+          acc[field.id] = '';
+          return acc;
+        }, {} as any);
+        setFormData(clearedForm);
+      }
     } catch (error) {
       console.error(`Error generating ${title}:`, error);
       if (error instanceof Error) {

@@ -88,8 +88,10 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew }: Psych
                 className="w-full text-left mb-4"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Cluster {idx + 1}: {cluster.irrationalBehavior?.slice(0, 40) || 'Behavior Cluster'}</h3>
-                  <span className="text-2xl">{expandedClusters[idx] ? '−' : '+'}</span>
+                  <h3 className="text-lg font-semibold pr-4">
+                    Cluster {idx + 1}: {cluster.irrationalBehavior || 'Behavior Cluster'}
+                  </h3>
+                  <span className="text-2xl flex-shrink-0">{expandedClusters[idx] ? '−' : '+'}</span>
                 </div>
               </button>
               {expandedClusters[idx] && (
