@@ -21,15 +21,9 @@ import { EditProfilePage } from '@/pages/ProfilePage';
 import ProjectSlidePage from '@/pages/ProjectSlidePage';
 import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
-import AsIsMapPage from '@/pages/AsIsMapPage';
-import ExtremeUserPage from '@/pages/ExtremeUserPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
-import PsychologicalAnalysisPage from '@/pages/PsychologicalAnalysisPage';
 import TransformationFrameworkPage from '@/pages/TransformationFrameworkPage';
 import { ChatPage } from '@/pages/ChatPage';
-
-import OutcomeToBehaviorReport from '@/pages/OutcomeToBehaviorReport';
-import HMWIdeationReport from '@/pages/HMWIdeationReport';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -246,22 +240,7 @@ function App() {
                   </ProtectedRoute>
                 }
             />
-            <Route
-                path="projects/:id/as_is_map"
-                element={
-                  <ProtectedRoute>
-                    <AsIsMapPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path="projects/:id/extreme_user"
-                element={
-                  <ProtectedRoute>
-                    <ExtremeUserPage />
-                  </ProtectedRoute>
-                }
-            />
+
             <Route
                 path="projects/:id/deep_empathy"
                 element={
@@ -270,14 +249,7 @@ function App() {
                   </ProtectedRoute>
                 }
             />
-            <Route
-                path="projects/:id/psychological_analysis"
-                element={
-                  <ProtectedRoute>
-                    <PsychologicalAnalysisPage />
-                  </ProtectedRoute>
-                }
-            />
+
             <Route
                 path="projects/:id/transformation_framework"
                 element={
@@ -287,30 +259,6 @@ function App() {
                 }
             />
 
-            <Route
-                path="projects/:id/outcome_to_behavior"
-                element={
-                  <ProtectedRoute>
-                    <OutcomeToBehaviorReport />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path="projects/:id/hmw_framework"
-                element={
-                  <ProtectedRoute>
-                    <OutcomeToBehaviorReport />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path="projects/:id/hmw_ideation"
-                element={
-                  <ProtectedRoute>
-                    <HMWIdeationReport />
-                  </ProtectedRoute>
-                }
-            />
             <Route
                 path="projects/:id/chat"
                 element={

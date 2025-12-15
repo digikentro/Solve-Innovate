@@ -21,6 +21,7 @@ import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUs
 
 import { OutcomeToBehaviorHMWReportViewer } from '@/components/project-detail/OutcomeToBehaviorHMWReportViewer';
 import { HMWIdeationFrameworkReportViewer } from '@/components/project-detail/HMWIdeationFrameworkReportViewer';
+import { IdeaClusteringReportViewer } from '@/components/project-detail/IdeaClusteringReportViewer';
 import { EmbeddedChatSection } from '@/components/project-detail/EmbeddedChatSection';
 
 // Section navigation items
@@ -35,6 +36,7 @@ const SECTIONS = [
   { id: 'transformation', label: 'Transformation Framework', icon: FiTarget },
   { id: 'hmw-framework', label: 'Outcome-to-Behavior HMW', icon: FiZap },
   { id: 'hmw-ideation', label: 'HMW Ideation Framework', icon: FiZap },
+  { id: 'idea-clustering', label: 'Idea Clustering and Idea Cards', icon: FiZap },
 ];
 
 export const ProjectDetailPage = () => {
@@ -92,6 +94,10 @@ export const ProjectDetailPage = () => {
     extremeUserType: ''
   });
 
+  const [ideaClusteringForm, setIdeaClusteringForm] = useState({
+    projectId: ''
+  });
+
   // Pain Point Modal handlers
   const handleShowPainPointsModal = () => {
     setIsPainPointModalOpen(true);
@@ -144,6 +150,7 @@ export const ProjectDetailPage = () => {
     transformationFrameworkData,
     hmwFrameworkData,
     hmwIdeationData,
+    ideaClusteringData,
     setAsIsMapData,
     setExtremeUserData,
     setDeepEmpathyData,
@@ -151,7 +158,29 @@ export const ProjectDetailPage = () => {
     setTransformationFrameworkData,
     setHmwFrameworkData,
     setHmwIdeationData,
+    setIdeaClusteringData,
   } = useResearchData(project);
+
+
+
+  // Function to extract Target Users from As-Is Map and populate Extreme User form
+  const populateTargetUserFromAsIsMap = () => {
+    if (!asIsMapData) return;
+    
+    const reportData = asIsMapData?.content || asIsMapData;
+    if (reportData?.hmw_statement_analysis?.target_users) {
+      const targetUsers = Array.isArray(reportData.hmw_statement_analysis.target_users) 
+        ? reportData.hmw_statement_analysis.target_users[0] 
+        : reportData.hmw_statement_analysis.target_users;
+      
+      if (targetUsers) {
+        setExtremeUserForm(prev => ({
+          ...prev,
+          targetUserContext: targetUsers
+        }));
+      }
+    }
+  };
 
   // Function to sync Extreme User data to Deep Empathy (called on Generate)
   const syncExtremeUserToDeepEmpathy = () => {
@@ -395,6 +424,7 @@ export const ProjectDetailPage = () => {
                       location: formData.location
                     })}
                     onShowPainPointsModal={handleShowPainPointsModal}
+                    onPopulateFromAsIsMap={populateTargetUserFromAsIsMap}
                     onGenerate={syncExtremeUserToDeepEmpathy}
                     onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <ExtremeUserReportViewer data={data} onGenerateNew={onGenerateNew} />}
@@ -502,8 +532,11 @@ export const ProjectDetailPage = () => {
                     setData={setTransformationFrameworkData}
                     isGenerating={false}
                     projectId={project.id}
-                    apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/Transformation Framework"
-                    onRefreshProject={refetchProject}
+                    apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/Transformation_Framework"                    requestBodyMapper={(formData, projectId) => ({
+                      project_id: projectId,
+                      "Prioritized Pain Point": formData.painPointInvestigated,
+                      "Selected Extreme User": formData.extremeUserType
+                    })}                    onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <TransformationFrameworkReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
@@ -558,6 +591,33 @@ export const ProjectDetailPage = () => {
                     })}
                     onRefreshProject={refetchProject}
                     renderReport={(data, onGenerateNew) => <HMWIdeationFrameworkReportViewer data={data} onGenerateNew={onGenerateNew} />}
+                  />
+                </div>
+              )}
+
+              {/* Idea Clustering and Idea Cards */}
+              {activeSection === 'idea-clustering' && (
+                <div className="animate-fadeIn">
+                  <ResearchGeneratorSection
+                    title="Idea Clustering and Idea Cards"
+                    description="Generate idea clusters and detailed idea cards from your ideation framework. This analysis groups related ideas, evaluates innovation potential, and provides actionable implementation pathways for the most promising concepts."
+                    gradientFrom="emerald-50"
+                    gradientTo="teal-50"
+                    iconBgFrom="emerald-500"
+                    iconBgTo="teal-600"
+                    formFields={[]}
+                    formData={ideaClusteringForm}
+                    setFormData={setIdeaClusteringForm}
+                    data={ideaClusteringData}
+                    setData={setIdeaClusteringData}
+                    isGenerating={false}
+                    projectId={project.id}
+                    apiEndpoint="https://n8n.srv922914.hstgr.cloud/webhook/Idea_Clustering_and_Idea_Cards"
+                    requestBodyMapper={(formData, projectId) => ({
+                      project_id: projectId
+                    })}
+                    onRefreshProject={refetchProject}
+                    renderReport={(data, onGenerateNew) => <IdeaClusteringReportViewer data={data} onGenerateNew={onGenerateNew} />}
                   />
                 </div>
               )}

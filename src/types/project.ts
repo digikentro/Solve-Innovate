@@ -15,6 +15,7 @@ export interface Project {
   transformation_framework?: any;
   Behaviour_Framework?: any;
   HMW_Ideation_Framework?: any;
+  Idea_Clustering_and_Idea_Cards?: any;
   canvas?: any;
   metadata?: any;
   design_research?: {

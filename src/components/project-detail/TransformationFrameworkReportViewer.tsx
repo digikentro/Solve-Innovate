@@ -6,13 +6,20 @@ interface TransformationFrameworkReportViewerProps {
 }
 
 export const TransformationFrameworkReportViewer: React.FC<TransformationFrameworkReportViewerProps> = ({ data, onGenerateNew }) => {
-  // Follow the same pattern as PsychologicalAnalysisReportViewer
-  const reportData = data?.content || data;
   
-  console.log('TransformationFrameworkReportViewer - received data:', data);
-  console.log('TransformationFrameworkReportViewer - reportData after extraction:', reportData);
-  console.log('TransformationFrameworkReportViewer - reportData type:', typeof reportData);
-  console.log('TransformationFrameworkReportViewer - reportData keys:', reportData ? Object.keys(reportData) : 'no reportData');
+  let reportData = data;
+  
+  // Try multiple extraction methods
+  if (data?.content) {
+    reportData = data.content;
+  } else if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      reportData = parsed.content || parsed;
+    } catch (e) {
+      reportData = data;
+    }
+  }
 
   const renderDataValue = (value: any): string => {
     if (value === null || value === undefined) return 'N/A';
@@ -28,8 +35,6 @@ export const TransformationFrameworkReportViewer: React.FC<TransformationFramewo
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">No transformation framework data available</p>
-        <p className="text-xs text-gray-400 mt-2">Debug: original data = {JSON.stringify(data, null, 2)}</p>
-        <p className="text-xs text-gray-400 mt-2">Debug: reportData = {JSON.stringify(reportData, null, 2)}</p>
         <button
           onClick={onGenerateNew}
           className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -234,6 +239,21 @@ export const TransformationFrameworkReportViewer: React.FC<TransformationFramewo
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback: Show raw data if expected structure doesn't exist */}
+      {!reportData.projectContext && !reportData.irrationalityClusters && !reportData.outcomeIntegrationAnalysis && (
+        <div className="bg-yellow-50 p-6 rounded-xl border border-yellow-200">
+          <h3 className="text-lg font-bold text-yellow-800 mb-4">🔍 Debug: Raw Data Structure</h3>
+          <p className="text-sm text-yellow-700 mb-4">
+            The expected transformation framework structure was not found. Showing raw data for debugging:
+          </p>
+          <div className="bg-white p-4 rounded border border-yellow-300 max-h-96 overflow-auto">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+              {JSON.stringify(reportData, null, 2)}
+            </pre>
           </div>
         </div>
       )}

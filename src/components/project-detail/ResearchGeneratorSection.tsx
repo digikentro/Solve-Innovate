@@ -38,6 +38,7 @@ interface ResearchGeneratorSectionProps {
   requestBodyMapper?: (formData: any, projectId: string) => Record<string, any>;
   onShowPainPointsModal?: () => void;
   onShowUsersModal?: () => void; // Add callback for user selection modal
+  onPopulateFromAsIsMap?: () => void; // Add callback for populating from As-Is Map
   onGenerate?: () => void; // Add callback for when Generate button is clicked
   renderReport?: (data: any, onGenerateNew: () => void) => React.ReactNode; // Updated: Accepts handler
   onRefreshProject?: () => void; // Add this to refresh project data after generation
@@ -61,6 +62,7 @@ export const ResearchGeneratorSection = ({
   requestBodyMapper,
   onShowPainPointsModal,
   onShowUsersModal,
+  onPopulateFromAsIsMap,
   onGenerate,
   renderReport,
   onRefreshProject,
@@ -70,11 +72,28 @@ export const ResearchGeneratorSection = ({
 
   // Check if data exists - either from local state or passed from parent (database)
   const hasData = data !== null && data !== undefined;
+  
+  // DEBUG: Log data evaluation for transformation framework
+  if (title === 'Transformation Framework') {
+    console.log('ResearchGeneratorSection DEBUG:', {
+      title,
+      data,
+      hasData,
+      dataType: typeof data,
+      dataKeys: data ? Object.keys(data) : 'no data'
+    });
+  }
 
   // Auto-show report when data is available (from database on page load)
   useEffect(() => {
+    if (title === 'Transformation Framework') {
+      console.log('Transformation useEffect:', { hasData, isLoading, showReport });
+    }
     if (hasData && !isLoading) {
       setShowReport(true);
+      if (title === 'Transformation Framework') {
+        console.log('Transformation: Setting showReport to true');
+      }
     }
   }, [hasData, isLoading]);
 
@@ -204,6 +223,11 @@ export const ResearchGeneratorSection = ({
     }
   };
 
+  // DEBUG: Log render decision
+  if (title === 'Transformation Framework') {
+    console.log('Transformation Framework render decision:', { hasData, showReport, renderingForm: !hasData });
+  }
+
   return (
     <>
       {!hasData ? (
@@ -264,6 +288,16 @@ export const ResearchGeneratorSection = ({
                                     Choose User
                                   </button>
                                 )}
+                                {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
+                                  <button
+                                    type="button"
+                                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                                    onClick={onPopulateFromAsIsMap}
+                                    title="Use Target Users from As-Is Map Report"
+                                  >
+                                    Use As-Is Map
+                                  </button>
+                                )}
                               </div>
                               {field.type === 'textarea' ? (
                                 <textarea
@@ -306,6 +340,16 @@ export const ResearchGeneratorSection = ({
                               title="Choose from Extreme User Analysis"
                             >
                               Choose User
+                            </button>
+                          )}
+                          {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                              onClick={onPopulateFromAsIsMap}
+                              title="Use Target Users from As-Is Map Report"
+                            >
+                              Use As-Is Map
                             </button>
                           )}
                         </div>

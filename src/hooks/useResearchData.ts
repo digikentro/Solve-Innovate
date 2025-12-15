@@ -9,6 +9,7 @@ interface ResearchDataState {
   transformationFrameworkData: any | null;
   hmwFrameworkData: any | null;
   hmwIdeationData: any | null;
+  ideaClusteringData: any | null;
 }
 
 export const useResearchData = (project: Project | null) => {
@@ -20,6 +21,7 @@ export const useResearchData = (project: Project | null) => {
     transformationFrameworkData: null,
     hmwFrameworkData: null,
     hmwIdeationData: null,
+    ideaClusteringData: null,
   });
 
   useEffect(() => {
@@ -78,22 +80,11 @@ export const useResearchData = (project: Project | null) => {
         return null;
       }
       
-      // For transformation framework, use special extraction logic
-      let result;
+      // Standard logic for all types
+      let result = parsed.content !== undefined ? parsed.content : parsed;
+      
       if (type === 'transformation') {
-        console.log(`extractData for ${type}: parsed data structure:`, parsed);
-        
-        // Try to get the content field
-        if (parsed && parsed.content) {
-          result = parsed.content;
-          console.log(`extractData for ${type}: extracted content field:`, result);
-        } else {
-          result = parsed;
-          console.log(`extractData for ${type}: using full parsed data:`, result);
-        }
-      } else {
-        // Standard logic for other types
-        result = parsed.content !== undefined ? parsed.content : parsed;
+        console.log(`extractData for ${type}: using standard extraction, result:`, result);
       }
       
       console.log(`extractData for ${type}: final extracted result:`, result);
@@ -137,9 +128,10 @@ export const useResearchData = (project: Project | null) => {
       extremeUserData: extractData(project.extreme_user_data),
       deepEmpathyData: extractData(project.deep_empathy_data),
       psychologicalAnalysisData: extractData(project.psychological_analysis, 'psychological'),
-      transformationFrameworkData: extractData(project.transformation_framework),
+      transformationFrameworkData: extractData(project.transformation_framework, 'transformation'),
       hmwFrameworkData: extractData(project.Behaviour_Framework),
       hmwIdeationData: extractData(project.HMW_Ideation_Framework),
+      ideaClusteringData: extractData(project.Idea_Clustering_and_Idea_Cards),
     });
   }, [project]);
 
@@ -152,5 +144,6 @@ export const useResearchData = (project: Project | null) => {
     setTransformationFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, transformationFrameworkData: data })),
     setHmwFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, hmwFrameworkData: data })),
     setHmwIdeationData: (data: any) => setResearchData(prev => ({ ...prev, hmwIdeationData: data })),
+    setIdeaClusteringData: (data: any) => setResearchData(prev => ({ ...prev, ideaClusteringData: data })),
   };
 };

@@ -57,19 +57,29 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew }: AsIsMapReportViewer
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold mb-2">Problem Statement</h3>
-              <p className="text-base leading-relaxed pl-4">
-                {reportData.hmw_statement_analysis.hmw?.[0] || 'N/A'}
+              <p className="text-base leading-relaxed pl-4 break-words whitespace-normal">
+                {Array.isArray(reportData.hmw_statement_analysis.hmw) 
+                  ? reportData.hmw_statement_analysis.hmw[0] 
+                  : reportData.hmw_statement_analysis.hmw || 'N/A'}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
                 <h3 className="text-lg font-semibold mb-2">Target Users</h3>
-                <p className="text-base pl-4">{reportData.hmw_statement_analysis.target_users?.[0] || 'N/A'}</p>
+                <p className="text-base pl-4 break-words whitespace-normal">
+                  {Array.isArray(reportData.hmw_statement_analysis.target_users) 
+                    ? reportData.hmw_statement_analysis.target_users[0] 
+                    : reportData.hmw_statement_analysis.target_users || 'N/A'}
+                </p>
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2">Core Need</h3>
-                <p className="text-base pl-4">{reportData.hmw_statement_analysis.core_need?.[0] || 'N/A'}</p>
+                <p className="text-base pl-4 break-words whitespace-normal">
+                  {Array.isArray(reportData.hmw_statement_analysis.core_need) 
+                    ? reportData.hmw_statement_analysis.core_need[0] 
+                    : reportData.hmw_statement_analysis.core_need || 'N/A'}
+                </p>
               </div>
             </div>
           </div>
@@ -279,26 +289,34 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew }: AsIsMapReportViewer
           <div className="grid grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-semibold mb-3">Primary Focus</h3>
-              <p className="text-sm pl-4">
-                {reportData.exploration_recommendations.primary_focus?.[0] || 'N/A'}
+              <p className="text-sm pl-4 break-words whitespace-normal">
+                {Array.isArray(reportData.exploration_recommendations.primary_focus) 
+                  ? reportData.exploration_recommendations.primary_focus[0] 
+                  : reportData.exploration_recommendations.primary_focus || 'N/A'}
               </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-3">Research Methods</h3>
-              <p className="text-sm pl-4">
-                {reportData.exploration_recommendations.research_methods?.[0] || 'N/A'}
+              <p className="text-sm pl-4 break-words whitespace-normal">
+                {Array.isArray(reportData.exploration_recommendations.research_methods) 
+                  ? reportData.exploration_recommendations.research_methods[0] 
+                  : reportData.exploration_recommendations.research_methods || 'N/A'}
               </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-3">Success Metrics</h3>
-              <p className="text-sm pl-4">
-                {reportData.exploration_recommendations.success_metrics?.[0] || 'N/A'}
+              <p className="text-sm pl-4 break-words whitespace-normal">
+                {Array.isArray(reportData.exploration_recommendations.success_metrics) 
+                  ? reportData.exploration_recommendations.success_metrics[0] 
+                  : reportData.exploration_recommendations.success_metrics || 'N/A'}
               </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-3">Timeline</h3>
-              <p className="text-sm pl-4">
-                {reportData.exploration_recommendations.timeline?.[0] || 'N/A'}
+              <p className="text-sm pl-4 break-words whitespace-normal">
+                {Array.isArray(reportData.exploration_recommendations.timeline) 
+                  ? reportData.exploration_recommendations.timeline[0] 
+                  : reportData.exploration_recommendations.timeline || 'N/A'}
               </p>
             </div>
           </div>
