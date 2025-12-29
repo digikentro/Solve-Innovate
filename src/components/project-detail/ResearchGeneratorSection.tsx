@@ -70,8 +70,30 @@ export const ResearchGeneratorSection = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
+  // COMPREHENSIVE DEBUG for transformation framework
+  if (title === 'Transformation Framework') {
+    console.log('=== RESEARCH GENERATOR SECTION DEBUG ===');
+    console.log('Title:', title);
+    console.log('Data received from parent:', data);
+    console.log('Data type:', typeof data);
+    console.log('Data is null?', data === null);
+    console.log('Data is undefined?', data === undefined);
+    if (data) {
+      console.log('Data keys:', Object.keys(data));
+      console.log('Has content property?', 'content' in data);
+      console.log('Content value:', data.content);
+    }
+    console.log('=== END DEBUG ===');
+  }
+
   // Check if data exists - either from local state or passed from parent (database)
-  const hasData = data !== null && data !== undefined;
+  const hasData = data !== null && data !== undefined && 
+    (typeof data === 'object' && Object.keys(data).length > 0);
+     
+  // Additional debug for transformation framework
+  if (title === 'Transformation Framework') {
+    console.log('Transformation hasData result:', hasData);
+  }
   
   // DEBUG: Log data evaluation for transformation framework
   if (title === 'Transformation Framework') {
@@ -86,16 +108,15 @@ export const ResearchGeneratorSection = ({
 
   // Auto-show report when data is available (from database on page load)
   useEffect(() => {
-    if (title === 'Transformation Framework') {
-      console.log('Transformation useEffect:', { hasData, isLoading, showReport });
-    }
+    console.log(`${title} useEffect:`, { hasData, isLoading, showReport });
     if (hasData && !isLoading) {
       setShowReport(true);
-      if (title === 'Transformation Framework') {
-        console.log('Transformation: Setting showReport to true');
-      }
+      console.log(`${title}: Setting showReport to true`);
+    } else if (!hasData && !isLoading) {
+      setShowReport(false);
+      console.log(`${title}: Setting showReport to false (no data)`);
     }
-  }, [hasData, isLoading]);
+  }, [hasData, isLoading, title]);
 
   const handleGenerate = async () => {
     // Call onGenerate callback if provided (for syncing data between forms)
@@ -199,38 +220,23 @@ export const ResearchGeneratorSection = ({
   };
 
   const handleReset = () => {
-    // Trigger regeneration instead of clearing form
+    // Clear data and show form
     setData(null);
     setShowReport(false);
-    // Keep form data and trigger regeneration
-    if (Object.values(formData).some(value => value && value.toString().trim())) {
-      handleGenerate();
-    } else {
-      // Only clear form if no data exists
-      const allFields: FormField[] = [];
-      formFields.forEach(element => {
-        if ('type' in element && element.type === 'inline') {
-          allFields.push(...element.fields);
-        } else {
-          allFields.push(element as FormField);
-        }
-      });
-      const clearedForm = allFields.reduce((acc, field) => {
-        acc[field.id] = '';
-        return acc;
-      }, {} as any);
-      setFormData(clearedForm);
-    }
+    
+    // Don't clear form fields - keep existing data so users can regenerate with same inputs
+    // This is especially useful for sections like Deep Empathy where users want to keep
+    // the pain point and description when regenerating
+    
+    // Note: Form data is preserved, users can modify if needed before clicking Generate
   };
 
   // DEBUG: Log render decision
-  if (title === 'Transformation Framework') {
-    console.log('Transformation Framework render decision:', { hasData, showReport, renderingForm: !hasData });
-  }
+  console.log(`${title} render decision:`, { hasData, showReport, willShowForm: !showReport });
 
   return (
     <>
-      {!hasData ? (
+      {!showReport ? (
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
           <div className={`px-8 py-6 bg-gradient-to-r from-${gradientFrom} to-${gradientTo} border-b border-gray-100`}>
             <div className="flex items-center justify-between">

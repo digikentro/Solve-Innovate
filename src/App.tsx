@@ -22,13 +22,12 @@ import ProjectSlidePage from '@/pages/ProjectSlidePage';
 import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
-import TransformationFrameworkPage from '@/pages/TransformationFrameworkPage';
 import { ChatPage } from '@/pages/ChatPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  
+
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="py-10">
@@ -44,23 +43,23 @@ const Dashboard = () => {
               </Link>
             </div>
           </div>
-          
+
           <div className="mt-8 grid gap-6 grid-cols-1 lg:grid-cols-3">
             {/* Profile Card */}
             <div className="lg:col-span-1">
               <ProfileCard />
             </div>
-            
+
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* IOS Dashboard */}
               <IOSDashboard />
-              
+
               {/* Welcome Section */}
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Welcome to SolveInnovate</h3>
                 <p className="text-gray-600">Start shaping your ideas with AI assistance. Create a new project or explore existing ones to get started.</p>
-                
+
                 <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div className="bg-indigo-50 p-4 rounded-lg">
                     <h4 className="text-sm font-medium text-indigo-800">Projects</h4>
@@ -69,7 +68,7 @@ const Dashboard = () => {
                       <Link to="/projects" className="hover:underline">View all →</Link>
                     </p>
                   </div>
-                  
+
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h4 className="text-sm font-medium text-green-800">Ideas</h4>
                     <p className="mt-2 text-2xl font-semibold text-green-900">0</p>
@@ -79,7 +78,7 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Recent Activity Section */}
               <div className="bg-white shadow rounded-lg overflow-hidden">
                 <div className="bg-white px-6 py-5 border-b border-gray-200">
@@ -107,7 +106,7 @@ const SetupProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    
+
     setLoading(true);
     try {
       // Here you would typically update the user's profile in your database
@@ -176,122 +175,113 @@ function App() {
               <Route index element={<HomePage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
-            <Route
+              <Route
                 path="profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="profile/edit"
                 element={
                   <ProtectedRoute>
                     <EditProfilePage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects"
                 element={
                   <ProtectedRoute>
                     <ProjectsPage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects/new"
                 element={
                   <ProtectedRoute>
                     <CreateProjectPage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects/:id"
                 element={
                   <ProtectedRoute>
                     <ProjectDetailPage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects/:id/edit"
                 element={
                   <ProtectedRoute>
                     <ProjectEditPage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects/:id/slide"
                 element={
                   <ProtectedRoute>
                     <ProjectSlidePage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="projects/:id/canvas"
                 element={
                   <ProtectedRoute>
                     <ProjectCanvasPage />
                   </ProtectedRoute>
                 }
-            />
+              />
 
-            <Route
+              <Route
                 path="projects/:id/deep_empathy"
                 element={
                   <ProtectedRoute>
                     <UniversalDeepEmpathyPage />
                   </ProtectedRoute>
                 }
-            />
+              />
 
-            <Route
-                path="projects/:id/transformation_framework"
-                element={
-                  <ProtectedRoute>
-                    <TransformationFrameworkPage />
-                  </ProtectedRoute>
-                }
-            />
-
-            <Route
+              <Route
                 path="projects/:id/chat"
                 element={
                   <ProtectedRoute>
                     <ChatPage />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="dashboard"
                 element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="setup-profile"
                 element={
                   <ProtectedRoute>
                     <SetupProfile />
                   </ProtectedRoute>
                 }
-            />
-            <Route
+              />
+              <Route
                 path="search"
                 element={
                   <ProtectedRoute>
                     <SearchPage />
                   </ProtectedRoute>
                 }
-            />
-          </Route>
+              />
+            </Route>
           </Routes>
         </AuthProvider>
       </Router>

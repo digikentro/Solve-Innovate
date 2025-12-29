@@ -812,6 +812,54 @@ export default function CreateProjectPage() {
               )}
             </div>
 
+            {/* Generate Problem Button - Positioned before OR divider */}
+            {generatedProblems.length === 0 && (
+              <div className="flex justify-end mt-8 mb-8">
+                {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) ? (
+                  <Button
+                    onClick={async () => {
+                      // Validate word count for custom input
+                      if (inputMode === 'custom') {
+                        const wordCount = problemDescription.trim().split(/\s+/).length;
+                        if (wordCount < 10) {
+                          toast.error('Please describe more.');
+                          return;
+                        }
+                      }
+                      setIsGenerating(true);
+                      setLastHmwType('human');
+                      try {
+                        await generateHMW('human');
+                      } finally {
+                        setIsGenerating(false);
+                      }
+                    }}
+                    disabled={isGenerating}
+                    className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
+                    size="lg"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Generating Problem...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Generate Problem
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <div className="text-gray-400 text-sm font-medium py-3 px-4">
+                    ↑ Enter the idea to generate
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Big OR Separator */}
             <div className="flex items-center my-12">
               <div className="flex-grow border-t-2 border-gray-300"></div>
@@ -845,30 +893,8 @@ export default function CreateProjectPage() {
           </div>
         )}
 
-        {/* Generate Problem Button */}
-        {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) && generatedProblems.length === 0 && (
-          <div className="fixed bottom-6 right-6 z-50">
-            <Button
-              onClick={() => setIsHmwTypeModalOpen(true)}
-              disabled={isGenerating}
-              className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Generating Problem...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Generate Problem
-                </>
-              )}
-            </Button>
-            <Modal open={isHmwTypeModalOpen} onClose={() => setIsHmwTypeModalOpen(false)}>
+        {/* Generate Problem Modal */}
+        <Modal open={isHmwTypeModalOpen} onClose={() => setIsHmwTypeModalOpen(false)}>
               <h2 className="text-xl font-bold mb-4">Select HMW Prompt Type</h2>
               <div className="space-y-4">
                 <div
@@ -920,8 +946,6 @@ export default function CreateProjectPage() {
                 </Button>
               </div>
             </Modal>
-          </div>
-        )}
 
         {/* Engaging loading overlay for initial HMW generation */}
         <LoadingOverlay show={isGenerating && generatedProblems.length === 0} />

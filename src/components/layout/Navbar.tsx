@@ -41,7 +41,7 @@ export function Navbar() {
                 to="/search"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
               >
-                Search
+                Validate Idea
               </Link>
             </div>
           </div>

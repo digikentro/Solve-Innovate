@@ -28,6 +28,7 @@ interface PainPointSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPainPoint: (painPoint: { step: string; description: string }) => void;
+  onSelectAllPainPoints?: (payload: { steps: string; descriptions: string; items: PainPoint[] }) => void;
   asIsMapData: AsIsMapData | null;
   project: any;
 }
@@ -36,6 +37,7 @@ export const PainPointSelectionModal = ({
   isOpen,
   onClose,
   onSelectPainPoint,
+  onSelectAllPainPoints,
   asIsMapData,
   project
 }: PainPointSelectionModalProps) => {
@@ -187,12 +189,35 @@ export const PainPointSelectionModal = ({
             <p className="text-sm text-gray-600">
               Select a pain point to automatically populate the Extreme User Generator form
             </p>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
+            <div className="flex items-center gap-3">
+              {allPainPoints.length > 0 && (
+                <button
+                  onClick={() => {
+                    const steps = allPainPoints
+                      .map((pp) => `Stage ${pp.stage_id}, Step ${pp.step_id}`)
+                      .join('; ');
+                    const descriptions = allPainPoints
+                      .map((pp, i) => `${pp.description}.`)
+                      .join('\n');
+                    if (onSelectAllPainPoints) {
+                      onSelectAllPainPoints({ steps, descriptions, items: allPainPoints });
+                    } else if (onSelectPainPoint) {
+                      onSelectPainPoint({ step: steps, description: descriptions });
+                    }
+                    onClose();
+                  }}
+                  className="px-6 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold shadow hover:bg-purple-700 transition-colors"
+                >
+                  Select All
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       </div>

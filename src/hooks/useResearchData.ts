@@ -6,10 +6,12 @@ interface ResearchDataState {
   extremeUserData: any | null;
   deepEmpathyData: any | null;
   psychologicalAnalysisData: any | null;
-  transformationFrameworkData: any | null;
   hmwFrameworkData: any | null;
   hmwIdeationData: any | null;
   ideaClusteringData: any | null;
+  transformationFrameworkData: any | null;
+  testingData: any | null;
+  marketSearchData: any | null;
 }
 
 export const useResearchData = (project: Project | null) => {
@@ -18,52 +20,89 @@ export const useResearchData = (project: Project | null) => {
     extremeUserData: null,
     deepEmpathyData: null,
     psychologicalAnalysisData: null,
-    transformationFrameworkData: null,
     hmwFrameworkData: null,
     hmwIdeationData: null,
     ideaClusteringData: null,
+    transformationFrameworkData: null,
+    testingData: null,
+    marketSearchData: null,
   });
 
   useEffect(() => {
     if (!project) return;
 
-    console.log('useResearchData - full project:', project);
-    console.log('useResearchData - all project keys:', Object.keys(project));
-    console.log('useResearchData - transformation_framework field specifically:', project.transformation_framework);
-    
-    // DIRECT TEST - Simple parsing of transformation framework
-    console.log('=== DIRECT TRANSFORMATION TEST ===');
-    const directTF = project.transformation_framework;
-    if (directTF) {
-      console.log('Direct TF exists, type:', typeof directTF);
-      console.log('Direct TF first 100 chars:', typeof directTF === 'string' ? directTF.substring(0, 100) : directTF);
-      
-      if (typeof directTF === 'string') {
-        try {
-          const directParsed = JSON.parse(directTF);
-          console.log('Direct parsing SUCCESS, keys:', Object.keys(directParsed));
-          console.log('Direct parsing content exists:', !!directParsed.content);
-          if (directParsed.content) {
-            console.log('Direct content keys:', Object.keys(directParsed.content));
-          }
-        } catch (e) {
-          console.error('Direct parsing FAILED:', e);
-        }
-      }
-    } else {
-      console.log('Direct TF is null/undefined');
-    }
-    console.log('=== END DIRECT TEST ===');
-
     const parseData = (data: any) => {
       if (!data) return null;
+
+      // If it's already an object, return it directly
+      if (typeof data === 'object' && data !== null) {
+        // Check if content is a string that needs parsing
+        if (typeof data.content === 'string') {
+          try {
+            data.content = JSON.parse(data.content);
+          } catch (e) {
+            // Try without escaped quotes
+            try {
+              const cleanContent = data.content.replace(/\\n/g, '').replace(/\\"/g, '"');
+              data.content = JSON.parse(cleanContent);
+            } catch (e2) {
+              // content is invalid JSON, leave as string
+            }
+          }
+        }
+        return data;
+      }
+
       if (typeof data === 'string') {
         try {
-          const parsed = JSON.parse(data);
-          console.log('parseData - successfully parsed string to:', parsed);
+          // First try: direct parse
+          let parsed = JSON.parse(data);
+
+          // Check if content needs additional parsing
+          if (parsed && typeof parsed.content === 'string') {
+            try {
+              parsed.content = JSON.parse(parsed.content);
+            } catch (contentErr) {
+              // Try cleaning the content string
+              try {
+                const cleanContent = parsed.content.replace(/\\n/g, '').replace(/\\"/g, '"');
+                parsed.content = JSON.parse(cleanContent);
+              } catch (e2) {
+                // content is invalid, leave as string
+              }
+            }
+          }
+
           return parsed;
         } catch (e) {
-          console.log('parseData - failed to parse string:', data, e);
+
+          // Fallback: Try to extract content using regex
+          try {
+            // Look for content between "content": and ,"generated_at" or ,"prompt"
+            const contentMatch = data.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/);
+            if (contentMatch && contentMatch[1]) {
+              let contentStr = contentMatch[1];
+              // Unescape the content
+              contentStr = contentStr.replace(/\\n/g, '').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+              try {
+                const contentParsed = JSON.parse(contentStr);
+
+                // Try to get generated_at
+                const generatedMatch = data.match(/"generated_at"\s*:\s*"([^"]+)"/);
+
+                return {
+                  content: contentParsed,
+                  generated_at: generatedMatch ? generatedMatch[1] : null
+                };
+              } catch (contentErr) {
+                // Regex content parse failed
+              }
+            }
+          } catch (regexErr) {
+            // Regex extraction failed
+          }
+
           return null;
         }
       }
@@ -72,66 +111,71 @@ export const useResearchData = (project: Project | null) => {
 
     // Check if data exists - either as direct value or nested in .content
     const extractData = (data: any, type?: string) => {
-      console.log(`extractData for ${type}:`, { raw: data, type: typeof data });
-      
       const parsed = parseData(data);
       if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) {
-        console.log(`extractData for ${type}: no parsed data`);
         return null;
       }
-      
+
       // Standard logic for all types
       let result = parsed.content !== undefined ? parsed.content : parsed;
-      
-      if (type === 'transformation') {
-        console.log(`extractData for ${type}: using standard extraction, result:`, result);
-      }
-      
-      console.log(`extractData for ${type}: final extracted result:`, result);
-      
-      // For psychological analysis, only return if valid report structure exists and not just placeholder/empty data
+
+      // For psychological analysis, only return if valid report structure exists
       if (type === 'psychological') {
         if (!result || typeof result !== 'object') return null;
-        // Check if comprehensiveMetaAnalysis exists and is all blank/zero
         let meta = result.comprehensiveMetaAnalysis;
         let clusters = result.clusters;
         let criticalRequirements = result.criticalRequirements;
         const metaIsEmpty = !meta || Object.values(meta).every(v => v === '' || v === 0 || v == null || (Array.isArray(v) && v.length === 0));
         const clustersIsEmpty = !clusters || clusters.length === 0;
         const criticalReqsIsEmpty = !criticalRequirements || (Array.isArray(criticalRequirements) && criticalRequirements.length === 0);
-        // If all are empty, treat as no data
         if (metaIsEmpty && clustersIsEmpty && criticalReqsIsEmpty) return null;
       }
 
-      // For transformation framework, be extremely lenient with validation
+      // For transformation framework, be lenient with validation
       if (type === 'transformation') {
-        console.log('Transformation validation - input result:', result);
-        
-        // Allow almost anything that's not null/undefined
-        if (result === null || result === undefined) {
-          console.log('Transformation validation - rejected: null/undefined');
-          return null;
-        }
-        
-        // Always accept any non-null/undefined data for transformation framework
-        console.log('Transformation validation - accepted:', result);
+        if (result === null || result === undefined) return null;
+        if (typeof result === 'object' && Object.keys(result).length === 0) return null;
+        if (typeof result === 'string' && result.trim().length === 0) return null;
         return result;
       }
 
       return result;
     };
 
+    let transformationResult = extractData(project.transformation_framework, 'transformation');
 
+    // FALLBACK: If extraction failed but raw data exists, try to use raw data directly
+    if (!transformationResult && project.transformation_framework) {
+      const rawTF = project.transformation_framework;
+      if (typeof rawTF === 'object' && rawTF !== null) {
+        transformationResult = rawTF;
+      } else if (typeof rawTF === 'string') {
+        try {
+          const ultraClean = rawTF
+            .replace(/\\n/g, '')
+            .replace(/\\r/g, '')
+            .replace(/\n/g, '')
+            .replace(/\r/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          transformationResult = JSON.parse(ultraClean);
+        } catch (e) {
+          // Parse failed
+        }
+      }
+    }
 
     setResearchData({
       asIsMapData: extractData(project.as_is_map),
       extremeUserData: extractData(project.extreme_user_data),
       deepEmpathyData: extractData(project.deep_empathy_data),
       psychologicalAnalysisData: extractData(project.psychological_analysis, 'psychological'),
-      transformationFrameworkData: extractData(project.transformation_framework, 'transformation'),
       hmwFrameworkData: extractData(project.Behaviour_Framework),
       hmwIdeationData: extractData(project.HMW_Ideation_Framework),
       ideaClusteringData: extractData(project.Idea_Clustering_and_Idea_Cards),
+      transformationFrameworkData: extractData(project.transformation_framework),
+      testingData: extractData(project.testing),
+      marketSearchData: extractData(project.market_research),
     });
   }, [project]);
 
@@ -141,9 +185,11 @@ export const useResearchData = (project: Project | null) => {
     setExtremeUserData: (data: any) => setResearchData(prev => ({ ...prev, extremeUserData: data })),
     setDeepEmpathyData: (data: any) => setResearchData(prev => ({ ...prev, deepEmpathyData: data })),
     setPsychologicalAnalysisData: (data: any) => setResearchData(prev => ({ ...prev, psychologicalAnalysisData: data })),
-    setTransformationFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, transformationFrameworkData: data })),
     setHmwFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, hmwFrameworkData: data })),
     setHmwIdeationData: (data: any) => setResearchData(prev => ({ ...prev, hmwIdeationData: data })),
     setIdeaClusteringData: (data: any) => setResearchData(prev => ({ ...prev, ideaClusteringData: data })),
+    setTransformationFrameworkData: (data: any) => setResearchData(prev => ({ ...prev, transformationFrameworkData: data })),
+    setTestingData: (data: any) => setResearchData(prev => ({ ...prev, testingData: data })),
+    setMarketSearchData: (data: any) => setResearchData(prev => ({ ...prev, marketSearchData: data })),
   };
 };

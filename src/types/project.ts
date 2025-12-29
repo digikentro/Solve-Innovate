@@ -12,10 +12,15 @@ export interface Project {
   extreme_user_data?: any;
   deep_empathy_data?: any;
   psychological_analysis?: any;
-  transformation_framework?: any;
   Behaviour_Framework?: any;
   HMW_Ideation_Framework?: any;
   Idea_Clustering_and_Idea_Cards?: any;
+  transformation_framework?: any;
+  final_idea?: any; // Selected idea card for prototyping
+  prototype_images?: any; // Stores generated prototype sketch metadata/url
+  testing?: any; // Stores testing analysis data
+  market_research?: any; // Stores market research data
+  research_data?: any;
   canvas?: any;
   metadata?: any;
   design_research?: {
