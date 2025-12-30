@@ -23,6 +23,11 @@ import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { AdminLayout } from '@/components/layout/AdminLayout';
+import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminProjectsPage } from '@/pages/admin/AdminProjectsPage';
+import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -281,6 +286,18 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="projects" element={<AdminProjectsPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
           </Routes>
         </AuthProvider>

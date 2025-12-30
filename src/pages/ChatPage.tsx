@@ -42,11 +42,11 @@ export const ChatPage = () => {
   useEffect(() => {
     const fetchChatHistory = async () => {
       if (!id || !user?.id) return;
-      
+
       try {
         setIsLoadingHistory(true);
         const chatHistory = await ProjectService.getProjectChatHistory(id, user.id);
-        
+
         // Convert chat history to Message format
         const historyMessages: Message[] = chatHistory.flatMap((chat, index) => [
           {
@@ -62,7 +62,7 @@ export const ChatPage = () => {
             timestamp: new Date(chat.generated_at),
           }
         ]);
-        
+
         setMessages(historyMessages);
       } catch (error) {
         console.error('Error fetching chat history:', error);
@@ -98,7 +98,7 @@ export const ChatPage = () => {
 
       console.log('Sending chat request:', requestBody);
 
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox', {
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/chatbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export const ChatPage = () => {
 
       // Handle the response structure: [{"Assistant": "message"}]
       let assistantMessage = "I'm sorry, I couldn't process your message right now.";
-      
+
       if (Array.isArray(data) && data.length > 0 && data[0].Assistant) {
         assistantMessage = data[0].Assistant;
       } else if (data.output) {
@@ -187,100 +187,96 @@ export const ChatPage = () => {
       {/* Messages Area */}
       <div className={`flex-1 p-8 space-y-6 ${messages.length > 0 ? 'overflow-y-auto no-scrollbar' : 'flex items-center justify-center'} relative z-10`} style={{ paddingBottom: messages.length > 0 ? '120px' : '0' }}>
         <div className="max-w-4xl mx-auto w-full">
-        {isLoadingHistory ? (
-          <div className="text-center">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl mx-auto mb-6 flex items-center justify-center animate-pulse">
-                <FiMessageCircle className="w-8 h-8 text-white" />
+          {isLoadingHistory ? (
+            <div className="text-center">
+              <div className="relative">
+                <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl mx-auto mb-6 flex items-center justify-center animate-pulse">
+                  <FiMessageCircle className="w-8 h-8 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Loading chat history...</h3>
-            <p className="text-gray-600 font-medium">Fetching your previous conversations.</p>
-            <div className="mt-4 flex justify-center space-x-1">
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center">
-            <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg">
-                <FiMessageCircle className="w-10 h-10 text-white" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Loading chat history...</h3>
+              <p className="text-gray-600 font-medium">Fetching your previous conversations.</p>
+              <div className="mt-4 flex justify-center space-x-1">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Start a conversation</h3>
-            <p className="text-gray-600 font-medium mb-6">Send a message to begin chatting about your project.</p>
-            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 rounded-full">
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-indigo-600 font-medium">AI Assistant Ready</span>
+          ) : messages.length === 0 ? (
+            <div className="text-center">
+              <div className="relative">
+                <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg">
+                  <FiMessageCircle className="w-10 h-10 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Start a conversation</h3>
+              <p className="text-gray-600 font-medium mb-6">Send a message to begin chatting about your project.</p>
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 rounded-full">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                <span className="text-sm text-indigo-600 font-medium">AI Assistant Ready</span>
+              </div>
             </div>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-            >
+          ) : (
+            messages.map((message) => (
               <div
-                className={`flex max-w-md lg:max-w-2xl xl:max-w-3xl ${
-                  message.isUser ? 'flex-row-reverse' : 'flex-row'
-                }`}
+                key={message.id}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
               >
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${
-                    message.isUser
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white ml-3'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3'
-                  }`}
+                  className={`flex max-w-md lg:max-w-2xl xl:max-w-3xl ${message.isUser ? 'flex-row-reverse' : 'flex-row'
+                    }`}
                 >
-                  {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
-                </div>
-                 <div
-                   className={`px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm ${
-                     message.isUser
-                       ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                       : 'bg-white/90 text-gray-900 border border-white/20'
-                   }`}
-                 >
-                   <div className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{message.text}</div>
-                   <p
-                     className={`text-xs mt-2 font-medium ${
-                       message.isUser ? 'text-indigo-100' : 'text-gray-500'
-                     }`}
-                   >
-                     {message.timestamp.toLocaleTimeString([], {
-                       hour: '2-digit',
-                       minute: '2-digit',
-                     })}
-                   </p>
-                 </div>
-              </div>
-            </div>
-          ))
-        )}
-        
-        {isTyping && (
-          <div className="flex justify-start animate-fadeIn">
-            <div className="flex max-w-md lg:max-w-2xl xl:max-w-3xl">
-              <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 flex items-center justify-center shadow-lg">
-                <FiMessageCircle className="w-5 h-5" />
-              </div>
-              <div className="bg-white/90 text-gray-900 border border-white/20 px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div
+                    className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${message.isUser
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white ml-3'
+                        : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3'
+                      }`}
+                  >
+                    {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
+                  </div>
+                  <div
+                    className={`px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm ${message.isUser
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                        : 'bg-white/90 text-gray-900 border border-white/20'
+                      }`}
+                  >
+                    <div className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{message.text}</div>
+                    <p
+                      className={`text-xs mt-2 font-medium ${message.isUser ? 'text-indigo-100' : 'text-gray-500'
+                        }`}
+                    >
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
+            ))
+          )}
+
+          {isTyping && (
+            <div className="flex justify-start animate-fadeIn">
+              <div className="flex max-w-md lg:max-w-2xl xl:max-w-3xl">
+                <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 flex items-center justify-center shadow-lg">
+                  <FiMessageCircle className="w-5 h-5" />
+                </div>
+                <div className="bg-white/90 text-gray-900 border border-white/20 px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+          )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 

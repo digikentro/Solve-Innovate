@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiSend, FiUser, FiMessageCircle } from 'react-icons/fi';
+import { FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiZap, FiX, FiArrowLeft } from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
+import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
 
 interface Message {
   id: string;
@@ -10,17 +11,42 @@ interface Message {
   timestamp: Date;
 }
 
-interface EmbeddedChatSectionProps {
-  projectId: string;
+interface CustomExtremeUser {
+  name: string;
+  age: string;
+  location: string;
+  description: string;
 }
 
-export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => {
+interface EmbeddedChatSectionProps {
+  projectId: string;
+  extremeUserData?: any;
+}
+
+export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChatSectionProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // User interaction states
+  const [isCustomUserModalOpen, setIsCustomUserModalOpen] = useState(false);
+  const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
+  const [customUser, setCustomUser] = useState<CustomExtremeUser>({
+    name: '',
+    age: '',
+    location: '',
+    description: ''
+  });
+
+  // Chat mode state - only show chat after user selection
+  const [isChatMode, setIsChatMode] = useState(false);
+  const [selectedUserData, setSelectedUserData] = useState<string | null>(null);
+  const [userContextData, setUserContextData] = useState<string | null>(null);
+  const [userType, setUserType] = useState<'provided' | 'selected' | null>(null);
+  const [isFirstMessage, setIsFirstMessage] = useState(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,15 +56,15 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
     scrollToBottom();
   }, [messages]);
 
-  // Fetch chat history when component mounts
+  // Fetch chat history when entering chat mode
   useEffect(() => {
     const fetchChatHistory = async () => {
-      if (!projectId || !user?.id) return;
-      
+      if (!projectId || !user?.id || !isChatMode) return;
+
       try {
         setIsLoadingHistory(true);
         const chatHistory = await ProjectService.getProjectChatHistory(projectId, user.id);
-        
+
         // Convert chat history to Message format
         const historyMessages: Message[] = chatHistory.flatMap((chat, index) => [
           {
@@ -54,18 +80,17 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
             timestamp: new Date(chat.generated_at),
           }
         ]);
-        
+
         setMessages(historyMessages);
       } catch (error) {
         console.error('Error fetching chat history:', error);
-        // Don't show error to user, just start with empty messages
       } finally {
         setIsLoadingHistory(false);
       }
     };
 
     fetchChatHistory();
-  }, [projectId, user?.id]);
+  }, [projectId, user?.id, isChatMode]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -83,14 +108,22 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
     setIsTyping(true);
 
     try {
-      const requestBody = {
+      // Build request body with user prompt and user data (different field names based on source)
+      const requestBody: Record<string, any> = {
         project_id: projectId,
-        user: currentInput
+        user: currentInput,
       };
+
+      // Use different field names based on user type
+      if (userType === 'provided' && userContextData) {
+        requestBody.provided_user_data = userContextData;
+      } else if (userType === 'selected' && userContextData) {
+        requestBody.extreme_user_data = userContextData;
+      }
 
       console.log('Sending chat request:', requestBody);
 
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox', {
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/chatbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,13 +139,11 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
       const data = await response.json();
       console.log('Chat response:', data);
 
-      // Handle the response structure: [{"Assistant": "message"}]
       let assistantMessage = "I'm sorry, I couldn't process your message right now.";
-      
+
       if (Array.isArray(data) && data.length > 0 && data[0].Assistant) {
         assistantMessage = data[0].Assistant;
       } else if (data.output) {
-        // Fallback to the old structure
         assistantMessage = data.output;
       }
 
@@ -144,17 +175,227 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
     }
   };
 
+  // Handle custom user form submission - just open chat mode (data sent with first message)
+  const handleCustomUserSubmit = () => {
+    if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
+
+    // Store the user context to be sent with first message
+    const userContext = `Custom User - Name: ${customUser.name}, Age: ${customUser.age}, Location: ${customUser.location}, Description: ${customUser.description}`;
+    setUserContextData(userContext);
+    setUserType('provided');
+    setSelectedUserData(`Custom User: ${customUser.name}`);
+    setIsCustomUserModalOpen(false);
+    setCustomUser({ name: '', age: '', location: '', description: '' });
+    setIsFirstMessage(true);
+    setIsChatMode(true);
+  };
+
+  // Handle extreme user selection from modal - just open chat mode (data sent with first message)
+  const handleExtremeUserSelect = (userSummary: string) => {
+    setIsSelectUserModalOpen(false);
+
+    // Store the user context to be sent with first message
+    setUserContextData(userSummary);
+    setUserType('selected');
+
+    // Extract user label from summary (first line)
+    const userLabel = userSummary.split('\n')[0] || 'Selected Extreme User';
+    setSelectedUserData(userLabel);
+    setIsFirstMessage(true);
+    setIsChatMode(true);
+  };
+
+  // Exit chat mode and return to button selection
+  const handleExitChat = () => {
+    setIsChatMode(false);
+    setSelectedUserData(null);
+    setUserContextData(null);
+    setUserType(null);
+    setMessages([]);
+    setIsFirstMessage(true);
+  };
+
+  // Button selection view (before chat mode)
+  if (!isChatMode) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <FiMessageCircle className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
+                Interact with User
+              </h3>
+              <p className="text-gray-600">Select or provide an extreme user to start chatting</p>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Button 1: Provide Your Extreme User */}
+            <button
+              onClick={() => setIsCustomUserModalOpen(true)}
+              className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <FiUserPlus className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <span className="font-bold text-lg block">Provide Your Extreme User</span>
+                <span className="text-sm text-white/80">Add custom user details</span>
+              </div>
+            </button>
+
+            {/* Button 2: Select the User */}
+            <button
+              onClick={() => setIsSelectUserModalOpen(true)}
+              className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <FiUsers className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <span className="font-bold text-lg block">Select the User</span>
+                <span className="text-sm text-white/80">Choose from generated users</span>
+              </div>
+            </button>
+
+            {/* Button 3: Insights */}
+            <div className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl shadow-lg opacity-80 cursor-not-allowed">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <FiZap className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <span className="font-bold text-lg block">Insights</span>
+                <span className="text-sm text-white/80">Coming soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Extreme User Modal */}
+        {isCustomUserModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+              {/* Modal Header */}
+              <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                      <FiUserPlus className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Provide Your Extreme User</h3>
+                      <p className="text-sm text-gray-600">Enter user details below</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCustomUserModalOpen(false)}
+                    className="p-2 hover:bg-white/50 rounded-xl transition-colors"
+                  >
+                    <FiX className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                  <input
+                    type="text"
+                    value={customUser.name}
+                    onChange={(e) => setCustomUser(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter user name"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Age *</label>
+                    <input
+                      type="text"
+                      value={customUser.age}
+                      onChange={(e) => setCustomUser(prev => ({ ...prev, age: e.target.value }))}
+                      placeholder="e.g., 25"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
+                    <input
+                      type="text"
+                      value={customUser.location}
+                      onChange={(e) => setCustomUser(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="e.g., Mumbai"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
+                  <textarea
+                    value={customUser.description}
+                    onChange={(e) => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe the user's characteristics, behaviors, needs..."
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                <button
+                  onClick={() => setIsCustomUserModalOpen(false)}
+                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCustomUserSubmit}
+                  disabled={!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()}
+                  className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Start Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Extreme User Selection Modal */}
+        <ExtremeUserSelectionModal
+          isOpen={isSelectUserModalOpen}
+          onClose={() => setIsSelectUserModalOpen(false)}
+          onSelectUser={handleExtremeUserSelect}
+          extremeUserData={extremeUserData}
+        />
+      </div>
+    );
+  }
+
+  // Chat Mode View
   return (
     <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 overflow-hidden h-[75vh] flex flex-col relative">
       {/* Decorative gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/30 via-blue-50/20 to-indigo-50/30 pointer-events-none"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-cyan-200/20 to-transparent rounded-full blur-2xl"></div>
       <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-200/20 to-transparent rounded-full blur-xl"></div>
-      
+
       {/* Header */}
       <div className="relative px-4 py-4 bg-gradient-to-r from-cyan-50/80 to-blue-50/80 backdrop-blur-sm border-b border-cyan-100/50 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <button
+              onClick={handleExitChat}
+              className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center shadow-md hover:shadow-lg transition-all text-gray-600 hover:text-gray-800"
+            >
+              <FiArrowLeft className="w-5 h-5" />
+            </button>
             <div className="relative">
               <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <FiMessageCircle className="w-7 h-7 text-white" />
@@ -162,10 +403,10 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
             </div>
             <div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
                 Chat with Your Project
               </h3>
-              <p className="text-sm text-gray-600 font-medium">AI-powered insights and project discussion</p>
+              <p className="text-sm text-gray-600 font-medium">{selectedUserData}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
@@ -184,12 +425,8 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
                 <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
                   <FiMessageCircle className="w-8 h-8 text-white" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-3 border-white shadow-lg">
-                  <div className="w-2 h-2 bg-white rounded-full mx-auto mt-2"></div>
-                </div>
               </div>
-              <h4 className="text-xl font-bold text-gray-800 mb-3">Loading conversation history</h4>
-              <p className="text-gray-600 mb-6">Retrieving your previous discussions...</p>
+              <h4 className="text-xl font-bold text-gray-800 mb-3">Loading conversation...</h4>
               <div className="flex justify-center space-x-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce"></div>
                 <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -202,25 +439,13 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
                 <div className="w-20 h-20 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl">
                   <FiMessageCircle className="w-10 h-10 text-white" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center">
-                  <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                </div>
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-                Welcome to Project Chat
+                Start Your Conversation
               </h4>
               <p className="text-gray-600 mb-6 leading-relaxed max-w-md mx-auto">
-                Start an intelligent conversation about your project. Ask questions, get insights, and explore new possibilities.
+                Ask questions about your project from the selected user's perspective.
               </p>
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-2xl border border-cyan-200/50 shadow-sm">
-                <div className="relative">
-                  <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse"></div>
-                  <div className="absolute inset-0 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-                <span className="text-sm font-semibold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
-                  AI Assistant is ready to help
-                </span>
-              </div>
             </div>
           ) : (
             messages.map((message) => (
@@ -229,33 +454,29 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
               >
                 <div
-                  className={`flex max-w-[85%] ${
-                    message.isUser ? 'flex-row-reverse' : 'flex-row'
-                  }`}
+                  className={`flex max-w-[85%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'
+                    }`}
                 >
                   <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${
-                      message.isUser
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white ml-3'
-                        : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 border border-gray-200'
-                    }`}
+                    className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${message.isUser
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white ml-3'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 border border-gray-200'
+                      }`}
                   >
                     {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
                   </div>
                   <div className="space-y-1">
                     <div
-                      className={`px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
-                        message.isUser
-                          ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-300/30'
-                          : 'bg-white/80 text-gray-800 border-gray-200/50'
-                      }`}
+                      className={`px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${message.isUser
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-300/30'
+                        : 'bg-white/80 text-gray-800 border-gray-200/50'
+                        }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{message.text}</div>
                     </div>
                     <p
-                      className={`text-xs px-2 ${
-                        message.isUser ? 'text-right text-cyan-600' : 'text-left text-gray-500'
-                      }`}
+                      className={`text-xs px-2 ${message.isUser ? 'text-right text-cyan-600' : 'text-left text-gray-500'
+                        }`}
                     >
                       {message.timestamp.toLocaleTimeString([], {
                         hour: '2-digit',
@@ -267,7 +488,7 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
               </div>
             ))
           )}
-          
+
           {isTyping && (
             <div className="flex justify-start animate-fadeIn">
               <div className="flex max-w-[85%]">
@@ -314,7 +535,7 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
                 </div>
               )}
             </div>
-            
+
             {/* Character count */}
             {inputMessage && (
               <div className="mt-2 flex justify-end">
@@ -322,7 +543,7 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
               </div>
             )}
           </div>
-          
+
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isTyping}
@@ -332,7 +553,7 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
               <FiSend className={`w-5 h-5 transition-transform duration-200 ${isTyping ? 'animate-pulse' : 'group-hover:translate-x-0.5'}`} />
               <span className="font-semibold">{isTyping ? 'Sending...' : 'Send'}</span>
             </div>
-            
+
             {/* Loading indicator for sending state */}
             {isTyping && (
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 rounded-2xl flex items-center justify-center">
@@ -345,7 +566,6 @@ export const EmbeddedChatSection = ({ projectId }: EmbeddedChatSectionProps) => 
             )}
           </button>
         </div>
-
       </div>
     </div>
   );
