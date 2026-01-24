@@ -6,10 +6,10 @@ interface AsIsMapReportViewerProps {
   projectId?: string;
   onSave?: (updatedData: any) => Promise<void>;
 }
-    
+
 export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: AsIsMapReportViewerProps) => {
-  const [expandedStages, setExpandedStages] = useState<{[key: number]: boolean}>({});
-  const [expandedBottlenecks, setExpandedBottlenecks] = useState<{[key: number]: boolean}>({});
+  const [expandedStages, setExpandedStages] = useState<{ [key: number]: boolean }>({});
+  const [expandedBottlenecks, setExpandedBottlenecks] = useState<{ [key: number]: boolean }>({});
   // Hover states to provide affordance and optional auto-expand on hover
   const [hoverStageId, setHoverStageId] = useState<number | null>(null);
   const [hoverBottleneckIndex, setHoverBottleneckIndex] = useState<number | null>(null);
@@ -20,7 +20,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
   const [editedData, setEditedData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [originalData, setOriginalData] = useState<any>(null);
-  
+
   // Dialog states
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -29,7 +29,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
   const [errorText, setErrorText] = useState('');
 
   const reportData = isEditMode && editedData ? editedData?.content || editedData : data?.content || data;
-  
+
   // Precompute step offsets so numbering is continuous across stages,
   // regardless of which stages are expanded in the UI
   const stages: any[] = reportData?.as_is_map?.stages || [];
@@ -149,17 +149,17 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
   const updateTextAtPath = (path: string[], value: string) => {
     const clone = structuredClone(editedData || data);
     let current: any = clone?.content || clone;
-    
+
     // Navigate to parent
     for (let i = 0; i < path.length - 1; i++) {
       if (current[path[i]] === undefined) return;
       current = current[path[i]];
     }
-    
+
     // Update the final key
     const lastKey = path[path.length - 1];
     current[lastKey] = value;
-    
+
     setEditedData(clone?.content ? { ...clone } : clone);
   };
 
@@ -235,7 +235,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
           </p>
         </div>
       )}
-      
+
       {/* Header with Action Buttons */}
       <div className="pb-4 flex items-center justify-between">
         <h1 className="text-3xl font-bold">As-Is Map Report</h1>
@@ -285,14 +285,14 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
       {reportData.hmw_statement_analysis && (
         <section className="p-6 bg-gray-50">
           <h2 className="text-2xl font-bold mb-4 pb-2">Executive Summary</h2>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold mb-2">Problem Statement</h3>
               {isEditMode ? (
                 <textarea
-                  value={Array.isArray(reportData.hmw_statement_analysis.hmw) 
-                    ? reportData.hmw_statement_analysis.hmw[0] 
+                  value={Array.isArray(reportData.hmw_statement_analysis.hmw)
+                    ? reportData.hmw_statement_analysis.hmw[0]
                     : reportData.hmw_statement_analysis.hmw || ''}
                   onChange={(e) => {
                     const isArray = Array.isArray((editedData?.content || editedData)?.hmw_statement_analysis?.hmw);
@@ -305,8 +305,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 />
               ) : (
                 <p className="text-base leading-relaxed pl-4 break-words whitespace-normal">
-                  {Array.isArray(reportData.hmw_statement_analysis.hmw) 
-                    ? reportData.hmw_statement_analysis.hmw[0] 
+                  {Array.isArray(reportData.hmw_statement_analysis.hmw)
+                    ? reportData.hmw_statement_analysis.hmw[0]
                     : reportData.hmw_statement_analysis.hmw || 'N/A'}
                 </p>
               )}
@@ -317,8 +317,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 <h3 className="text-lg font-semibold mb-2">Target Users</h3>
                 {isEditMode ? (
                   <textarea
-                    value={Array.isArray(reportData.hmw_statement_analysis.target_users) 
-                      ? reportData.hmw_statement_analysis.target_users[0] 
+                    value={Array.isArray(reportData.hmw_statement_analysis.target_users)
+                      ? reportData.hmw_statement_analysis.target_users[0]
                       : reportData.hmw_statement_analysis.target_users || ''}
                     onChange={(e) => {
                       const isArray = Array.isArray((editedData?.content || editedData)?.hmw_statement_analysis?.target_users);
@@ -331,8 +331,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                   />
                 ) : (
                   <p className="text-base pl-4 break-words whitespace-normal">
-                    {Array.isArray(reportData.hmw_statement_analysis.target_users) 
-                      ? reportData.hmw_statement_analysis.target_users[0] 
+                    {Array.isArray(reportData.hmw_statement_analysis.target_users)
+                      ? reportData.hmw_statement_analysis.target_users[0]
                       : reportData.hmw_statement_analysis.target_users || 'N/A'}
                   </p>
                 )}
@@ -341,8 +341,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 <h3 className="text-lg font-semibold mb-2">Core Need</h3>
                 {isEditMode ? (
                   <textarea
-                    value={Array.isArray(reportData.hmw_statement_analysis.core_need) 
-                      ? reportData.hmw_statement_analysis.core_need[0] 
+                    value={Array.isArray(reportData.hmw_statement_analysis.core_need)
+                      ? reportData.hmw_statement_analysis.core_need[0]
                       : reportData.hmw_statement_analysis.core_need || ''}
                     onChange={(e) => {
                       const isArray = Array.isArray((editedData?.content || editedData)?.hmw_statement_analysis?.core_need);
@@ -355,8 +355,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                   />
                 ) : (
                   <p className="text-base pl-4 break-words whitespace-normal">
-                    {Array.isArray(reportData.hmw_statement_analysis.core_need) 
-                      ? reportData.hmw_statement_analysis.core_need[0] 
+                    {Array.isArray(reportData.hmw_statement_analysis.core_need)
+                      ? reportData.hmw_statement_analysis.core_need[0]
                       : reportData.hmw_statement_analysis.core_need || 'N/A'}
                   </p>
                 )}
@@ -375,7 +375,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
           {/* Number steps continuously across stages irrespective of expansion state */}
           <div className="space-y-6">
             {reportData.as_is_map.stages.map((stage: any, index: number) => (
-              
+
               <div key={stage.id}>
                 {/* Stage Header */}
                 {isEditMode ? (
@@ -460,7 +460,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
       {reportData.pain_point_analysis?.steps && (
         <section className="p-6 bg-gray-50">
           <h2 className="text-2xl font-bold mb-4 pb-2">Pain Point Analysis</h2>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -624,8 +624,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <h3 className="text-lg font-semibold mb-3">Primary Focus</h3>
               {isEditMode ? (
                 <textarea
-                  value={Array.isArray(reportData.exploration_recommendations.primary_focus) 
-                    ? reportData.exploration_recommendations.primary_focus[0] 
+                  value={Array.isArray(reportData.exploration_recommendations.primary_focus)
+                    ? reportData.exploration_recommendations.primary_focus[0]
                     : reportData.exploration_recommendations.primary_focus || ''}
                   onChange={(e) => {
                     const isArray = Array.isArray((editedData?.content || editedData)?.exploration_recommendations?.primary_focus);
@@ -638,8 +638,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 />
               ) : (
                 <p className="text-sm pl-4 break-words whitespace-normal">
-                  {Array.isArray(reportData.exploration_recommendations.primary_focus) 
-                    ? reportData.exploration_recommendations.primary_focus[0] 
+                  {Array.isArray(reportData.exploration_recommendations.primary_focus)
+                    ? reportData.exploration_recommendations.primary_focus[0]
                     : reportData.exploration_recommendations.primary_focus || 'N/A'}
                 </p>
               )}
@@ -648,8 +648,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <h3 className="text-lg font-semibold mb-3">Research Methods</h3>
               {isEditMode ? (
                 <textarea
-                  value={Array.isArray(reportData.exploration_recommendations.research_methods) 
-                    ? reportData.exploration_recommendations.research_methods[0] 
+                  value={Array.isArray(reportData.exploration_recommendations.research_methods)
+                    ? reportData.exploration_recommendations.research_methods[0]
                     : reportData.exploration_recommendations.research_methods || ''}
                   onChange={(e) => {
                     const isArray = Array.isArray((editedData?.content || editedData)?.exploration_recommendations?.research_methods);
@@ -662,8 +662,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 />
               ) : (
                 <p className="text-sm pl-4 break-words whitespace-normal">
-                  {Array.isArray(reportData.exploration_recommendations.research_methods) 
-                    ? reportData.exploration_recommendations.research_methods[0] 
+                  {Array.isArray(reportData.exploration_recommendations.research_methods)
+                    ? reportData.exploration_recommendations.research_methods[0]
                     : reportData.exploration_recommendations.research_methods || 'N/A'}
                 </p>
               )}
@@ -672,8 +672,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <h3 className="text-lg font-semibold mb-3">Success Metrics</h3>
               {isEditMode ? (
                 <textarea
-                  value={Array.isArray(reportData.exploration_recommendations.success_metrics) 
-                    ? reportData.exploration_recommendations.success_metrics[0] 
+                  value={Array.isArray(reportData.exploration_recommendations.success_metrics)
+                    ? reportData.exploration_recommendations.success_metrics[0]
                     : reportData.exploration_recommendations.success_metrics || ''}
                   onChange={(e) => {
                     const isArray = Array.isArray((editedData?.content || editedData)?.exploration_recommendations?.success_metrics);
@@ -686,8 +686,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 />
               ) : (
                 <p className="text-sm pl-4 break-words whitespace-normal">
-                  {Array.isArray(reportData.exploration_recommendations.success_metrics) 
-                    ? reportData.exploration_recommendations.success_metrics[0] 
+                  {Array.isArray(reportData.exploration_recommendations.success_metrics)
+                    ? reportData.exploration_recommendations.success_metrics[0]
                     : reportData.exploration_recommendations.success_metrics || 'N/A'}
                 </p>
               )}
@@ -696,8 +696,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <h3 className="text-lg font-semibold mb-3">Timeline</h3>
               {isEditMode ? (
                 <textarea
-                  value={Array.isArray(reportData.exploration_recommendations.timeline) 
-                    ? reportData.exploration_recommendations.timeline[0] 
+                  value={Array.isArray(reportData.exploration_recommendations.timeline)
+                    ? reportData.exploration_recommendations.timeline[0]
                     : reportData.exploration_recommendations.timeline || ''}
                   onChange={(e) => {
                     const isArray = Array.isArray((editedData?.content || editedData)?.exploration_recommendations?.timeline);
@@ -710,8 +710,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 />
               ) : (
                 <p className="text-sm pl-4 break-words whitespace-normal">
-                  {Array.isArray(reportData.exploration_recommendations.timeline) 
-                    ? reportData.exploration_recommendations.timeline[0] 
+                  {Array.isArray(reportData.exploration_recommendations.timeline)
+                    ? reportData.exploration_recommendations.timeline[0]
                     : reportData.exploration_recommendations.timeline || 'N/A'}
                 </p>
               )}
@@ -730,9 +730,13 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <div>
                 <h3 className="text-lg font-semibold mb-2">Methodology</h3>
                 <ul className="list-disc list-inside space-y-1 pl-4">
-                  {reportData.prioritization_rationale.methodology.map((method: string, i: number) => (
-                    <li key={i} className="text-sm">{method}</li>
-                  ))}
+                  {Array.isArray(reportData.prioritization_rationale.methodology) ? (
+                    reportData.prioritization_rationale.methodology.map((method: string, i: number) => (
+                      <li key={i} className="text-sm">{method}</li>
+                    ))
+                  ) : (
+                    <li className="text-sm">{reportData.prioritization_rationale.methodology}</li>
+                  )}
                 </ul>
               </div>
             )}
@@ -741,9 +745,13 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <div>
                 <h3 className="text-lg font-semibold mb-2">Impact Calculation</h3>
                 <ul className="list-disc list-inside space-y-1 pl-4">
-                  {reportData.prioritization_rationale.impact_calculation.map((calc: string, i: number) => (
-                    <li key={i} className="text-sm">{calc}</li>
-                  ))}
+                  {Array.isArray(reportData.prioritization_rationale.impact_calculation) ? (
+                    reportData.prioritization_rationale.impact_calculation.map((calc: string, i: number) => (
+                      <li key={i} className="text-sm">{calc}</li>
+                    ))
+                  ) : (
+                    <li className="text-sm">{reportData.prioritization_rationale.impact_calculation}</li>
+                  )}
                 </ul>
               </div>
             )}
@@ -772,9 +780,9 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                   <div className="flex-1">
                     <h3 className="font-semibold mb-2">{source.title}</h3>
                     <p className="text-sm text-gray-700 mb-2">{source.relevance}</p>
-                    <a 
-                      href={source.url} 
-                      target="_blank" 
+                    <a
+                      href={source.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm underline hover:no-underline"
                     >
