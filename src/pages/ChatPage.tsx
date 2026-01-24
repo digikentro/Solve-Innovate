@@ -98,7 +98,7 @@ export const ChatPage = () => {
 
       console.log('Sending chat request:', requestBody);
 
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/chatbox', {
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,16 +232,16 @@ export const ChatPage = () => {
                 >
                   <div
                     className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${message.isUser
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white ml-3'
-                        : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white ml-3'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3'
                       }`}
                   >
                     {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
                   </div>
                   <div
                     className={`px-5 py-3 rounded-2xl shadow-lg backdrop-blur-sm ${message.isUser
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                        : 'bg-white/90 text-gray-900 border border-white/20'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                      : 'bg-white/90 text-gray-900 border border-white/20'
                       }`}
                   >
                     <div className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{message.text}</div>
