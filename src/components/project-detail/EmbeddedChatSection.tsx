@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiZap, FiX, FiArrowLeft } from 'react-icons/fi';
+import { FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX, FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
 import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
 
@@ -21,9 +21,11 @@ interface CustomExtremeUser {
 interface EmbeddedChatSectionProps {
   projectId: string;
   extremeUserData?: any;
+  project?: any;
+  userId?: string;
 }
 
-export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChatSectionProps) => {
+export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userId }: EmbeddedChatSectionProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -48,6 +50,13 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
   const [userType, setUserType] = useState<'provided' | 'selected' | null>(null);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
 
+  // Saved state from Supabase (to show saved card instead of form button)
+  const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
+  const [savedExtremeUser, setSavedExtremeUser] = useState<string | null>(null);
+
+  // Confirmation dialog for clearing a saved selection
+  const [confirmClear, setConfirmClear] = useState<'provided' | 'selected' | null>(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -56,6 +65,25 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
     scrollToBottom();
   }, [messages]);
 
+  // On mount: restore saved selections from research_data column
+  useEffect(() => {
+    if (!project) return;
+
+    let researchData: Record<string, any> = {};
+    try {
+      researchData = typeof project.research_data === 'string'
+        ? JSON.parse(project.research_data)
+        : (project.research_data || {});
+    } catch { researchData = {}; }
+
+    if (researchData.chatProvidedUser) {
+      setSavedProvidedUser(researchData.chatProvidedUser);
+    }
+    if (researchData.chatExtremeUser) {
+      setSavedExtremeUser(researchData.chatExtremeUser);
+    }
+  }, [project]);
+
   // Fetch chat history when entering chat mode
   useEffect(() => {
     const fetchChatHistory = async () => {
@@ -63,7 +91,11 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
 
       try {
         setIsLoadingHistory(true);
-        const chatHistory = await ProjectService.getProjectChatHistory(projectId, user.id);
+
+        // Use the correct column based on which flow opened the chat
+        const chatHistory = userType === 'selected'
+          ? await ProjectService.getProjectChatboxExtreUserHistory(projectId, user.id)
+          : await ProjectService.getProjectChatHistory(projectId, user.id);
 
         // Convert chat history to Message format
         const historyMessages: Message[] = chatHistory.flatMap((chat, index) => [
@@ -90,7 +122,7 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
     };
 
     fetchChatHistory();
-  }, [projectId, user?.id, isChatMode]);
+  }, [projectId, user?.id, isChatMode, userType]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -108,22 +140,28 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
     setIsTyping(true);
 
     try {
-      // Build request body with user prompt and user data (different field names based on source)
+      // Choose webhook URL and body based on user type
+      let webhookUrl: string;
       const requestBody: Record<string, any> = {
         project_id: projectId,
         user: currentInput,
       };
 
-      // Use different field names based on user type
-      if (userType === 'provided' && userContextData) {
-        requestBody.provided_user_data = userContextData;
-      } else if (userType === 'selected' && userContextData) {
+      if (userType === 'selected' && userContextData) {
+        // "Select the User" flow → chatbox_extreuser webhook
+        webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_extreuser';
         requestBody.extreme_user_data = userContextData;
+      } else {
+        // "Provide Your Extreme User" flow → chatbox_userprovideinfo webhook
+        webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo';
+        if (userContextData) {
+          requestBody.provided_user_data = userContextData;
+        }
       }
 
-      console.log('Sending chat request:', requestBody);
+      console.log('Sending chat request to:', webhookUrl, requestBody);
 
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,12 +213,38 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
     }
   };
 
-  // Handle custom user form submission - just open chat mode (data sent with first message)
-  const handleCustomUserSubmit = () => {
+  // Handle custom user form submission - POST to chatbox_userprovideinfo webhook, save to Supabase, then open chat
+  const handleCustomUserSubmit = async () => {
     if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
 
-    // Store the user context to be sent with first message
     const userContext = `Custom User - Name: ${customUser.name}, Age: ${customUser.age}, Location: ${customUser.location}, Description: ${customUser.description}`;
+    const effectiveUserId = userId || user?.id;
+
+    try {
+      // Send the provided user info to the dedicated webhook
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          name: customUser.name,
+          age: customUser.age,
+          location: customUser.location,
+          description: customUser.description,
+        })
+      });
+      if (!response.ok) console.warn('chatbox_userprovideinfo webhook responded with:', response.status);
+    } catch (error) {
+      console.error('Error sending user info to webhook:', error);
+    }
+
+    // Persist to Supabase so it survives page reload
+    if (effectiveUserId) {
+      await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, customUser);
+      setSavedProvidedUser(customUser);
+    }
+
+    // Open chat mode
     setUserContextData(userContext);
     setUserType('provided');
     setSelectedUserData(`Custom User: ${customUser.name}`);
@@ -190,15 +254,64 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
     setIsChatMode(true);
   };
 
-  // Handle extreme user selection from modal - just open chat mode (data sent with first message)
-  const handleExtremeUserSelect = (userSummary: string) => {
-    setIsSelectUserModalOpen(false);
+  // Resume chat with the already-saved provided user
+  const handleResumeSavedProvidedUser = () => {
+    if (!savedProvidedUser) return;
+    const userContext = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
+    setUserContextData(userContext);
+    setUserType('provided');
+    setSelectedUserData(`Custom User: ${savedProvidedUser.name}`);
+    setIsFirstMessage(false);
+    setIsChatMode(true);
+  };
 
-    // Store the user context to be sent with first message
+  // Clear saved provided user — show confirmation first
+  const handleClearSavedProvidedUser = () => {
+    setConfirmClear('provided');
+  };
+
+  // Resume chat with the already-saved extreme user
+  const handleResumeSavedExtremeUser = () => {
+    if (!savedExtremeUser) return;
+    const userLabel = savedExtremeUser.split('\n')[0] || 'Selected Extreme User';
+    setUserContextData(savedExtremeUser);
+    setUserType('selected');
+    setSelectedUserData(userLabel);
+    setIsFirstMessage(false);
+    setIsChatMode(true);
+  };
+
+  // Clear saved extreme user — show confirmation first
+  const handleClearSavedExtremeUser = () => {
+    setConfirmClear('selected');
+  };
+
+  // Confirmed: actually clear the saved selection from Supabase
+  const handleConfirmClear = async () => {
+    const effectiveUserId = userId || user?.id;
+    if (confirmClear === 'provided') {
+      if (effectiveUserId) await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
+      setSavedProvidedUser(null);
+    } else if (confirmClear === 'selected') {
+      if (effectiveUserId) await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, null);
+      setSavedExtremeUser(null);
+    }
+    setConfirmClear(null);
+  };
+
+  // Handle extreme user selection from modal - save to Supabase, then open chat
+  const handleExtremeUserSelect = async (userSummary: string) => {
+    setIsSelectUserModalOpen(false);
+    const effectiveUserId = userId || user?.id;
+
+    // Persist to Supabase
+    if (effectiveUserId) {
+      await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary);
+      setSavedExtremeUser(userSummary);
+    }
+
     setUserContextData(userSummary);
     setUserType('selected');
-
-    // Extract user label from summary (first line)
     const userLabel = userSummary.split('\n')[0] || 'Selected Extreme User';
     setSelectedUserData(userLabel);
     setIsFirstMessage(true);
@@ -233,51 +346,155 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData }: EmbeddedChat
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Button 1: Provide Your Extreme User */}
-            <button
-              onClick={() => setIsCustomUserModalOpen(true)}
-              className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
-            >
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                <FiUserPlus className="w-6 h-6" />
-              </div>
-              <div className="text-left">
-                <span className="font-bold text-lg block">Provide Your Extreme User</span>
-                <span className="text-sm text-white/80">Add custom user details</span>
-              </div>
-            </button>
+          {/* Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-            {/* Button 2: Select the User */}
-            <button
-              onClick={() => setIsSelectUserModalOpen(true)}
-              className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
-            >
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                <FiUsers className="w-6 h-6" />
+            {/* Card 1: Provide Your Extreme User */}
+            {savedProvidedUser ? (
+              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FiUserPlus className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-base text-purple-800 block truncate">Provide Your Extreme User</span>
+                    <span className="text-xs text-purple-600 font-medium">Saved ✓</span>
+                  </div>
+                </div>
+                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700 space-y-1">
+                  <p><span className="font-semibold text-gray-800">Name:</span> {savedProvidedUser.name}</p>
+                  <p><span className="font-semibold text-gray-800">Age:</span> {savedProvidedUser.age} &nbsp;|&nbsp; <span className="font-semibold text-gray-800">Location:</span> {savedProvidedUser.location}</p>
+                  <p className="line-clamp-2 text-gray-600">{savedProvidedUser.description}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleResumeSavedProvidedUser}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                  >
+                    Continue Chat
+                  </button>
+                  <button
+                    onClick={handleClearSavedProvidedUser}
+                    title="Enter new user details"
+                    className="px-3 py-2.5 bg-white border-2 border-purple-200 text-purple-600 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
+                  >
+                    <FiRefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="text-left">
-                <span className="font-bold text-lg block">Select the User</span>
-                <span className="text-sm text-white/80">Choose from generated users</span>
-              </div>
-            </button>
+            ) : (
+              <button
+                onClick={() => setIsCustomUserModalOpen(true)}
+                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
+              >
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                  <FiUserPlus className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <span className="font-bold text-lg block">Provide Your Extreme User</span>
+                  <span className="text-sm text-white/80">Add custom user details</span>
+                </div>
+              </button>
+            )}
 
-            {/* Button 3: Insights */}
-            <div className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl shadow-lg opacity-80 cursor-not-allowed">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <FiZap className="w-6 h-6" />
+            {/* Card 2: Select the User */}
+            {savedExtremeUser ? (
+              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FiUsers className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-base text-cyan-800 block truncate">Select the User</span>
+                    <span className="text-xs text-cyan-600 font-medium">Saved ✓</span>
+                  </div>
+                </div>
+                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700">
+                  <p className="font-semibold text-gray-800 truncate">{savedExtremeUser.split('\n')[0]}</p>
+                  <p className="text-gray-500 text-xs mt-1 line-clamp-2">{savedExtremeUser.split('\n').slice(1).join(' ').trim()}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleResumeSavedExtremeUser}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+                  >
+                    Continue Chat
+                  </button>
+                  <button
+                    onClick={handleClearSavedExtremeUser}
+                    title="Select a different user"
+                    className="px-3 py-2.5 bg-white border-2 border-cyan-200 text-cyan-600 rounded-xl hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200"
+                  >
+                    <FiRefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="text-left">
-                <span className="font-bold text-lg block">Insights</span>
-                <span className="text-sm text-white/80">Coming soon</span>
+            ) : (
+              <button
+                onClick={() => setIsSelectUserModalOpen(true)}
+                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
+              >
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                  <FiUsers className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <span className="font-bold text-lg block">Select the User</span>
+                  <span className="text-sm text-white/80">Choose from generated users</span>
+                </div>
+              </button>
+            )}
+          </div>
+
+        </div>
+
+        {/* Confirmation Dialog — shown when user clicks Change */}
+        {confirmClear && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-5 border-b border-gray-100 ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-gradient-to-r from-cyan-50 to-blue-50'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>
+                    <FiRefreshCw className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Change User?</h3>
+                    <p className="text-sm text-gray-500">
+                      {confirmClear === 'provided' ? 'Provided Extreme User' : 'Selected Extreme User'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Body */}
+              <div className="px-6 py-5">
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  This will remove your currently saved user and let you{' '}
+                  {confirmClear === 'provided' ? 'enter new details.' : 'select a different user.'}
+                  {' '}Are you sure?
+                </p>
+              </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmClear(null)}
+                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmClear}
+                  className={`px-6 py-2.5 text-white font-semibold rounded-xl hover:shadow-lg transition-all ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}
+                >
+                  Yes, Change
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Custom Extreme User Modal */}
         {isCustomUserModalOpen && (
+
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
               {/* Modal Header */}

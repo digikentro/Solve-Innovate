@@ -8,7 +8,7 @@ interface PsychologicalAnalysisReportViewerProps {
 }
 
 export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, projectId, onSave }: PsychologicalAnalysisReportViewerProps) => {
-  const [expandedClusters, setExpandedClusters] = useState<{[key: number]: boolean}>({});
+  const [expandedClusters, setExpandedClusters] = useState<{ [key: number]: boolean }>({});
   const [hoverTimer, setHoverTimer] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
@@ -19,7 +19,7 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
-  
+
   const reportData = isEditMode ? editedData : (data?.content || data);
 
   const handleEditToggle = () => {

@@ -554,7 +554,7 @@ export const ProjectDetailPage = () => {
             {/* Chat Section */}
             {activeSection === 'chat' && (
               <div className="animate-fadeIn">
-                <EmbeddedChatSection projectId={project.id} extremeUserData={extremeUserData} />
+                <EmbeddedChatSection projectId={project.id} extremeUserData={extremeUserData} project={project} userId={user.id} />
               </div>
             )}
 

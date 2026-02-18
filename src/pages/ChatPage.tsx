@@ -98,7 +98,7 @@ export const ChatPage = () => {
 
       console.log('Sending chat request:', requestBody);
 
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox', {
+      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/chatbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

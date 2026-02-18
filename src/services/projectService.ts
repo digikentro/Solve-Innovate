@@ -39,15 +39,15 @@ export class ProjectService {
       const project = await ErrorHandler.withRetry(
         async () => {
           const { data: projectData, error } = await supabase
-      .from('projects')
-      .insert([{
+            .from('projects')
+            .insert([{
               ...sanitizedData,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
+            }])
+            .select()
+            .single();
 
           if (error) {
             throw new Error('Unable to create project. Please try again.');
@@ -169,15 +169,15 @@ export class ProjectService {
       const project = await ErrorHandler.withRetry(
         async () => {
           const { data: projectData, error } = await supabase
-      .from('projects')
-      .update({
+            .from('projects')
+            .update({
               ...sanitizedData,
               updated_at: new Date().toISOString()
-      })
+            })
             .eq('id', projectId)
             .eq('user_id', userId)
-      .select()
-      .single();
+            .select()
+            .single();
 
           if (error) {
             throw new Error('Unable to update project. Please try again.');
@@ -216,9 +216,9 @@ export class ProjectService {
 
       await ErrorHandler.withRetry(
         async () => {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
+          const { error } = await supabase
+            .from('projects')
+            .delete()
             .eq('id', projectId)
             .eq('user_id', userId);
 
@@ -301,7 +301,7 @@ export class ProjectService {
 
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        const recentCount = projects.filter(project => 
+        const recentCount = projects.filter(project =>
           new Date(project.created_at) > oneWeekAgo
         ).length;
 
@@ -316,7 +316,7 @@ export class ProjectService {
   }
 
   /**
-   * Get chat history for a project
+   * Get chat history for a project (Provide Your Extreme User flow)
    */
   static async getProjectChatHistory(projectId: string, userId: string): Promise<Array<{
     user: string;
@@ -350,5 +350,116 @@ export class ProjectService {
       },
       context
     );
+  }
+
+  /**
+   * Get chat history for a project (Select the User / Extreme User flow)
+   */
+  static async getProjectChatboxExtreUserHistory(projectId: string, userId: string): Promise<Array<{
+    user: string;
+    assistant: string;
+    generated_at: string;
+  }>> {
+    const context: ErrorContext = {
+      operation: 'get_project_chatbox_extre_user_history',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_extreuser')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            throw new Error('Project not found');
+          }
+          throw new Error('Unable to load chat history. Please try again.');
+        }
+
+        // Return the chatbox_extreuser data or empty array if null
+        return data?.chatbox_extreuser || [];
+      },
+      context
+    );
+  }
+
+  /**
+   * Save "Provide Your Extreme User" form data into research_data JSONB column
+   */
+  static async saveChatProvidedUser(projectId: string, userId: string, data: object | null): Promise<void> {
+    // Fetch current research_data first
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('research_data')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch research_data:', fetchError);
+      return;
+    }
+
+    // Parse existing research_data (may be string or object)
+    let existing: Record<string, any> = {};
+    try {
+      existing = typeof row?.research_data === 'string'
+        ? JSON.parse(row.research_data)
+        : (row?.research_data || {});
+    } catch { existing = {}; }
+
+    // Merge chatProvidedUser key
+    const merged = { ...existing, chatProvidedUser: data };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({ research_data: merged })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to save chatProvidedUser into research_data:', error);
+  }
+
+  /**
+   * Save selected extreme user summary into research_data JSONB column
+   */
+  static async saveChatExtremeUser(projectId: string, userId: string, data: string | null): Promise<void> {
+    // Fetch current research_data first
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('research_data')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch research_data:', fetchError);
+      return;
+    }
+
+    // Parse existing research_data (may be string or object)
+    let existing: Record<string, any> = {};
+    try {
+      existing = typeof row?.research_data === 'string'
+        ? JSON.parse(row.research_data)
+        : (row?.research_data || {});
+    } catch { existing = {}; }
+
+    // Merge chatExtremeUser key
+    const merged = { ...existing, chatExtremeUser: data };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({ research_data: merged })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to save chatExtremeUser into research_data:', error);
   }
 }

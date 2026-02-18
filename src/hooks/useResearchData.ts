@@ -54,58 +54,59 @@ export const useResearchData = (project: Project | null) => {
       }
 
       if (typeof data === 'string') {
-        try {
-          // First try: direct parse
-          let parsed = JSON.parse(data);
+        // Pre-clean: strip the "prompt" field which often contains unescaped inner quotes
+        // from the webhook response (e.g. "prompt": "{...\"key\":\"value\"...}\"")
+        // making the outer JSON invalid. Removing it lets content + generated_at parse fine.
+        const stripped = data.replace(/,\s*"prompt"\s*:\s*"(?:[^"\\]|\\.)*"/g, '');
 
+        const tryParse = (str: string) => {
+          const parsed = JSON.parse(str);
           // Check if content needs additional parsing
           if (parsed && typeof parsed.content === 'string') {
             try {
               parsed.content = JSON.parse(parsed.content);
-            } catch (contentErr) {
-              // Try cleaning the content string
+            } catch {
               try {
                 const cleanContent = parsed.content.replace(/\\n/g, '').replace(/\\"/g, '"');
                 parsed.content = JSON.parse(cleanContent);
-              } catch (e2) {
-                // content is invalid, leave as string
-              }
+              } catch { /* leave as string */ }
             }
           }
-
           return parsed;
-        } catch (e) {
+        };
 
-          // Fallback: Try to extract content using regex
-          try {
-            // Look for content between "content": and ,"generated_at" or ,"prompt"
-            const contentMatch = data.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/);
-            if (contentMatch && contentMatch[1]) {
-              let contentStr = contentMatch[1];
-              // Unescape the content
-              contentStr = contentStr.replace(/\\n/g, '').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        // 1. Try stripped string first (removes broken prompt field)
+        try {
+          return tryParse(stripped);
+        } catch { /* fall through */ }
 
-              try {
-                const contentParsed = JSON.parse(contentStr);
+        // 2. Try original string as-is
+        try {
+          return tryParse(data);
+        } catch { /* fall through */ }
 
-                // Try to get generated_at
-                const generatedMatch = data.match(/"generated_at"\s*:\s*"([^"]+)"/);
-
-                return {
-                  content: contentParsed,
-                  generated_at: generatedMatch ? generatedMatch[1] : null
-                };
-              } catch (contentErr) {
-                // Regex content parse failed
-              }
-            }
-          } catch (regexErr) {
-            // Regex extraction failed
+        // 3. Fallback: extract content + generated_at via regex
+        try {
+          const contentMatch =
+            stripped.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/) ||
+            data.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/);
+          if (contentMatch && contentMatch[1]) {
+            let contentStr = contentMatch[1]
+              .replace(/\\n/g, '')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\');
+            const contentParsed = JSON.parse(contentStr);
+            const generatedMatch = data.match(/"generated_at"\s*:\s*"([^"]+)"/);
+            return {
+              content: contentParsed,
+              generated_at: generatedMatch ? generatedMatch[1] : null,
+            };
           }
+        } catch { /* regex extraction failed */ }
 
-          return null;
-        }
+        return null;
       }
+
       return data;
     };
 

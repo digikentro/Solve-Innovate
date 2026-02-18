@@ -49,13 +49,13 @@ export default function PsychologicalAnalysisPage() {
   useEffect(() => {
     // Scroll to top when page loads
     window.scrollTo(0, 0);
-    
+
     const fetchPsychologicalData = async () => {
       if (!projectId) return;
 
       try {
         setLoading(true);
-        
+
         // Get the project data including psychological_analysis
         const { data: projectData, error: projectError } = await supabase
           .from('projects')
@@ -69,9 +69,9 @@ export default function PsychologicalAnalysisPage() {
         // Check if psychological_analysis exists and has content
         console.log('Project data received:', projectData);
         console.log('psychological_analysis value:', projectData.psychological_analysis);
-        
+
         let psychologicalAnalysisData = projectData.psychological_analysis;
-        
+
         // Handle case where psychological_analysis might be stoblack as a JSON string
         if (typeof psychologicalAnalysisData === 'string') {
           try {
@@ -81,11 +81,11 @@ export default function PsychologicalAnalysisPage() {
             console.error('Failed to parse psychological_analysis string:', error);
           }
         }
-        
-        if (psychologicalAnalysisData && 
-            typeof psychologicalAnalysisData === 'object' && 
-            psychologicalAnalysisData.content && 
-            Object.keys(psychologicalAnalysisData.content).length > 0) {
+
+        if (psychologicalAnalysisData &&
+          typeof psychologicalAnalysisData === 'object' &&
+          psychologicalAnalysisData.content &&
+          Object.keys(psychologicalAnalysisData.content).length > 0) {
           console.log('Setting psychological analysis data:', psychologicalAnalysisData);
           setPsychologicalData(psychologicalAnalysisData as PsychologicalAnalysisData);
         } else {
@@ -138,14 +138,14 @@ export default function PsychologicalAnalysisPage() {
             The psychological analysis is still being generated. This process typically takes a few minutes.
           </p>
           <div className="space-y-4">
-            <Button 
-              onClick={() => window.location.reload()} 
+            <Button
+              onClick={() => window.location.reload()}
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
             >
               Refresh Page
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate(`/projects/${projectId}`)}
               className="w-full border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-3 rounded-xl transition-all duration-200"
             >
@@ -192,7 +192,7 @@ export default function PsychologicalAnalysisPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100 hover:shadow-lg transition-all duration-300">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
@@ -285,7 +285,7 @@ export default function PsychologicalAnalysisPage() {
               </div>
               <h2 className="text-2xl font-bold text-slate-800">Behavioral Clusters Analysis</h2>
             </div>
-            
+
             {psychologicalData.content.clusters.map((cluster, clusterIndex) => (
               <Card key={clusterIndex} className="p-8 bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300">
                 <div className="space-y-8">
@@ -404,7 +404,7 @@ export default function PsychologicalAnalysisPage() {
               </div>
               <h2 className="text-2xl font-bold text-slate-800">Critical Requirements</h2>
             </div>
-            
+
             <ul className="space-y-4">
               {psychologicalData.content.criticalRequirements?.map((requirement, idx) => (
                 <li key={idx} className="flex items-start gap-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 hover:shadow-md transition-all duration-300">
@@ -419,25 +419,25 @@ export default function PsychologicalAnalysisPage() {
         )}
 
         {/* Fallback - Show raw data if structure doesn't match expected format */}
-        {(!psychologicalData.content.clusters && 
-          !psychologicalData.content.comprehensiveMetaAnalysis && 
+        {(!psychologicalData.content.clusters &&
+          !psychologicalData.content.comprehensiveMetaAnalysis &&
           !psychologicalData.content.criticalRequirements) && (
-          <Card className="p-8 mb-12 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Raw Data Structure</h2>
-            <p className="text-slate-600 mb-6 text-lg">
-              The data structure doesn't match the expected format. Here's the raw data:
-            </p>
-            <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-6 rounded-2xl border border-slate-200">
-              {typeof psychologicalData.content === 'string' ? (
-                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-mono text-sm">{psychologicalData.content}</div>
-              ) : (
-                <pre className="text-sm text-slate-700 overflow-auto max-h-96 font-mono">
-                  {JSON.stringify(psychologicalData.content, null, 2)}
-                </pre>
-              )}
-            </div>
-          </Card>
-        )}
+            <Card className="p-8 mb-12 bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
+              <h2 className="text-2xl font-bold text-slate-800 mb-6">Raw Data Structure</h2>
+              <p className="text-slate-600 mb-6 text-lg">
+                The data structure doesn't match the expected format. Here's the raw data:
+              </p>
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-6 rounded-2xl border border-slate-200">
+                {typeof psychologicalData.content === 'string' ? (
+                  <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-mono text-sm">{psychologicalData.content}</div>
+                ) : (
+                  <pre className="text-sm text-slate-700 overflow-auto max-h-96 font-mono">
+                    {JSON.stringify(psychologicalData.content, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </Card>
+          )}
 
         {/* Footer */}
         <div className="text-center text-slate-500 text-sm mb-8 p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200">

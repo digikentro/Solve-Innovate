@@ -59,7 +59,7 @@ export function AdminSettingsPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Chat Webhook</label>
                             <input
                                 type="url"
-                                defaultValue="https://n8n.srv922914.hstgr.cloud/webhook/chatbox"
+                                defaultValue="https://n8n.srv922914.hstgr.cloud/webhook-test/chatbox"
                                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 font-mono text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             />
                         </div>
