@@ -14,7 +14,6 @@ export const LoginForm = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
@@ -42,9 +41,7 @@ export const LoginForm = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
+              <label htmlFor="email-address" className="sr-only">Email address</label>
               <input
                 id="email-address"
                 name="email"
@@ -58,9 +55,7 @@ export const LoginForm = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
+              <label htmlFor="password" className="sr-only">Password</label>
               <input
                 id="password"
                 name="password"
@@ -74,7 +69,6 @@ export const LoginForm = () => {
               />
             </div>
           </div>
-
           <div>
             <button
               type="submit"
@@ -98,3 +92,4 @@ export const LoginForm = () => {
     </div>
   );
 };
+

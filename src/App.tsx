@@ -28,6 +28,8 @@ import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminProjectsPage } from '@/pages/admin/AdminProjectsPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -180,6 +182,8 @@ function App() {
               <Route index element={<HomePage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="profile"
                 element={

@@ -288,47 +288,15 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/projects')}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-                type="button"
-                aria-label="Back to Projects"
-              >
-                <FiArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-                <p className="text-sm text-gray-600">Project Detail</p>
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
-            >
-              {isMobileSidebarOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Two-column layout */}
-      <div className="flex">
-        {/* Left Sidebar - 17% */}
-        <aside className={`
-          fixed lg:sticky top-16 left-0 h-[calc(100vh-4rem)] w-56 lg:w-[17%]
-          bg-white/80 backdrop-blur-sm border-r border-gray-200
-          transition-transform duration-300 ease-in-out z-30
-          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <nav className="h-full overflow-y-auto p-4 space-y-2">
+    <div className="h-[calc(100vh-64px)] flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Left Sidebar - fixed */}
+      <aside className={`
+        fixed lg:relative top-16 lg:top-0 left-0 h-[calc(100vh-64px)] w-56 flex-shrink-0
+        bg-white/80 backdrop-blur-sm border-r border-gray-200
+        transition-transform duration-300 ease-in-out z-30
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <nav className="h-full overflow-y-auto p-4 space-y-2">
             {SECTIONS.map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
@@ -354,19 +322,51 @@ export const ProjectDetailPage = () => {
                 </button>
               );
             })}
-          </nav>
-        </aside>
+        </nav>
+      </aside>
 
-        {/* Overlay for mobile */}
-        {isMobileSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-            onClick={() => setIsMobileSidebarOpen(false)}
-          />
-        )}
+      {/* Overlay for mobile */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
 
-        {/* Right Content Area - 83% */}
-        <main className="flex-1 lg:w-[83%] min-h-screen">
+      {/* Right Side - Header + Scrollable Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Fixed Project Header */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 flex-shrink-0 z-10">
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                  type="button"
+                  aria-label="Back to Projects"
+                >
+                  <FiArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+                  <p className="text-sm text-gray-600">Project Detail</p>
+                </div>
+              </div>
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
+              >
+                {isMobileSidebarOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8">
             {/* Project Information */}
             {activeSection === 'project-info' && (
