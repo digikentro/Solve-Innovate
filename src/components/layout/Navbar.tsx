@@ -17,7 +17,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b bg-background">
+    <nav className="sticky top-0 z-50 border-b bg-background">
       <div className="container mx-auto px-4">
         <div className="relative flex h-16 items-center justify-between">
 

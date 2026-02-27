@@ -1,7 +1,7 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
 import { ProjectInfo } from '@/components/project-detail/ProjectInfo';
@@ -53,6 +53,9 @@ export const ProjectDetailPage = () => {
   // Active section state
   const [activeSection, setActiveSection] = useState('project-info');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Track sections with no generate button (chat, prototyping-tools) — visiting completes them
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set<string>());
 
   // State for presentable slide
   const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
@@ -249,6 +252,30 @@ export const ProjectDetailPage = () => {
     }
   };
 
+  // Maps a section ID to whether it is "completed" (data generated or always-complete)
+  // Used to decide whether the NEXT section should be unlocked.
+  const isSectionCompleted = (sectionId: string): boolean => {
+    const hasData = (d: any) =>
+      d !== null && d !== undefined &&
+      typeof d === 'object' && Object.keys(d).length > 0;
+    switch (sectionId) {
+      case 'project-info':             return true; // info only, always complete
+      case 'as-is-map':                return hasData(asIsMapData);
+      case 'extreme-user':             return hasData(extremeUserData);
+      case 'deep-empathy':             return hasData(deepEmpathyData);
+      case 'chat':                     return visitedSections.has('chat'); // no generate btn
+      case 'psychological':            return hasData(psychologicalAnalysisData);
+      case 'transformation-framework': return hasData(transformationFrameworkData);
+      case 'hmw-framework':            return hasData(hmwFrameworkData);
+      case 'hmw-ideation':             return hasData(hmwIdeationData);
+      case 'idea-clustering':          return hasData(ideaClusteringData);
+      case 'prototyping-tools':        return visitedSections.has('prototyping-tools'); // no generate btn
+      case 'testing':                  return hasData(testingData);
+      case 'market-search':            return true; // last section
+      default:                         return false;
+    }
+  };
+
   // Function to sync Extreme User data to Deep Empathy (called on Generate)
   const syncExtremeUserToDeepEmpathy = () => {
     if (extremeUserForm.painPointStep && extremeUserForm.painPointDescription) {
@@ -288,37 +315,44 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="fixed inset-x-0 top-16 bottom-0 flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Left Sidebar - fixed */}
       <aside className={`
-        fixed lg:relative top-16 lg:top-0 left-0 h-[calc(100vh-64px)] w-56 flex-shrink-0
+        fixed top-16 left-0 h-[calc(100vh-64px)] w-56 flex-shrink-0
         bg-white/80 backdrop-blur-sm border-r border-gray-200
         transition-transform duration-300 ease-in-out z-30
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <nav className="h-full overflow-y-auto p-4 space-y-2">
-            {SECTIONS.map((section) => {
+            {SECTIONS.map((section, index) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
+              const isUnlocked = index === 0 || isSectionCompleted(SECTIONS[index - 1].id);
 
               return (
                 <button
                   key={section.id}
+                  disabled={!isUnlocked}
                   onClick={() => {
+                    if (!isUnlocked) return;
                     setActiveSection(section.id);
+                    setVisitedSections(prev => new Set([...prev, section.id]));
                     setIsMobileSidebarOpen(false);
                   }}
                   className={`
                       w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
                       transition-all duration-200
                       ${isActive
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                      : 'text-gray-700 hover:bg-gray-100'
-                    }
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                        : !isUnlocked
+                          ? 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
+                          : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+                      }
                     `}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                  <span className="truncate">{section.label}</span>
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : !isUnlocked ? 'text-gray-300' : 'text-gray-500'}`} />
+                  <span className="truncate flex-1 text-left">{section.label}</span>
+                  {!isUnlocked && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300" />}
                 </button>
               );
             })}
@@ -334,7 +368,7 @@ export const ProjectDetailPage = () => {
       )}
 
       {/* Right Side - Header + Scrollable Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-56">
         {/* Fixed Project Header */}
         <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 flex-shrink-0 z-10">
           <div className="px-4 py-4">
