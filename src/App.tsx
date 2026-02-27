@@ -13,6 +13,7 @@ import { IOSDashboard } from '@/components/dashboard/IOSDashboard';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import { Layout } from '@/components/layout/Layout';
+
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
@@ -33,7 +34,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 
 // Dashboard component (protected route)
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuth(); 
 
   return (
     <div className="min-h-screen bg-gray-100">
