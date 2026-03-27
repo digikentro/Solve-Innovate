@@ -38,3 +38,39 @@ venv/
 static/
 
 .agents/
+skills-lock.json
+TODO.md
+PPT_WORKSTREAM_REPORT.MD
+prompt.md
+Solve_Innovate_Feedback.md
+IMPLEMENTATION_GUIDE.MD
+
+# Secrets and local credentials
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Python local/runtime artifacts
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+fastapi/.venv/
+fastapi/build/
+fastapi/*.egg-info/
+fastapi/.pytest_cache/
+fastapi/pytest-cache-files-*/
+
+# Local databases and logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+fastapi/_out.txt
