@@ -1,7 +1,7 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
 import { ProjectInfo } from '@/components/project-detail/ProjectInfo';
@@ -27,6 +27,7 @@ import { PrototypingToolsSection } from '@/components/project-detail/Prototyping
 import { TestingSection } from '@/components/project-detail/TestingSection';
 import { MarketSearchSection } from '@/components/project-detail/MarketSearchSection';
 import { TransformationFrameworkSection } from '@/components/project-detail/TransformationFrameworkSection';
+import { PresentationSection } from '@/components/presentation/PresentationSection';
 
 // Section navigation items
 const SECTIONS = [
@@ -43,6 +44,7 @@ const SECTIONS = [
   { id: 'prototyping-tools', label: 'Prototyping Tools', icon: FiTrendingUp },
   { id: 'testing', label: 'Testing', icon: FiActivity },
   { id: 'market-search', label: 'Market Search', icon: FiSearch },
+  { id: 'presentation', label: 'Presentation', icon: FiMonitor },
 ];
 
 export const ProjectDetailPage = () => {
@@ -271,7 +273,8 @@ export const ProjectDetailPage = () => {
       case 'idea-clustering':          return hasData(ideaClusteringData);
       case 'prototyping-tools':        return visitedSections.has('prototyping-tools'); // no generate btn
       case 'testing':                  return hasData(testingData);
-      case 'market-search':            return true; // last section
+      case 'market-search':            return hasData(marketSearchData);
+      case 'presentation':             return true; // last section
       default:                         return false;
     }
   };
@@ -327,7 +330,10 @@ export const ProjectDetailPage = () => {
             {SECTIONS.map((section, index) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
-              const isUnlocked = index === 0 || isSectionCompleted(SECTIONS[index - 1].id);
+              const isUnlocked =
+                section.id === 'presentation' ||
+                index === 0 ||
+                isSectionCompleted(SECTIONS[index - 1].id);
 
               return (
                 <button
@@ -793,6 +799,16 @@ export const ProjectDetailPage = () => {
                   testingData={testingData}
                   marketSearchData={marketSearchData}
                   setMarketSearchData={setMarketSearchData}
+                  onRefreshProject={refetchProject}
+                />
+              </div>
+            )}
+
+            {/* Presentation */}
+            {activeSection === 'presentation' && (
+              <div className="animate-fadeIn">
+                <PresentationSection
+                  project={project}
                   onRefreshProject={refetchProject}
                 />
               </div>

@@ -20,6 +20,7 @@ export interface Project {
   prototype_images?: any; // Stores generated prototype sketch metadata/url
   testing?: any; // Stores testing analysis data
   market_research?: any; // Stores market research data
+  presentation_id?: string | null; // ID linking to generated markdown presentation
   research_data?: any;
   canvas?: any;
   metadata?: any;
