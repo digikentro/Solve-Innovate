@@ -74,3 +74,7 @@ fastapi/pytest-cache-files-*/
 *.sqlite3
 *.log
 fastapi/_out.txt
+
+mdfiles/
+mdfiles-solve-innovate
+api-docs/

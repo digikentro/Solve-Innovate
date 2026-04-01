@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: solve-innovate-backend
+    env: docker
+    repo: https://github.com/your-username/Solve-Innovate # Placeholder
+    rootDir: fastapi
+    plan: free # or starter
+    healthCheckPath: /api/v1/health # Ensure you have a health endpoint
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LLM
+        value: openai
+      - key: IMAGE_PROVIDER
+        value: dalle
+      - key: APP_DATA_DIRECTORY
+        value: /app/app_data
+    disk:
+      name: app-data
+      mountPath: /app/app_data
+      sizeGB: 1

@@ -11,10 +11,7 @@ export default defineConfig({
   },
   server: {
     port: 3001,
-    allowedHosts: [
-      'scanner-readily-workshop-ribbon.trycloudflare.com',
-      'angola-intranet-finance-sold.trycloudflare.com',
-      `hearts-survivors-lone-penn.trycloudflare.com`
-    ]
+    host: '127.0.0.1',
+    allowedHosts: true
   },
 });

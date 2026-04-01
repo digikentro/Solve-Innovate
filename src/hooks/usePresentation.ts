@@ -24,12 +24,12 @@ const DEFAULT_SETTINGS: PresentationSettings = {
   textMode: 'condense',
   audience: '',
   theme: DEFAULT_THEME.id,
-  imageSource: 'ai',
-  imageStyle: 'photo',
   language: 'English',
   instructions: '',
   logoUrl: null,
   logoPosition: 'top-right',
+  includeImages: true,
+  includeCharts: true,
 };
 
 interface UsePresentationReturn {
@@ -49,9 +49,12 @@ interface UsePresentationReturn {
   switchTheme: (themeId: string) => Promise<void>;
   regenerateSlide: (index: number, instructions?: string) => Promise<void>;
   exportPptx: () => Promise<void>;
+  isExporting: boolean;
   resetToConfig: () => void;
   replaceSlides: (slides: SlideData[]) => void;
 }
+
+import { toast } from 'react-hot-toast';
 
 export function usePresentation(
   project: Project,
@@ -160,15 +163,23 @@ export function usePresentation(
     [presentationId]
   );
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const exportPptx = useCallback(async () => {
     if (!presentationId) return;
+    setIsExporting(true);
+    const toastId = toast.loading('Exporting to PPTX... This may take a moment.');
     try {
       const result = await presentationApi.exportPptx(presentationId);
       // Open the file path (backend serves it as static)
       const apiBase = import.meta.env.VITE_PPT_API_URL || 'http://localhost:8000';
       window.open(`${apiBase}/app_data/${result.path.split('app_data/').pop() || ''}`, '_blank');
+      toast.success('Presentation exported successfully!', { id: toastId });
     } catch (e: any) {
       setError(e.message || 'Failed to export PPTX');
+      toast.error(e.message || 'Failed to export PPTX', { id: toastId });
+    } finally {
+      setIsExporting(false);
     }
   }, [presentationId]);
 
@@ -203,6 +214,7 @@ export function usePresentation(
     switchTheme,
     regenerateSlide,
     exportPptx,
+    isExporting,
     resetToConfig,
     replaceSlides,
   };

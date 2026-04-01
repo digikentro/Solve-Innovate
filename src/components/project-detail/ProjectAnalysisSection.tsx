@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiTrendingUp, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiTrendingUp } from 'react-icons/fi';
 import { HorizontalModal } from '@/components/ui/Modal';
 import { ResourceFrameworkSelector } from '@/components/assessment/ResourceFrameworkSelector';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
@@ -14,8 +14,6 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'express' | 'standard' | 'premium' | null>(null);
   const [viewAssessmentIdx, setViewAssessmentIdx] = useState<number | null>(null);
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editName, setEditName] = useState<string>('');
   
   const analysis = project?.analysis || [];
 
@@ -96,26 +94,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
                               <FiTrendingUp className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1">
-                              {editingIdx === idx ? (
-                                <input
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                  value={editName}
-                                  onChange={e => setEditName(e.target.value)}
-                                  onBlur={() => {
-                                    a.name = editName;
-                                    setEditingIdx(null);
-                                  }}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      a.name = editName;
-                                      setEditingIdx(null);
-                                    }
-                                  }}
-                                  autoFocus
-                                />
-                              ) : (
-                                <h4 className="text-lg font-semibold text-gray-900">{name}</h4>
-                              )}
+                              <h4 className="text-lg font-semibold text-gray-900">{name}</h4>
                               <p className="text-sm text-gray-600 mt-1">
                                 {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
                               </p>
@@ -128,31 +107,6 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
                             onClick={() => setViewAssessmentIdx(idx)}
                           >
                             View Analysis
-                          </button>
-                          <button
-                            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200"
-                            onClick={() => {
-                              setEditingIdx(idx);
-                              setEditName(a.name || name);
-                            }}
-                            title="Edit Assessment Name"
-                          >
-                            <FiEdit className="w-4 h-4" />
-                          </button>
-                          <button
-                            className="p-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200"
-                            onClick={() => {
-                              if (window.confirm('Delete this assessment?')) {
-                                const updated = [...analysis];
-                                updated.splice(idx, 1);
-                                setProject({ ...project, analysis: updated });
-                                setViewAssessmentIdx(null);
-                                setEditingIdx(null);
-                              }
-                            }}
-                            title="Delete Assessment"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>

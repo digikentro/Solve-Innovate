@@ -544,32 +544,74 @@ def _pack_split_blocks(
     blocks: List[Dict[str, Any]],
     limits: Dict[str, int],
 ) -> List[str]:
+    """
+    Pack split blocks into slides. Strategy (priority order):
+      1. Try to fit everything into a single-column slide.
+      2. If overflow, try to fit into 2 columns (left col + right col).
+      3. If still overflow, try 3 columns.
+      4. Only spill to a new slide when content is truly too large for 3 columns.
+    """
+
+    def _blocks_fit(group: List[Dict[str, Any]], col_multiplier: float = 1.0) -> bool:
+        """Check whether a group of blocks fits within column-adjusted limits."""
+        total_bullets = sum(int(b["bullet_items"]) for b in group)
+        total_rows = sum(int(b["table_rows"]) for b in group)
+        total_words = sum(int(b["paragraph_words"]) for b in group)
+        adj_bullets = int(limits["max_bullets"] * col_multiplier)
+        adj_rows = int(limits["max_table_rows"] * col_multiplier)
+        adj_words = int(limits["max_paragraph_words"] * col_multiplier)
+        return total_bullets <= adj_bullets and total_rows <= adj_rows and total_words <= adj_words
+
+    def _render_blocks_text(group: List[Dict[str, Any]]) -> str:
+        """Render a list of blocks as markdown text lines."""
+        lines = []
+        for b in group:
+            lines.append(b["text"].strip())
+            lines.append("")
+        return "\n".join(lines).strip()
+
+    def _try_pack_into_columns(group: List[Dict[str, Any]], n_cols: int) -> Optional[str]:
+        """
+        Try to split `group` evenly across `n_cols` columns.
+        Returns the :::columns markdown string if it fits, else None.
+        """
+        # Each column gets at most 1/n_cols of the limits (with a small padding factor).
+        col_factor = (1.0 / n_cols) * 1.1  # 10% headroom
+
+        # Split into roughly equal column groups
+        total = len(group)
+        if total == 0:
+            return None
+
+        chunk_size = max(1, (total + n_cols - 1) // n_cols)
+        column_groups = [group[i : i + chunk_size] for i in range(0, total, chunk_size)]
+
+        # Check each column fits within column capacity
+        for col_group in column_groups:
+            if not _blocks_fit(col_group, col_factor * n_cols):
+                return None  # A column still overflows
+
+        # Build :::columns markdown
+        lines = [":::columns"]
+        for ci, col_group in enumerate(column_groups):
+            if ci > 0:
+                lines.append("---")
+            lines.append(_render_blocks_text(col_group))
+        lines.append(":::")
+        return "\n".join(lines)
+
+    # ── Phase 1: Greedily assign blocks to pages ─────────────────────────────
     pages: List[List[Dict[str, Any]]] = []
     current: List[Dict[str, Any]] = []
-    current_bullets = 0
-    current_rows = 0
-    current_words = 0
 
     for block in blocks:
-        next_bullets = current_bullets + int(block["bullet_items"])
-        next_rows = current_rows + int(block["table_rows"])
-        next_words = current_words + int(block["paragraph_words"])
-        exceeds = (
-            next_bullets > limits["max_bullets"]
-            or next_rows > limits["max_table_rows"]
-            or next_words > limits["max_paragraph_words"]
-        )
-        if exceeds and current:
-            pages.append(current)
-            current = []
-            current_bullets = 0
-            current_rows = 0
-            current_words = 0
-
-        current.append(block)
-        current_bullets += int(block["bullet_items"])
-        current_rows += int(block["table_rows"])
-        current_words += int(block["paragraph_words"])
+        trial = current + [block]
+        if _blocks_fit(trial):
+            current.append(block)
+        else:
+            if current:
+                pages.append(current)
+            current = [block]
 
     if current:
         pages.append(current)
@@ -577,16 +619,58 @@ def _pack_split_blocks(
     if not pages:
         return []
 
+    # ── Phase 2: Merge overflow pages using columns where possible ────────────
+    merged_pages: List[str] = []  # each entry is a slide markdown body (no heading)
     continuation = _continuation_heading(heading)
+
+    page_idx = 0
+    while page_idx < len(pages):
+        page = pages[page_idx]
+        page_text = _render_blocks_text(page)
+
+        # Already fits single column → output as-is
+        if _blocks_fit(page):
+            merged_pages.append(page_text)
+            page_idx += 1
+            continue
+
+        # Try merging with next page(s) into 2 or 3 columns
+        combined = False
+        for n_cols in (2, 3):
+            # Try to merge this page + up to (n_cols-1) following pages into columns
+            candidates = []
+            flat_blocks: List[Dict[str, Any]] = []
+            for look_ahead in range(n_cols):
+                idx = page_idx + look_ahead
+                if idx < len(pages):
+                    candidates.append(pages[idx])
+                    flat_blocks.extend(pages[idx])
+                else:
+                    break
+
+            if len(candidates) < 2:
+                continue
+
+            col_md = _try_pack_into_columns(flat_blocks, n_cols)
+            if col_md is not None:
+                merged_pages.append(col_md)
+                page_idx += len(candidates)
+                combined = True
+                break
+
+        if not combined:
+            # Cannot fit into columns — output as single overflowing slide
+            merged_pages.append(page_text)
+            page_idx += 1
+
+    # ── Phase 3: Attach headings and emit final slide strings ─────────────────
     slides: List[str] = []
-    for index, page in enumerate(pages):
+    for index, body_text in enumerate(merged_pages):
         lines: List[str] = []
         if heading:
             lines.append(heading if index == 0 else (continuation or heading))
             lines.append("")
-        for block in page:
-            lines.append(block["text"].strip())
-            lines.append("")
+        lines.append(body_text)
         candidate = "\n".join(lines).strip()
         if candidate:
             slides.append(candidate)

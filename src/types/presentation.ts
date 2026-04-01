@@ -84,7 +84,14 @@ export interface ColumnsBlock {
   columns: MarkdownBlock[][];
 }
 
-export type MarkdownBlock =
+export interface BlockLayout {
+  width?: number; // percentage 0-100
+  height?: number; // pixels on 720 canvas
+  x?: number; // percentage
+  y?: number; // percentage
+}
+
+export type MarkdownBlock = (
   | HeadingBlock
   | ParagraphBlock
   | BulletListBlock
@@ -97,7 +104,8 @@ export type MarkdownBlock =
   | CalloutBlock
   | CodeBlock
   | DividerBlock
-  | ColumnsBlock;
+  | ColumnsBlock
+) & { layout?: BlockLayout };
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
@@ -136,12 +144,12 @@ export interface PresentationSettings {
   textMode: 'generate' | 'condense' | 'preserve';
   audience: string;
   theme: string;
-  imageSource: 'ai' | 'stock' | 'none';
-  imageStyle: string;
   language: string;
   instructions: string;
   logoUrl?: string | null;
   logoPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  includeImages: boolean;
+  includeCharts: boolean;
   customColors?: {
     primary?: string;
     secondary?: string;

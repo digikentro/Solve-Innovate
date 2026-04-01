@@ -157,23 +157,36 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
     // ── Columns block ──────────────────────────────────────────────────────
     if (line.trim() === ':::columns') {
       i++;
-      const columns: MarkdownBlock[][] = [[]];
-      let currentCol = 0;
+      // Collect raw lines until closing :::
+      const rawColumnLines: string[] = [];
       while (i < lines.length && !lines[i].trim().startsWith(':::')) {
-        if (lines[i].trim() === '---') {
-          columns.push([]);
-          currentCol++;
-        } else if (lines[i].trim()) {
-          // Simple: treat each line as a paragraph in the column
-          columns[currentCol].push({
-            type: 'paragraph',
-            text: stripInline(lines[i]),
-          });
-        }
+        rawColumnLines.push(lines[i]);
         i++;
       }
-      blocks.push({ type: 'columns', columns });
       i++; // skip closing :::
+
+      // Split by --- to get individual column text blocks
+      const columnTexts: string[] = [];
+      let colBuffer: string[] = [];
+      for (const rawLine of rawColumnLines) {
+        if (rawLine.trim() === '---') {
+          columnTexts.push(colBuffer.join('\n'));
+          colBuffer = [];
+        } else {
+          colBuffer.push(rawLine);
+        }
+      }
+      columnTexts.push(colBuffer.join('\n'));
+
+      // Recursively parse each column
+      const columns: MarkdownBlock[][] = columnTexts
+        .map((txt) => txt.trim())
+        .filter(Boolean)
+        .map((txt) => parseSlideMarkdown(txt));
+
+      if (columns.length > 0) {
+        blocks.push({ type: 'columns', columns });
+      }
       continue;
     }
 

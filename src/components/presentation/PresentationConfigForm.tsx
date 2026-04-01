@@ -31,12 +31,6 @@ const TEXT_MODE_OPTIONS = [
   { value: 'preserve', label: 'Preserve', desc: 'Keep exact text, only format into slides' },
 ] as const;
 
-const IMAGE_SOURCE_OPTIONS = [
-  { value: 'ai', label: 'AI Generated' },
-  { value: 'stock', label: 'Stock Photos' },
-  { value: 'none', label: 'No Images' },
-] as const;
-
 export const PresentationConfigForm = ({
   settings,
   setSettings,
@@ -151,23 +145,48 @@ export const PresentationConfigForm = ({
           />
         </div>
 
-        {/* Image Source */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Image Source</label>
-          <div className="flex gap-3">
-            {IMAGE_SOURCE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => update('imageSource', opt.value)}
-                className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-200 ${
-                  settings.imageSource === opt.value
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+        {/* Visuals */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={settings.includeImages}
+                  onChange={(e) => update('includeImages', e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-12 h-6 rounded-full transition-colors ${settings.includeImages ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.includeImages ? 'translate-x-6' : ''}`} />
+              </div>
+              <span className="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors">
+                Include AI Images
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-15">
+              Automatically generate conceptual visuals for relevant slides.
+            </p>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={settings.includeCharts}
+                  onChange={(e) => update('includeCharts', e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-12 h-6 rounded-full transition-colors ${settings.includeCharts ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.includeCharts ? 'translate-x-6' : ''}`} />
+              </div>
+              <span className="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors">
+                Include Data Charts
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-15">
+              Visualize numeric tables as interactive Bar, Line, or Pie charts.
+            </p>
           </div>
         </div>
 

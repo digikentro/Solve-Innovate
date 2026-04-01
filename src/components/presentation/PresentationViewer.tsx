@@ -4,7 +4,7 @@ import { THEMES } from '@/themes';
 import { SlideRenderer } from './renderer/SlideRenderer';
 import { SlideThumbnails } from './SlideThumbnails';
 import { LightweightWysiwyg } from './LightweightWysiwyg';
-import { FiDownload, FiRefreshCw, FiChevronLeft, FiChevronRight, FiPlus, FiPlay, FiMoreVertical } from 'react-icons/fi';
+import { FiDownload, FiRefreshCw, FiChevronLeft, FiChevronRight, FiPlus, FiPlay, FiMoreVertical, FiEdit2 } from 'react-icons/fi';
 import { blocksToMarkdown, editorHtmlToMarkdown } from '@/utils/slideEditor';
 import { parseSlideMarkdown } from '@/utils/markdownParser';
 
@@ -18,6 +18,7 @@ interface PresentationViewerProps {
   onSwitchTheme: (themeId: string) => void;
   onRegenerateSlide: (index: number, instructions?: string) => void;
   onExportPptx: () => void;
+  isExporting?: boolean;
   onNewPresentation: () => void;
   onSlidesUpdate: (slides: SlideData[]) => void;
   saveState: 'idle' | 'saving' | 'saved' | 'error';
@@ -33,6 +34,7 @@ export const PresentationViewer = ({
   onSwitchTheme,
   onRegenerateSlide,
   onExportPptx,
+  isExporting,
   onNewPresentation,
   onSlidesUpdate,
   saveState,
@@ -41,6 +43,7 @@ export const PresentationViewer = ({
   const [showRegenInput, setShowRegenInput] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [isSlideEditing, setIsSlideEditing] = useState(false);
   
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -134,136 +137,8 @@ export const PresentationViewer = ({
     else if (type === 'chart') newBlock = { type: 'chart', chartType: 'bar', data: { headers: ['Cat', 'Val'], rows: [['A', '10']] } };
     else newBlock = { type: 'paragraph', text: 'New text block' };
     
-    // Insert after the current index
     next.splice(idx + 1, 0, newBlock);
     updateBlocks(next);
-  };
-
-  const blockTextValue = (block: MarkdownBlock): string => {
-    switch (block.type) {
-      case 'heading':
-      case 'paragraph':
-        return block.text;
-      case 'bullet_list':
-      case 'numbered_list':
-        return block.items.join('\n');
-      case 'quote':
-        return `${block.text}${block.attribution ? `\n- ${block.attribution}` : ''}`;
-      case 'code':
-        return block.code;
-      default:
-        return '';
-    }
-  };
-
-  const patchBlockText = (block: MarkdownBlock, value: string): MarkdownBlock => {
-    switch (block.type) {
-      case 'heading':
-      case 'paragraph':
-        return { ...block, text: value };
-      case 'bullet_list':
-      case 'numbered_list': {
-        const items = value
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean);
-        return { ...block, items };
-      }
-      case 'quote': {
-        const [first, ...rest] = value.split('\n');
-        const attribution = rest
-          .join(' ')
-          .replace(/^\s*-\s*/, '')
-          .trim();
-        return {
-          ...block,
-          text: first || '',
-          attribution: attribution || undefined,
-        };
-      }
-      case 'code':
-        return { ...block, code: value };
-      default:
-        return block;
-    }
-  };
-
-  const isInlineEditable = (block: MarkdownBlock): boolean =>
-    block.type === 'heading' ||
-    block.type === 'paragraph' ||
-    block.type === 'bullet_list' ||
-    block.type === 'numbered_list' ||
-    block.type === 'quote' ||
-    block.type === 'code';
-
-  const supportsRichEditing = (block: MarkdownBlock): boolean =>
-    block.type === 'heading' || block.type === 'paragraph' || block.type === 'quote';
-
-  const blockToRichHtml = (block: MarkdownBlock): string => {
-    switch (block.type) {
-      case 'heading':
-        return `<h${block.level}>${block.text}</h${block.level}>`;
-      case 'paragraph':
-        return `<p>${block.text}</p>`;
-      case 'quote':
-        return `<p>${block.text}</p>${block.attribution ? `<p>- ${block.attribution}</p>` : ''}`;
-      default:
-        return '<p></p>';
-    }
-  };
-
-  const richMarkdownToBlockValue = (block: MarkdownBlock, markdown: string): string => {
-    const lines = markdown
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (block.type === 'heading') {
-      return lines.map((line) => line.replace(/^#{1,6}\s+/, '')).join(' ').trim();
-    }
-    if (block.type === 'quote') {
-      return lines
-        .map((line) => line.replace(/^>\s*/, ''))
-        .join('\n')
-        .trim();
-    }
-    return lines
-      .map((line) => line.replace(/^[-*]\s+/, '').replace(/^\d+\.\s+/, ''))
-      .join(' ')
-      .trim();
-  };
-
-  const blockKindLabel = (block: MarkdownBlock): string => {
-    switch (block.type) {
-      case 'heading':
-        return `Heading H${block.level}`;
-      case 'paragraph':
-        return 'Paragraph';
-      case 'bullet_list':
-        return 'Bullet List';
-      case 'numbered_list':
-        return 'Numbered List';
-      case 'metric_row':
-        return 'Metrics';
-      case 'table':
-        return 'Table';
-      case 'chart':
-        return `Chart (${block.chartType})`;
-      case 'callout':
-        return 'Callout';
-      case 'image':
-        return 'Image';
-      case 'quote':
-        return 'Quote';
-      case 'columns':
-        return 'Columns';
-      case 'code':
-        return 'Code';
-      case 'divider':
-        return 'Divider';
-      default:
-        return 'Block';
-    }
   };
 
   const saveBadge = useMemo(() => {
@@ -273,10 +148,18 @@ export const PresentationViewer = ({
     return 'Idle';
   }, [saveState]);
 
+  // When navigating slides, exit edit mode
+  const handleNavigate = (newIndex: number) => {
+    setIsSlideEditing(false);
+    onSelectSlide(newIndex);
+  };
+
   return (
     <div className="space-y-4">
+      {/* ─── Top Toolbar ─── */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 flex gap-4 items-end justify-between flex-wrap">
         <div className="flex items-center gap-6 flex-wrap">
+          {/* Theme Picker */}
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Theme</span>
             <div className="flex items-center gap-2">
@@ -312,6 +195,7 @@ export const PresentationViewer = ({
             </div>
           </div>
 
+          {/* Logo */}
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logo</span>
             <div className="flex gap-2 items-center">
@@ -342,25 +226,35 @@ export const PresentationViewer = ({
               <button onClick={() => { setShowRegenInput(!showRegenInput); setShowMenu(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg text-left">
                 <FiRefreshCw className="w-4 h-4" /> Regenerate Slide
               </button>
-              <button onClick={() => { onExportPptx(); setShowMenu(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 rounded-lg text-left font-medium">
-                <FiDownload className="w-4 h-4" /> Export PPTX
+              <button disabled={isExporting} onClick={() => { onExportPptx(); setShowMenu(false); }} className={`flex items-center gap-2 px-3 py-2 text-sm text-left font-medium rounded-lg ${isExporting ? 'text-indigo-400 bg-indigo-50 cursor-not-allowed' : 'text-indigo-700 hover:bg-indigo-50'}`}>
+                <FiDownload className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} /> {isExporting ? 'Exporting...' : 'Export PPTX'}
               </button>
               <div className="my-1 border-t border-gray-100" />
               <button onClick={() => { onNewPresentation(); setShowMenu(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg text-left">
-                <FiPlus className="w-4 h-4" /> New Desk
+                <FiPlus className="w-4 h-4" /> New Deck
               </button>
             </div>
           )}
         </div>
       </div>
 
+      {/* Regenerate input */}
       {showRegenInput && (
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md border border-indigo-100 p-4 space-y-3 animate-fadeIn flex flex-col">
           <textarea
             value={regenInstructions}
-            onChange={(e) => setRegenInstructions(e.target.value)}
+            onChange={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+              setRegenInstructions(e.target.value);
+            }}
+            onFocus={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
             placeholder="Instructions (e.g., make this slide highly visual, add a comparison table...)"
-            className="w-full min-h-[60px] p-2 text-sm border rounded outline-none ring-1 ring-indigo-300 focus:ring-indigo-500"
+            className="w-full min-h-[60px] p-2 text-sm border rounded outline-none ring-1 ring-indigo-300 focus:ring-indigo-500 resize-none"
+            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
           />
           <div className="flex justify-end gap-2">
             <button onClick={() => setShowRegenInput(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
@@ -378,71 +272,103 @@ export const PresentationViewer = ({
         </div>
       )}
 
-      {/* Main Two-column layout */}
+      {/* ─── Main Two-column layout ─── */}
       <div className="flex gap-4">
-        {/* Thumbnails */}
+        {/* Thumbnails sidebar */}
         {!isFullscreen && (
-          <div className="hidden md:flex w-56 flex-col gap-4 flex-shrink-0 overflow-y-auto max-h-[calc(100vh-250px)] pb-12 pr-2 custom-scrollbar">
+          <div className="hidden md:flex w-52 flex-col flex-shrink-0 overflow-y-auto max-h-[calc(100vh-260px)] pb-12 pr-1 custom-scrollbar">
             <SlideThumbnails
               slides={slides}
               theme={activeTheme}
               logoUrl={logoUrl || undefined}
               logoPosition={logoPosition}
               currentIndex={currentIndex}
-              onSelect={onSelectSlide}
+              onSelect={handleNavigate}
             />
           </div>
         )}
 
         {/* Current Slide */}
-        <div className="flex-1 min-w-0 flex flex-col" ref={fullscreenRef}>
-          <div className={`shadow-xl border border-white/20 overflow-hidden relative group bg-black transition-all ${isFullscreen ? 'w-full h-full flex flex-col justify-center rounded-none' : 'bg-white/80 backdrop-blur-sm rounded-3xl'}`}>
-            <div className={`${isFullscreen ? 'w-full h-auto aspect-video max-h-screen relative mx-auto' : 'p-3'}`}>
+        <div className="flex-1 min-w-0 flex flex-col gap-3" ref={fullscreenRef}>
+
+          {/* ─── EDIT BUTTON (always visible, above slide) ─── */}
+          {!isFullscreen && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                Slide {currentIndex + 1} of {slides.length}
+              </span>
+              <button
+                onClick={() => setIsSlideEditing((prev) => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow ${
+                  isSlideEditing
+                    ? 'bg-indigo-600 text-white shadow-indigo-200'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700'
+                }`}
+              >
+                <FiEdit2 className="w-4 h-4" />
+                {isSlideEditing ? 'Done Editing' : 'Edit Slide'}
+              </button>
+            </div>
+          )}
+
+          {/* ─── Slide Canvas ─── */}
+          <div
+            className={`relative overflow-hidden transition-all ${
+              isFullscreen
+                ? 'w-full h-full flex flex-col justify-center rounded-none bg-black'
+                : 'w-full rounded-2xl shadow-2xl border border-white/20'
+            }`}
+          >
+            <div className={isFullscreen ? 'w-full aspect-video max-h-screen mx-auto' : 'w-full'}>
               <SlideRenderer
                 blocks={currentSlide.blocks}
                 theme={activeTheme}
                 logoUrl={logoUrl || undefined}
                 logoPosition={logoPosition}
                 role={isFullscreen ? 'measure' : 'viewer'}
-                className={isFullscreen ? '' : 'rounded-2xl shadow-inner'}
-                dragIndex={dragIndex}
-                setDragIndex={setDragIndex}
-                onBlockUpdate={handleBlockUpdate}
-                onBlockDelete={handleBlockDelete}
-                onBlockReorder={handleBlockReorder}
-                onBlockAdd={handleBlockAdd}
+                className={isFullscreen ? '' : 'rounded-2xl'}
+                dragIndex={isSlideEditing ? dragIndex : undefined}
+                setDragIndex={isSlideEditing ? setDragIndex : undefined}
+                onBlockUpdate={isSlideEditing ? handleBlockUpdate : undefined}
+                onBlockDelete={isSlideEditing ? handleBlockDelete : undefined}
+                onBlockReorder={isSlideEditing ? handleBlockReorder : undefined}
+                onBlockAdd={isSlideEditing ? handleBlockAdd : undefined}
               />
-              
-              {/* Fullscreen extra controls (hover to reveal) */}
-              {isFullscreen && (
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                  <button onClick={toggleFullscreen} className="bg-black/50 hover:bg-black/70 text-white rounded-xl px-3 py-2 text-sm backdrop-blur">
-                    Exit
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Navigation Drawer */}
-            <div className={`transition-all bg-white border-t border-gray-100 flex items-center justify-between ${isFullscreen ? 'absolute bottom-0 w-full px-6 py-4 opacity-0 group-hover:opacity-100 z-50 shadow-t-xl bg-white/90 backdrop-blur hover:bg-white' : 'px-4 py-3'}`}>
-              <button
-                onClick={() => onSelectSlide(Math.max(0, currentIndex - 1))}
-                disabled={currentIndex === 0}
-                className={`flex items-center gap-1 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all ${isFullscreen ? 'text-lg text-gray-800' : 'text-sm text-gray-500'}`}
-              >
-                <FiChevronLeft className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} /> Previous
-              </button>
-              <span className={`font-medium tracking-widest ${isFullscreen ? 'text-lg text-gray-800' : 'text-sm text-gray-500'}`}>
-                {currentIndex + 1} / {slides.length}
-              </span>
-              <button
-                onClick={() => onSelectSlide(Math.min(slides.length - 1, currentIndex + 1))}
-                disabled={currentIndex === slides.length - 1}
-                className={`flex items-center gap-1 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all ${isFullscreen ? 'text-lg text-gray-800' : 'text-sm text-gray-500'}`}
-              >
-                Next <FiChevronRight className={isFullscreen ? 'w-6 h-6' : 'w-4 h-4'} />
-              </button>
-            </div>
+            {/* Fullscreen exit button */}
+            {isFullscreen && (
+              <div className="absolute top-4 right-4 z-50">
+                <button onClick={toggleFullscreen} className="bg-black/50 hover:bg-black/70 text-white rounded-xl px-3 py-2 text-sm backdrop-blur">
+                  Exit
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ─── Navigation ─── */}
+          <div className={`flex items-center justify-between transition-all ${
+            isFullscreen
+              ? 'absolute bottom-0 w-full px-8 py-4 bg-white/90 backdrop-blur'
+              : 'px-2'
+          }`}>
+            <button
+              onClick={() => handleNavigate(Math.max(0, currentIndex - 1))}
+              disabled={currentIndex === 0}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <FiChevronLeft className="w-4 h-4" /> Previous
+            </button>
+            <span className="text-sm font-medium tracking-widest text-gray-500">
+              {currentIndex + 1} / {slides.length}
+            </span>
+            <button
+              onClick={() => handleNavigate(Math.min(slides.length - 1, currentIndex + 1))}
+              disabled={currentIndex === slides.length - 1}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              Next <FiChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -453,7 +379,7 @@ export const PresentationViewer = ({
           {slides.map((slide, i) => (
             <button
               key={slide.id}
-              onClick={() => onSelectSlide(i)}
+              onClick={() => handleNavigate(i)}
               className={`flex-shrink-0 w-20 h-12 rounded-lg overflow-hidden border-2 transition-all ${
                 i === currentIndex ? 'border-indigo-500' : 'border-gray-200'
               }`}

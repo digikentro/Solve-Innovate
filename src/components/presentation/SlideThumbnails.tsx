@@ -10,6 +10,10 @@ interface SlideThumbnailsProps {
   onSelect: (index: number) => void;
 }
 
+// Scale factor for thumbnails. SlideRenderer renders at 960px natural width
+// then scales it down by this factor → 960 * 0.208 ≈ 200px wide (fits the w-56 sidebar)
+const THUMBNAIL_SCALE = 0.208;
+
 export const SlideThumbnails = ({
   slides,
   theme,
@@ -19,7 +23,7 @@ export const SlideThumbnails = ({
   onSelect,
 }: SlideThumbnailsProps) => {
   return (
-    <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-280px)] no-scrollbar pr-1">
+    <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] no-scrollbar pr-1">
       {slides.map((slide, i) => (
         <button
           key={slide.id}
@@ -30,22 +34,24 @@ export const SlideThumbnails = ({
               : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
           }`}
         >
-          <div className="relative">
-            {/* Mini slide preview */}
-            <div className="pointer-events-none" style={{ fontSize: '5px' }}>
-              <SlideRenderer
-                blocks={slide.blocks}
-                theme={theme}
-                logoUrl={logoUrl}
-                logoPosition={logoPosition}
-                role="thumbnail"
-                className="rounded-none"
-              />
-            </div>
-            {/* Slide number overlay */}
-            <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-              {i + 1}
-            </div>
+          {/* SlideRenderer already handles the scaled wrapper at the right aspect ratio */}
+          <div className="pointer-events-none">
+            <SlideRenderer
+              blocks={slide.blocks}
+              theme={theme}
+              logoUrl={logoUrl}
+              logoPosition={logoPosition}
+              role="thumbnail"
+              className="rounded-none"
+              scale={THUMBNAIL_SCALE}
+            />
+          </div>
+          {/* Slide number badge */}
+          <div
+            className="flex items-center justify-between px-2 py-1 text-[10px] font-semibold"
+            style={{ backgroundColor: theme.colors.bg, color: theme.colors.primary }}
+          >
+            <span>Slide {i + 1}</span>
           </div>
         </button>
       ))}

@@ -12,23 +12,6 @@ interface PaginationOptions {
 
 let measureHost: HTMLDivElement | null = null;
 
-const getReferenceWidth = (): number => {
-  if (typeof document === 'undefined') return 1280;
-  const viewerCandidates = Array.from(
-    document.querySelectorAll<HTMLElement>('[data-slide-role="viewer"]')
-  ).filter((element) => !element.closest('[data-slide-measure-host="true"]'));
-
-  const viewerVisible = viewerCandidates.find(
-    (element) => element.getBoundingClientRect().width > 0
-  );
-  if (viewerVisible) {
-    const width = viewerVisible.getBoundingClientRect().width;
-    return Math.max(720, Math.min(1600, Math.floor(width)));
-  }
-
-  return 1280;
-};
-
 const getMeasureHost = (): HTMLDivElement | null => {
   if (typeof document === 'undefined') return null;
   if (measureHost) return measureHost;
@@ -39,6 +22,7 @@ const getMeasureHost = (): HTMLDivElement | null => {
   host.style.left = '-100000px';
   host.style.top = '0';
   host.style.width = '1280px';
+  host.style.height = '720px';
   host.style.pointerEvents = 'none';
   host.style.opacity = '0';
   host.style.visibility = 'hidden';
@@ -51,7 +35,6 @@ const getMeasureHost = (): HTMLDivElement | null => {
 const measureOverflow = (blocks: MarkdownBlock[], options: PaginationOptions): boolean => {
   const host = getMeasureHost();
   if (!host) return false;
-  host.style.width = `${getReferenceWidth()}px`;
 
   host.innerHTML = renderToStaticMarkup(
     <SlideRenderer
@@ -60,6 +43,7 @@ const measureOverflow = (blocks: MarkdownBlock[], options: PaginationOptions): b
       logoUrl={options.logoUrl || undefined}
       logoPosition={options.logoPosition}
       role="measure"
+      scale={1}
     />
   );
 

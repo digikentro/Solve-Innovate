@@ -31,7 +31,14 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
                 key_lower = k.lower()
                 if key_lower == "sslmode" and "postgresql+asyncpg" in driver_scheme:
                     if v.lower() != "disable" and "sqlite" not in database_url:
-                        connect_args["ssl"] = ssl.create_default_context()
+                        # For asyncpg, 'ssl' can be a boolean or an SSLContext
+                        if v.lower() == "require":
+                            connect_args["ssl"] = True
+                        else:
+                            connect_args["ssl"] = ssl.create_default_context()
+                            # Often required for Supabase/Render to avoid certificate verification errors if not using custom CAs
+                            connect_args["ssl"].check_hostname = False
+                            connect_args["ssl"].verify_mode = ssl.CERT_NONE
 
             database_url = urlunsplit(
                 (

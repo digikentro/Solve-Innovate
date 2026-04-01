@@ -37,7 +37,7 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
     }));
 
     return (
-      <div className="w-full my-2" style={{ height: 250 }}>
+      <div className="w-full my-6" style={{ height: 450 }}>
         <ResponsiveContainer>
           <PieChart>
             <Pie
@@ -46,11 +46,11 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={90}
-              innerRadius={chartType === 'donut' ? 50 : 0}
-              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+              outerRadius={160}
+              innerRadius={chartType === 'donut' ? 100 : 0}
+              label={({ name, percent }: any) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
             >
-              {pieData.map((entry, i) => (
+              {pieData.map((entry: any, i: number) => (
                 <Cell key={i} fill={entry.fill} />
               ))}
             </Pie>
@@ -63,12 +63,12 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
 
   if (chartType === 'line') {
     return (
-      <div className="w-full my-2" style={{ height: 250 }}>
+      <div className="w-full my-6" style={{ height: 450 }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-            <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-            <YAxis tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
+            <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
+            <YAxis tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
             <Tooltip />
             {valueKeys.map((key, i) => (
               <Line
@@ -76,8 +76,8 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
                 type="monotone"
                 dataKey={key}
                 stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2}
-                dot={{ r: 4 }}
+                strokeWidth={3}
+                dot={{ r: 6 }}
               />
             ))}
           </LineChart>
@@ -88,19 +88,19 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
 
   // Default: bar chart
   return (
-    <div className="w-full my-2" style={{ height: 250 }}>
+    <div className="w-full my-6" style={{ height: 450 }}>
       <ResponsiveContainer>
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
-          <YAxis tick={{ fill: 'var(--text-color)', fontSize: 12 }} />
+          <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
+          <YAxis tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
           <Tooltip />
           {valueKeys.map((key, i) => (
             <Bar
               key={key}
               dataKey={key}
               fill={CHART_COLORS[i % CHART_COLORS.length]}
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
           ))}
         </BarChart>

@@ -61,6 +61,19 @@ VALID_ROLES = Literal[
     "list_detail",
     "table_data",
     "closing",
+    "psychological_analysis",
+    "testing",
+    "canvas",
+    "as_is_map",
+    "extreme_user_data",
+    "deep_empathy_data",
+    "transformation_framework",
+    "Behaviour_Framework",
+    "HMW_Ideation_Framework",
+    "research_data",
+    "Idea_Clustering_and_Idea_Cards",
+    "final_idea",
+    "market_research",
 ]
 
 # Minimum fraction of source numbers that must appear verbatim in the brief.
@@ -171,8 +184,11 @@ persona_cards | journey_map | comparison | quote | list_detail | table_data | cl
 - research_data                  → data_heavy or chart_visual
 - Idea_Clustering_and_Idea_Cards → list_detail
 - final_idea                     → key_insight or list_detail
-- testing                        → data_heavy
-- market_research                → data_heavy or chart_visual
+- testing                        → data_heavy or testing
+- market_research                → data_heavy or chart_visual or market_research
+- psychological_analysis         → key_insight or psychological_analysis
+- canvas                         → list_detail or comparison or canvas
+- as_is_map                      → journey_map or as_is_map
 
 # Mandatory Rules
 1. First section role="cover". Last section role="closing".

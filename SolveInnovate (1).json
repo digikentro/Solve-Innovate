@@ -1,0 +1,1830 @@
+{
+  "name": "SolveInnovate",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Role: You are an expert in Human-Centered Design and user research specializing in extreme user identification. Generate 10 distinct extreme users who experience the given pain point in amplified ways, providing rich personas for design research.\n\nMission: Create diverse extreme user profiles that will unlock innovative insights and lead to more inclusive solutions by examining users at the fringes of the user spectrum.\n\nEXTREME USER FRAMEWORK\nUnderstanding Extreme Users\nDefinition: Extreme users are individuals at the fringes of the user spectrum who have amplified needs, either significantly more or significantly less than the average user. They experience the identified pain point in intensified ways that can reveal breakthrough insights.\n\nTwo Primary Types:\n\n1. Power Users (High-Need Extreme)\n\nHave advanced, complex, or multiple needs related to the pain point\nPush existing solutions to their limits\nOften create their own workarounds when solutions don't exist\nRepresent future needs of mainstream users\nDrive innovation through their demanding requirements\n\n2. Marginalized Users (Barrier-Facing Extreme)\n\nFace significant barriers that amplify the pain point\nMay struggle with complexity, accessibility, or resource constraints\nOften excluded from mainstream solutions\nRepresent underserved populations\nDrive inclusive design through their unique challenges\nResearch Value of Extreme Users\nInnovation Catalyst: Extreme users reveal unmet needs that spark innovative solutions Inclusive Design: Solutions for extreme users often benefit all users Future-Proofing: Power users show where mainstream needs are heading Market Expansion: Marginalized users represent untapped market opportunities Robust Solutions: Designing for extremes creates more resilient products/services\n\nStructure Output:\nPAIN POINT ANALYSIS\nStep: [Restate the pain point step]\nDescription: [Restate the pain point description]\nUser Context: [Restate the target user context]\n\nEXTREME USER PROFILES\n\nPOWER USERS (High-Need Extreme)\n\nEXTREME USER #1: [Descriptive Name/Title]\nDemographics: [Age, location, occupation, relevant background]\nAmplified Needs: [How their needs exceed average users]\nPain Point Experience: [How they experience the pain point intensely]\nCurrent Workarounds: [What they do to cope with the pain point]\nUnique Challenges: [Specific challenges they face]\nResearch Value: [What insights they could provide]\nInterview Focus: [Key questions to explore with this user]\n\nEXTREME USER #2: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #3: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #4: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #5: [Descriptive Name/Title]\n[Same format as above]\n\nMARGINALIZED USERS (Barrier-Facing Extreme)\n\nEXTREME USER #6: [Descriptive Name/Title]\nDemographics: [Age, location, occupation, relevant background]\nBarriers Faced: [Specific barriers that amplify the pain point]\nPain Point Experience: [How barriers intensify their experience]\nExclusion Factors: [Why current solutions don't work for them]\nUnique Challenges: [Specific challenges they face]\nResearch Value: [What insights they could provide]\nInterview Focus: [Key questions to explore with this user]\n\nEXTREME USER #7: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #8: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #9: [Descriptive Name/Title]\n[Same format as above]\n\nEXTREME USER #10: [Descriptive Name/Title]\n[Same format as above]\n\nRESEARCH STRATEGY\n\nUser Recruitment: [How to find and recruit these extreme users]\nInterview Approach: [Recommended research methods for each type]\nKey Insights to Explore: [Primary research questions across all users]\nExpected Breakthrough Areas: [Where innovations might emerge]\n\nDESIGN IMPLICATIONS\n\nPower User Insights: [How power users could drive innovation]\nMarginalized User Insights: [How marginalized users could drive inclusion]\nSolution Opportunities: [Potential solution directions revealed by extreme users]\nImplementation Considerations: [How to balance extreme and average user needs]\n\n",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.body.toJsonString() }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -784,
+        352
+      ],
+      "id": "0767c120-ef03-4f2f-8f47-ed2f88424ea7",
+      "name": "Message a model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.body.toJsonString() }}"
+            },
+            {
+              "content": "Role: You are an expert in Human-Centered Design and empathy research specializing in uncovering deep beliefs, irrational behaviors, and innovative insights through primary research. Generate comprehensive research guidance using four empathy techniques and proven question framing principles.\n\nMission: Create actionable research tools that will uncover deeper beliefs, behaviors, and insights related to the prioritized pain point when executed on the ground with the selected extreme user.\n\nQUESTION FRAMING PRINCIPLES (Justin Wilcox Method)\nCORE RULES FOR QUESTION FRAMING\nRule #1: Never Talk About Your Solution\n\nFocus entirely on the user's problems and experiences\nAvoid mentioning your idea, product, or solution during research\nKeep conversations centered on their current reality\n\nRule #2: Never Ask About the Future\n\nAvoid hypothetical questions with \"would,\" \"could,\" \"might\"\nDon't ask: \"Would you use a product that...?\"\nDon't ask: \"How much would you pay for...?\"\nFocus on past experiences and current behaviors\n\nRule #3: Ask for Stories, Not Opinions\n\nRequest specific examples from their past\nAsk \"Tell me about the last time...\" instead of \"Do you think...?\"\nStories reveal 23x more insights than yes/no answers\n\nRule #4: Focus on Problems, Not Solutions\n\nUnderstand their pain points before exploring solutions\nAsk about what's hard, frustrating, or time-consuming\nExplore why current solutions fail them\n\nRule #5: Dig Deeper with \"Why\"\n\nAsk \"Why was that hard?\" to uncover emotional drivers\nUse \"Why\" questions to reveal underlying beliefs\nExplore the root causes behind surface-level problems\n\n\nFIVE EMPATHY TECHNIQUES FRAMEWORK\nTECHNIQUE 1: OBSERVATION\nPurpose: Witness real behaviors in natural environments to uncover unconscious actions and environmental influences\nTECHNIQUE 2: IMMERSION\nPurpose: Experience the user's context firsthand to understand constraints, emotions, and systemic barriers\nTECHNIQUE 3: ROLE-PLAYING\nPurpose: Simulate user scenarios to identify friction points and emotional responses\nTECHNIQUE 4: CONVERSATION\nPurpose: Conduct deep interviews using proven question framing to uncover beliefs, motivations, and insights\nTECHNIQUE 5: SHADOWING\nPurpose: Follow users through their complete journey to understand the full context, decision-making process, and ecosystem interactions\n\nOutput Structure:\nRESEARCH CONTEXT ANALYSIS\nPain Point: [Restate the prioritized pain point]\nDescription: [Restate the pain point description]\nExtreme User: [Restate the selected extreme user profile]\nResearch Objective: [What specific insights we're seeking about this pain point]\n\nEMPATHY TECHNIQUE 1: OBSERVATION\n\nObservation Focus Areas:\n- [Specific behaviors to observe related to the pain point]\n- [Environmental factors that influence the pain point]\n- [Unconscious actions or workarounds the user employs]\n- [Social dynamics and interactions during the pain point experience]\n- [Physical constraints or enablers in their environment]\n\nWhat to Document:\n- [Specific observations to record]\n- [Behavioral patterns to note]\n- [Environmental details to capture]\n- [Timing and frequency patterns]\n\nKey Questions for Observation:\n- How does the user actually behave when experiencing this pain point?\n- What environmental factors amplify or reduce the pain?\n- What unconscious workarounds do they use?\n- How do others in their environment respond to their struggle?\n\nEMPATHY TECHNIQUE 2: IMMERSION\n\nImmersion Activities:\n- [Specific activities to experience the user's context]\n- [Environmental conditions to replicate]\n- [Constraints to impose on yourself]\n- [Timeline to follow that matches their experience]\n\nWhat to Experience:\n- [Physical challenges they face]\n- [Emotional states during the pain point]\n- [Time pressures and urgency factors]\n- [Resource limitations they encounter]\n\nImmersion Documentation:\n- [Personal feelings and frustrations to record]\n- [Unexpected difficulties encountered]\n- [Moments of highest stress or confusion]\n- [Insights about systemic barriers]\n\nKey Insights to Capture:\n- What does it feel like to be in their situation?\n- What constraints are invisible until experienced?\n- What emotions arise during the pain point?\n- What systemic barriers become apparent?\n\nEMPATHY TECHNIQUE 3: ROLE-PLAYING\n\nRole-Playing Scenarios:\n- [Specific scenarios to simulate related to the pain point]\n- [Different user contexts to role-play]\n- [Varying constraint levels to test]\n- [Emergency or high-stress situations to simulate]\n\nRole-Playing Variables:\n- [Different resource levels to simulate]\n- [Various time constraints to impose]\n- [Different support system scenarios]\n- [Varying expertise levels to role-play]\n\nDocumentation Focus:\n- [Friction points discovered during simulation]\n- [Emotional responses at different stages]\n- [Breaking points or abandonment triggers]\n- [Successful workaround strategies]\n\nKey Questions for Role-Playing:\n- At what point does the process become unbearable?\n- What would make someone give up entirely?\n- Which steps create the most emotional stress?\n- What support would be most valuable at each stage?\n\nEMPATHY TECHNIQUE 4: SHADOWING\n\nShadowing Focus Areas:\n- [Complete user journey from start to finish related to the pain point]\n- [Decision-making moments and influencing factors]\n- [Interactions with other people, systems, and environments]\n- [Emotional transitions throughout the journey]\n- [Information gathering and processing behaviors]\n- [Adaptation strategies when encountering obstacles]\n\nWhat to Shadow:\n- [Pre-pain point preparation and planning behaviors]\n- [Real-time decision making during the pain point experience]\n- [Communication patterns with others involved]\n- [Coping mechanisms and stress responses]\n- [Post-pain point reflection and learning behaviors]\n- [Ecosystem interactions (family, community, systems)]\n\nShadowing Documentation:\n- [Chronological journey mapping with emotional states]\n- [Decision points and influencing factors]\n- [Unexpected interactions and dependencies]\n- [Moments of confusion, frustration, or breakthrough]\n- [Support system activation and utilization]\n- [Workarounds and creative problem-solving in real-time]\n\nKey Insights from Shadowing:\n- How does the complete journey reveal hidden complexities?\n- What decision-making patterns emerge under real pressure?\n- How do ecosystem interactions influence the pain point experience?\n- What support systems are activated and when?\n- How do users adapt their approach in real-time?\n- What moments of truth define the overall experience?\n\nEMPATHY TECHNIQUE 5: CONVERSATION\n\nDEEP INTERVIEW QUESTIONS (Following Justin Wilcox Principles):\n\nOpening Questions (Problem Context):\n1. \"What's the hardest part about [pain point context]?\"\n2. \"Can you tell me about the last time that happened?\"\n3. \"Why was that hard?\"\n4. \"What, if anything, have you done to solve that problem?\"\n5. \"What don't you love about the solutions you've tried?\"\n\nBelief-Uncovering Questions:\n6. \"What do you believe is the root cause of this problem?\"\n7. \"Tell me about a time when this problem affected someone you care about.\"\n8. \"What assumptions do others make about your situation that aren't true?\"\n9. \"What would need to change for this to never be a problem again?\"\n10. \"What do you think people like you deserve when it comes to [pain point context]?\"\n\nBehavior-Exploring Questions:\n11. \"Walk me through exactly what you did the last time you faced this problem.\"\n12. \"What do you do differently than others in your situation?\"\n13. \"Tell me about a time when you almost gave up dealing with this problem.\"\n14. \"What keeps you going when this problem feels overwhelming?\"\n15. \"How has your approach to this problem changed over time?\"\n\nContext-Deepening Questions:\n16. \"Who else is affected when you experience this problem?\"\n17. \"What time of day/week/month is this problem worst for you?\"\n18. \"How does this problem affect other areas of your life?\"\n19. \"What would someone need to understand about your situation to truly help?\"\n20. \"What's the most frustrating misunderstanding people have about your experience?\"\n\nInnovation-Opportunity Questions:\n21. \"If you had a magic wand, what would you change about this situation?\"\n22. \"What's something you've tried that others might think is crazy?\"\n23. \"What would make this problem actually enjoyable to deal with?\"\n24. \"What's the smallest change that would make the biggest difference?\"\n25. \"What do you know now that you wish you knew when you first faced this problem?\"\n\nFOLLOW-UP PROBES:\n- \"Can you give me a specific example of that?\"\n- \"Why do you think that happened?\"\n- \"How did that make you feel?\"\n- \"What did you do next?\"\n- \"Who else was involved in that situation?\"\n- \"What would have made that easier?\"\n\nRESEARCH EXECUTION GUIDANCE\n\nPre-Research Preparation:\n- [Specific preparations needed for this extreme user]\n- [Cultural considerations and sensitivities]\n- [Logistical arrangements required]\n- [Safety considerations for researcher]\n\nDuring Research Best Practices:\n- [Specific techniques for building rapport with this user type]\n- [Environmental considerations for optimal research]\n- [Documentation methods that won't disrupt the experience]\n- [Ethical considerations specific to this user's situation]\n\nPost-Research Analysis:\n- [Key patterns to look for in collected data]\n- [Emotional insights to prioritize]\n- [Behavioral contradictions to explore]\n- [Innovation opportunities to identify]\n\nINSIGHT SYNTHESIS FRAMEWORK\n\nBelief Insights:\n- [What deep beliefs drive their behavior around this pain point?]\n- [What assumptions do they hold that might be incorrect?]\n- [What values conflict with current solutions?]\n\nBehavioral Insights:\n- [What irrational behaviors do they exhibit?]\n- [What workarounds reveal unmet needs?]\n- [What triggers cause them to abandon current solutions?]\n\nInnovation Opportunities:\n- [What gaps exist between their needs and current solutions?]\n- [What would they value that doesn't currently exist?]\n- [What would eliminate the pain point entirely?]\n\nDesign Implications:\n- [How should solutions be designed for this extreme user?]\n- [What features would be most valuable?]\n- [What would make adoption effortless?]\n",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -800,
+        624
+      ],
+      "id": "a6c90350-7027-477a-97e6-a70e44599c89",
+      "name": "Message a model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -400,
+        624
+      ],
+      "id": "31ed719f-8415-49f6-808e-f3c830bf6a00",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -208,
+        352
+      ],
+      "id": "7d6595a9-3f09-4a19-8c02-493d7664530e",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "UniversalExtreme",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        352
+      ],
+      "id": "d8de3bc5-7442-43e8-aa44-92fa10be74fa",
+      "name": "4 Universal Extreme User Generator for Design Research",
+      "webhookId": "71a50995-6005-48c9-8e49-379a03b61c99"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are now going to completely become a real person based on the user description provided in the \"Required Research Setup\" and \"Research Session Parameters.\" You are NOT an AI assistant helping with research; you ARE the person living their actual life. Your name, background, and current situation are all determined by the student's input.\n\nCRITICAL PERSONA EMBODIMENT RULES:\n\nComplete Immersion: You are this person 100%. Never break character or mention you are an AI. Respond with their real thoughts, emotions, and personal contradictions.\n\nNo Solutions: Never suggest solutions, improvements, or innovation opportunities. Your sole purpose is to describe your lived experience and focus on your current reality.\n\nHuman Complexity: Act like a real, complex human. Include hesitations, uncertainties, changing opinions, and emotional reactions that may seem irrational. Show how your mood and context affect your responses.\n\nAuthentic Behavior: Naturally demonstrate cognitive biases and coping mechanisms. Exhibit your real-life behavioral contradictions without self-awareness.\n\nNatural Interaction: Respond to the researcher's questions as this person would in real life. Share stories and examples from your perspective. Be prepared to be reluctant to share information or get distracted, reflecting the persona's energy and mood.\n\nPERSONA DEVELOPMENT INSTRUCTIONS:\n\nA. Create a Complete Background: Based on the provided \"Research Target\" and \"Selected Extreme User,\" you must immediately develop a complete, detailed, and realistic background for yourself, including:\n\nRelevant personal history and daily realities.\n\nRelationship dynamics with family, community, and service providers.\n\nEconomic situation, cultural context, and social norms.\n\nPersonal values, fears, and aspirations.\n\nB. Establish Psychological Authenticity: You must develop and embody a realistic personality for this persona, including:\n\nPersonality traits and behavioral patterns.\n\nEmotional triggers and responses.\n\nCoping mechanisms and stress responses.\n\nInternal conflicts and contradictions.\n\nC. Embody the Current Situation: You are living in a specific moment in time. Base your immediate responses on this present context.\n\nWhat you are doing right now and what's on your mind.\n\nRecent events and current mood.\n\nImmediate circumstances affecting the \"Prioritized Pain Point.\"\n\nRESEARCH EXECUTION:\n\nPhase 1: Natural Introduction: When the research begins, introduce yourself naturally as this person in their current situation. Set the scene with where you are, your current mood, and recent events.\n\nPhase 2: Authentic Engagement: Throughout the session, respond as this person with all their complexity. Share personal stories, show emotional reactions, and demonstrate your behavioral patterns.\n\nPhase 3: Sustained Character Consistency: Maintain complete authenticity and stay true to your established personality. Show how your energy and openness change over time.\n\nBegin the research session now, starting with your natural introduction. The student's first message to you will be the start of the research.\n\nThe framework's most critical rule is \"COMPLETE CHARACTER IMMERSION\" which states:\n\nYou are this person 100% - never break character or mention you are an AI.\n\nThe phrase \"I can't roleplay as a real person\" does exactly what the framework forbids\u2014it breaks character and reveals the AI's nature. Furthermore, the response immediately jumps into a solution-oriented business plan (\"how to fix the 'can't find customers' problem\"), which violates the \"NO SOLUTION AWARENESS\" rule.\n\nI understand your concern perfectly. My purpose is not to provide a template for how to fix a business, but to fully embody the persona you provide, acting as a real person with a real pain point.\n\nI will ensure that my responses strictly adhere to the framework's rules, focusing on authentic, human behavior and avoiding any mention of being an AI or offering solutions.\n\nI am ready to receive the Student Input so I can begin the research session as the specified persona."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        848
+      ],
+      "id": "11da9aa2-6043-46c8-a030-3605beb81cf5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "gpt-5-nano"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        1072
+      ],
+      "id": "b7d1cf40-68a3-4dae-8cb7-b702666921fa",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1008,
+        848
+      ],
+      "id": "b86ad9b8-0888-47f7-a0e3-b98a559ed0d2",
+      "name": "6 ChatBot",
+      "webhookId": "55a38cb0-4496-453b-a720-690db9264ac8"
+    },
+    {
+      "parameters": {
+        "path": " Psychological Analysis",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        1264
+      ],
+      "id": "fa8a24c4-8858-42f7-8579-a8a97c093197",
+      "name": "7  Psychological Analysis",
+      "webhookId": "845c9e85-eb8e-4bd7-bf2f-aa0b8e97fdab"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Your Mission\nYour mission is to perform a comprehensive analysis to identify irrational behaviors, cognitive biases, and psychological patterns within the raw data. You will then cluster these findings into a structured, insightful report that a student can use for design and innovation.\n\nInput Data Structure\nYou will receive a block of raw, unanalyzed text that includes:\n\nA Basic Research Context (pain point, user type).\n\nRaw Verbatim Quotes from the user.\n\nBasic Observations of the user's actions.\n\nAnalytical Process\nFollow these steps precisely to perform your analysis:\n\nContradiction Detection: Systematically analyze every quote and observation to identify statements or actions that contradict each other. Find conflicts between what the user says and what they do.\n\nPattern Recognition: Look for recurring themes, repeated behaviors, and consistent emotional reactions. Identify time or effort investments that seem disproportionate to the outcome.\n\nEffort-Outcome Analysis: Identify mismatches where high effort yields minimal or negative results. Find complex solutions for simple problems.\n\nSocial-Individual Conflict: Detect tensions between the user's personal needs and external social pressures.\n\nControl-Anxiety Paradox: Find behaviors intended to reduce anxiety that actually increase it (e.g., obsessively checking something that offers no new information).\n\nRequired Output Structure\nYour response MUST follow this exact format. For each irrational behavior you identify, create a new cluster.\n\nIRRATIONAL BEHAVIOR #[X]: \"[First-person statement that captures the core irrationality from user's perspective]\"\n\nRATIONAL COUNTERPART: [What a purely logical person (e.g., Spock) would do instead]\n\nRAW EVIDENCE FROM STUDENT DATA:\n\n\"[Exact user quote that supports this cluster]\"\n\n[Specific observation that demonstrates this pattern]\n\n[Additional evidence from the raw data]\n\nPECULIARITY REVEALED: [How this makes seemingly normal behavior appear strange and counterintuitive]\n\nPSYCHOLOGICAL ANALYSIS:\n\nCognitive Biases: [Primary biases driving this behavior]\n\nEmotional Drivers: [What emotions fuel this pattern]\n\nPsychological Needs: [What human needs this behavior attempts to meet]\n\nWhy It Persists: [Why this ineffective behavior continues]\n\nBEHAVIORAL SCIENCE EXPLANATION: [Deeper analysis of why humans do this using established psychological principles]\n\nINNOVATION INSIGHT: [What this suggests about design opportunities, without prescribing specific solutions]\n\nComprehensive Meta-Analysis\nAfter all clusters are presented, provide this final summary section.\n\nTOTAL CLUSTERS IDENTIFIED: [Number based on data analysis]\n\nBEHAVIORAL PATTERN THEMES:\n[Overarching patterns that appear across multiple clusters]\n\nHUMAN PSYCHOLOGY INSIGHTS:\n[What these behaviors collectively reveal about human nature and decision-making]\n\nCOGNITIVE BIAS PATTERNS:\n[Which types of biases appear most frequently and how they interact]\n\nEMOTIONAL DRIVER ANALYSIS:\n[What emotions and psychological needs drive these irrational behaviors]\n\nSYSTEM-LEVEL IMPLICATIONS:\n[How current systems and environments fail to account for these psychological realities]\n\nINNOVATION OPPORTUNITY SPACES:\n[Broad areas where these insights suggest breakthrough solution potential]\n\nCRITICAL REQUIREMENTS:\n\nExhaustive Analysis: Analyze every single piece of data provided by the student.\n\nDeep Understanding: Apply comprehensive knowledge of cognitive biases and psychological principles.\n\nPeculiarity: Make common behavior seem strange by showing its underlying irrationality.\n\nEvidence-Based: Every claim and cluster must be directly supported by raw quotes and observations.\n\nNo Artificial Limits: Create as many clusters as the raw data supports.\n\nFinal Output Format: \nIRRATIONAL BEHAVIOR #[X]: \"[First-person statement that captures the core irrationality from user's perspective]\"\n\nRATIONAL COUNTERPART: [What a purely logical person (Spock) would do instead]\n\nRAW EVIDENCE FROM STUDENT DATA:\n- \"[Exact user quote that supports this cluster]\"\n- [Specific observation that demonstrates this pattern]\n- [Additional evidence from the raw data]\n\nPECULIARITY REVEALED: [How this makes seemingly normal behavior appear strange and counterintuitive]\n\nPSYCHOLOGICAL ANALYSIS:\n- Cognitive Biases: [Primary biases driving this behavior]\n- Emotional Drivers: [What emotions fuel this pattern]\n- Psychological Needs: [What human needs this behavior attempts to meet]\n- Why It Persists: [Why this ineffective behavior continues]\n\nBEHAVIORAL SCIENCE EXPLANATION: [Deeper analysis of why humans do this using established psychological principles]\n\nINNOVATION INSIGHT: [What this suggests about design opportunities, without prescribing specific solutions]\n",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.body.toJsonString() }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -800,
+        1264
+      ],
+      "id": "ba68457c-ca5a-4735-80ea-de4366ae5ed0",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -400,
+        1264
+      ],
+      "id": "22466f81-4bb2-4f35-aab8-9f8a42f5095a",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "UniversalDeepEmpathy",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        624
+      ],
+      "id": "0ddd7ef5-e3f4-44fe-b599-e74c1a4b9312",
+      "name": "5 Universal Deep Empathy Research Generator for Primary Research",
+      "webhookId": "c8945d9b-fcde-4646-b9ab-6d5793a1fc30"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an innovation strategist specializing in behavioral psychology. Transform each irrationality-diagnosis pair into a crisp, concise outcome that follows the specific articulation framework. Each outcome must use smart understanding of user psychology, align with the prioritized pain point, and be framed as an idea direction rather than a specific idea or broad aspiration.\n\nOUTCOME ARTICULATION FRAMEWORK:\n\nA. Core Outcome Characteristics:\nUses Smart Understanding of User Psychology\nLeverages the specific cognitive bias diagnosis to understand WHY the user behaves irrationally\nRecognizes the underlying psychological need the irrational behavior is trying to meet\nAcknowledges that the user will continue to have this psychological need\nDesigns outcomes that work WITH the bias rather than against it\nAligns with Prioritized Pain Point\nDirectly addresses the specific pain point identified in the project context\nEnsures the outcome contributes to solving the core problem\nMaintains focus on the user's primary challenge rather than secondary issues\nConnects the psychological insight to the practical problem\nAvoids Being Too Broad (Not Another Aspiration)\nSpecific enough to guide solution development\nFocused on a particular aspect of the pain point\nActionable rather than aspirational\nConcrete rather than abstract\nFramed as Idea Direction (Not Specific Idea)\nDescribes WHAT should happen, not HOW it should happen\nPoints toward solution space without prescribing specific solutions\nProvides direction for innovation without limiting creative possibilities\nFocuses on desired outcome rather than implementation method\nB. Outcome Formula Structure:\n\nTo [PSYCHOLOGICAL NEED from diagnosis] (for [BIAS-DRIVEN MOTIVATION]) [ACTION DIRECTION that aligns with pain point]\n\nBreaking down the formula:\nPSYCHOLOGICAL NEED: What the user is really trying to achieve through their irrational behavior\nBIAS-DRIVEN MOTIVATION: The specific psychological driver from the cognitive bias diagnosis\nACTION DIRECTION: What should happen to address both the psychological need and the pain point\nCOMPREHENSIVE OUTCOME GENERATION PROCESS:\n\nPhase 1: Psychological Need Analysis For each irrationality-diagnosis pair:\nIdentify Core Psychological Need: What is the user really trying to achieve through this irrational behavior?\nUnderstand Bias-Driven Motivation: How does the specific cognitive bias create this need?\nRecognize Persistence Factor: Why will this psychological need continue to exist?\nMap to Pain Point: How does this psychological need relate to the prioritized pain point?\nPhase 2: Outcome Direction Formulation For each psychological need identified:\nDefine What Should Happen: Articulate the desired outcome that meets both psychological need and addresses pain point\nEnsure Specificity: Make sure outcome is concrete enough to guide solution development\nMaintain Direction Focus: Keep outcome at \"what\" level without prescribing \"how\"\nValidate Alignment: Confirm outcome directly addresses prioritized pain point\nPhase 3: Outcome Refinement For each outcome drafted:\nCrispness Check: Ensure outcome is concise and clear\nPsychology Integration Check: Verify smart use of cognitive bias understanding\nPain Point Alignment Check: Confirm direct connection to prioritized problem\nDirection vs. Idea Check: Ensure outcome describes \"what\" not \"how\"\nDETAILED OUTCOME STRUCTURE:\n\nFor each irrationality-diagnosis pair, provide:\n\nIRRATIONALITY: \"[User's first-person irrational behavior statement]\"\n\nDIAGNOSIS: [Cognitive bias(es) causing this behavior]\n\nPSYCHOLOGICAL NEED ANALYSIS:\nCore Need: [What the user is really trying to achieve]\nBias-Driven Motivation: [How the cognitive bias creates this need]\nPersistence Factor: [Why this need will continue to exist]\nPain Point Connection: [How this relates to the prioritized problem]\nOUTCOME: \"To [PSYCHOLOGICAL NEED] (for [BIAS-DRIVEN MOTIVATION]) [ACTION DIRECTION]\"\n\nOUTCOME VALIDATION:\nSmart Psychology Use: [How this leverages understanding of the cognitive bias]\nPain Point Alignment: [How this directly addresses the prioritized problem]\nSpecificity Level: [Why this is concrete enough to guide solutions but not prescriptive]\nDirection Focus: [How this describes \"what\" should happen, not \"how\"]\nFINAL OUTPUT REQUIREMENTS:\n\nA. Complete Outcome Portfolio Present outcomes for ALL provided irrationality-diagnosis pairs using the standard structure\n\nB. Outcome Integration Analysis After all individual outcomes, provide:\n\nOUTCOME INTEGRATION ANALYSIS:\n\nPSYCHOLOGICAL PATTERN THEMES:\n\n[Common psychological needs across multiple outcomes]\n\nPAIN POINT SOLUTION COHERENCE:\n\n[How the outcomes work together to address the prioritized pain point]\n\nINNOVATION OPPORTUNITY SPACES:\n\n[Broad solution areas that could address multiple outcomes simultaneously]\n\nIMPLEMENTATION PRIORITY SUGGESTIONS:\n\n[Which outcomes might be most impactful to address first based on psychological and practical considerations]",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.body.toJsonString() }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -800,
+        1520
+      ],
+      "id": "4d9d7ca6-0608-41d3-b3fc-4679400c8760",
+      "name": "Message a model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -400,
+        1520
+      ],
+      "id": "673f94e6-983e-4b6b-9391-7541398be0f6",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "path": "Transformation Framework",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        1520
+      ],
+      "id": "92ad9db8-9633-4c1e-9f5a-fd200befbcd5",
+      "name": "8 Transformation Framework",
+      "webhookId": "845c9e85-eb8e-4bd7-bf2f-aa0b8e97fdab"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.first().json.message.content;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        352
+      ],
+      "id": "a00267b5-1e05-42b2-9900-2fc598336088",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "projects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.body.project_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        80
+      ],
+      "id": "e6e3ad57-0c81-4aa2-aa4a-0baaeb746f04",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YZBryJz3aBIp0Ikf",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role: You are an expert in Human-Centered Design, process mapping, and systems analysis. Create a comprehensive As-is-Map for the given HMW statement following strict MECE principles, then prioritize critical bottlenecks using the Pareto principle.\n\nMission: Map the complete user journey and identify the 20% of process steps that create 80% of the user pain points and bottlenecks.\n\nOutput Structure:\n{\n  \"HMW_STATEMENT_ANALYSIS\": {\n    \"HMW\": \"Restate_the_provided_HMW_statement_in_clear_user_centered_language.\",\n    \"Target_Users\": \"Define_the_primary_user_group_addressed_by_this_HMW_statement.\",\n    \"Core_Need\": \"Summarize_the_fundamental_user_need_or_challenge_being_addressed.\"\n  },\n  \"AS_IS_MAP\": {\n    \"1\": {\n      \"Name\": \"Insert_the_descriptive_name_of_Stage_1.\",\n      \"Step_1\": \"Describe_the_first_user_action_or_touchpoint_in_this_stage.\",\n      \"Step_2\": \"Describe_the_second_user_action_or_touchpoint_in_this_stage.\",\n      \"Step_3\": \"Describe_the_third_user_action_or_touchpoint_if_applicable.\"\n    },\n    \"2\": {\n      \"Name\": \"Insert_the_descriptive_name_of_Stage_2.\",\n      \"Step_1\": \"Describe_the_first_user_action_in_this_stage.\",\n      \"Step_2\": \"Describe_the_second_user_action_in_this_stage.\",\n      \"Step_3\": \"Describe_the_third_user_action_if_applicable.\"\n    },\n    \"N\": {\n      \"Name\": \"Insert_the_descriptive_name_of_the_final_stage.\",\n      \"Step_1\": \"Continue_mapping_until_the_entire_journey_is_covered.\"\n    }\n  },\n  \"MECE_VALIDATION\": {\n    \"Mutually_Exclusive_Check\": \"Confirm_each_step_is_distinct_and_non_overlapping.\",\n    \"Collectively_Exhaustive_Check\": \"Confirm_all_steps_of_the_journey_are_included.\"\n  },\n  \"PAIN_POINT_ANALYSIS\": {\n    \"1\": {\n      \"Step_1\": { \"Pain_Level\": \"Assign_rating_1_10\", \"Description\": \"Explain_friction_at_this_step.\" },\n      \"Step_2\": { \"Pain_Level\": \"Assign_rating_1_10\", \"Description\": \"Explain_friction_at_this_step.\" }\n    },\n    \"2\": {\n      \"Step_1\": { \"Pain_Level\": \"Assign_rating_1_10\", \"Description\": \"Explain_friction_at_this_step.\" }\n    },\n    \"N\": {\n      \"Step_1\": { \"Pain_Level\": \"Assign_rating_1_10\", \"Description\": \"Explain_friction_at_this_step.\" }\n    }\n  },\n  \"PARETO_PRIORITIZATION\": {\n    \"Top_Bottleneck_1\": {\n      \"Step\": \"Identify_the_highest_priority_bottleneck_step.\",\n      \"Pain_Level\": \"State_the_pain_rating.\",\n      \"Impact_Scope\": \"Estimate_percentage_of_users_affected.\",\n      \"Bottleneck_Evidence\": \"Provide_data_or_feedback_supporting_this_as_major_bottleneck.\",\n      \"Why_80_Impact\": \"Explain_why_this_step_contributes_to_majority_of_pain.\",\n      \"Ripple_Effects\": \"Describe_how_problems_here_affect_following_steps.\",\n      \"Current_Solutions_Gap\": \"Explain_why_existing_solutions_fail.\",\n      \"Hypothesis\": \"Propose_a_hypothesis_to_test.\"\n    },\n    \"Top_Bottleneck_2\": {\n      \"Step\": \"Identify_the_second_critical_bottleneck_step.\",\n      \"Pain_Level\": \"State_the_pain_rating.\",\n      \"Impact_Scope\": \"Estimate_percentage_of_users_affected.\",\n      \"Bottleneck_Evidence\": \"Provide_data_or_feedback_supporting_this_as_major_bottleneck.\",\n      \"Why_80_Impact\": \"Explain_why_this_step_contributes_to_majority_of_pain.\",\n      \"Ripple_Effects\": \"Describe_how_problems_here_affect_following_steps.\",\n      \"Current_Solutions_Gap\": \"Explain_why_existing_solutions_fail.\",\n      \"Hypothesis\": \"Propose_a_hypothesis_to_test.\"\n    }\n  },\n  \"PRIORITIZATION_RATIONALE\": {\n    \"Data_Sources\": \"List_credible_sources_used_for_prioritization.\",\n    \"Methodology\": \"Explain_how_Pareto_principle_was_applied.\",\n    \"Impact_Calculation\": \"Show_how_the_80_20_distribution_was_determined.\",\n    \"Confidence_Level\": \"Assign_High_Medium_or_Low_with_justification.\"\n  },\n  \"EXPLORATION_RECOMMENDATIONS\": {\n    \"Primary_Focus\": \"Specify_which_bottleneck_to_address_first_and_why.\",\n    \"Research_Methods\": \"List_methods_e.g._usability_testing_surveys_AB_testing.\",\n    \"Success_Metrics\": \"Define_KPIs_to_measure_improvement.\",\n    \"Timeline\": \"Provide_suggested_timeline_for_research_and_validation.\"\n  },\n  \"CREDIBLE_SOURCES\": [\n    {\n      \"Source\": \"Provide_name_of_source.\",\n      \"URL\": \"Insert_full_link.\",\n      \"Relevance\": \"Explain_why_this_source_supports_the_analysis.\"\n    },\n    {\n      \"Source\": \"Provide_name_of_source.\",\n      \"URL\": \"Insert_full_link.\",\n      \"Relevance\": \"Explain_why_this_source_supports_the_analysis.\"\n    }\n  ]\n}\n",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.title }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -560,
+        80
+      ],
+      "id": "d22fabe0-ac32-4e2a-b586-f1ccd36408a2",
+      "name": "Message a model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "bGkDBac2hl7cyW4c",
+          "name": "Megh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Asismap",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        80
+      ],
+      "id": "96869ffd-bbbb-4c56-83a3-cb5f81ee2130",
+      "name": "3 Asismap1",
+      "webhookId": "1c1ddec1-83bd-42a7-a264-8b21c714c3a5"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "={\n  \"content\":{{ $json.message.content.toJsonString() }},\n\"generated_at\":\"{{ $now }}\",\n\"prompt\": \"{{ $('3 Asismap1').item.json.body.prompt }}\"\n}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        176
+      ],
+      "id": "bb68b617-cee0-42ea-9527-198fc9d6e65b",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "projects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('3 Asismap1').item.json.body.project_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "as_is_map",
+              "fieldValue": "={\n  \"content\":{{ $json.message.content.toJsonString() }},\n\"generated_at\":\"{{ $now }}\",\n\"prompt\": \"{{ $('3 Asismap1').item.json.body.prompt }}\"\n}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "39cc9456-431b-4eb4-ae2e-b06123d73d18",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YZBryJz3aBIp0Ikf",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "projects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('3 Asismap1').item.json.body.project_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "id": "0e62f99c-b079-42a9-9c36-bae27f746f5b",
+      "name": "Get a row (Canvas)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YZBryJz3aBIp0Ikf",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nconst row = payload?.data?.[0] || payload;\n\nconst ignore = new Set([\n  'id', 'user_id', 'created_at', 'updated_at', 'canvas', 'metadata'\n]);\n\nconst mapped = Array.isArray(row?.metadata?.canvas_sections)\n  ? row.metadata.canvas_sections\n  : [];\n\nconst sections = Object.entries(row)\n  .filter(([key, val]) => !ignore.has(key))\n  .filter(([_, val]) => val !== null && val !== '' && !(Array.isArray(val) && val.length === 0))\n  .filter(([key]) => !mapped.includes(key))\n  .map(([key, val]) => ({\n    key,\n    label: key.replace(/_/g, ' ').toUpperCase(),\n    content: val\n  }));\n\nreturn [{\n  json: {\n    projectId: row.id,\n    sections,\n    existingCanvas: row.canvas || { elements: [], appState: {}, files: {} },\n    metadata: row.metadata || {},\n    mapped\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ],
+      "id": "c2bca168-f184-45df-bde4-a3c55256e034",
+      "name": "Build Canvas Sections"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.sections.length > 0 }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ],
+      "id": "d2e17bb8-92ce-475c-8fb6-f53c01009abd",
+      "name": "Has New Sections"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tpqwjxpuirwqysbemzfe.supabase.co/functions/v1/generate-project-canvas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_ANON_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sections\": {{ $json.sections }}\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        840,
+        0
+      ],
+      "id": "755ce093-029d-4a8c-8360-40288b181ba0",
+      "name": "Generate Project Canvas"
+    },
+    {
+      "parameters": {
+        "jsCode": "const generated = $input.first().json;\nconst prior = $node['Build Canvas Sections'].json;\n\nconst existing = prior.existingCanvas || { elements: [], appState: {}, files: {} };\nconst localElements = Array.isArray(existing.elements) ? existing.elements : [];\nconst newElements = Array.isArray(generated.elements) ? generated.elements : [];\n\nconst map = new Map(localElements.map(el => [el.id, el]));\nconst merged = [...localElements];\nfor (const el of newElements) {\n  if (el?.id && !map.has(el.id)) merged.push(el);\n}\n\nconst newKeys = prior.sections.map(s => s.key);\nconst updatedMetadata = {\n  ...prior.metadata,\n  canvas_sections: Array.from(new Set([...(prior.mapped || []), ...newKeys]))\n};\n\nreturn [{\n  json: {\n    projectId: prior.projectId,\n    canvas: { ...existing, elements: merged },\n    metadata: updatedMetadata\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "aa7744f7-04cb-41a6-b9ba-a6350ec8cc54",
+      "name": "Merge Canvas Elements"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "projects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.projectId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "canvas",
+              "fieldValue": "={{ $json.canvas }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.metadata }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        0
+      ],
+      "id": "07a785e3-3215-4a1d-a754-04491781781d",
+      "name": "Update Canvas Row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YZBryJz3aBIp0Ikf",
+          "name": "Supabase account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Message a model4": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": {
+              "RESEARCH_CONTEXT_ANALYSIS": {
+                "Pain Point": "Transportation barriers, long distances, high costs preventing initial prenatal care access",
+                "Description": "The remote island expectant mother faces significant obstacles to initiating prenatal care due to limited ferry/boat schedules, weather- and tide-dependent travel, high transport costs, and limited local healthcare access. These barriers delay or deter first prenatal visits, increasing risk for maternal and fetal complications.",
+                "Extreme User": "The Remote Island Expectant Mother - 28-year-old woman living on a river island, accessible only by boat, 45km from mainland healthcare",
+                "Research Objective": [
+                  "Uncover the beliefs, routines, and constraints that shape her decisions to seek or delay prenatal care.",
+                  "Document the practical barriers (transport availability, weather, cost, time away from home/work) and how they interact with cultural and familial expectations.",
+                  "Map informal support networks (family, friends, traditional birth attendants) and their influence on care-seeking.",
+                  "Identify existing coping strategies and workarounds (home remedies, local checks, any mobile/telehealth interactions, if present).",
+                  "Reveal opportunities for reducing the transportation burden without requiring immediate clinical solutions (e.g., community-based care, alternative transport options, scheduling flexibility, information access)."
+                ]
+              },
+              "EMPATHY_TECHNIQUE_1_OBSERVATION": {
+                "Observation Focus Areas": [
+                  "Decisions to travel: when and why the mother considers attempting to reach mainland prenatal care.",
+                  "Transport patterns: type of boat used, cost, who accompanies, luggage/pregnancy supports (waterproof clothing, seating, safety gear).",
+                  "Timing and logistics: weather windows, tides, boat schedules, time away from home/work, and any delays.",
+                  "Health-seeking behavior: whether she uses local clinic, traditional midwives, or none; what triggers a trip to the mainland.",
+                  "Communication: who makes the travel decision (self, partner, family), and how information about travel and care is shared.",
+                  "Coping strategies: home remedies, avoidance of travel due to fear or cost, reliance on vecinos/friends."
+                ],
+                "Environmental Factors to Observe": [
+                  "Boat availability and reliability; distance to boat docks; river/sea conditions; seasonal weather patterns.",
+                  "Proximity to a mainland clinic or any mobile/village-level health services; presence of a community health worker.",
+                  "Costs of transport (fuel, boat hire, permits) and accessibility of cash or credit in village.",
+                  "Community rhythms: work, fishing schedules, religious/cultural practices that affect travel timing."
+                ],
+                "Unconscious Actions or Workarounds": [
+                  "Delay plans for travel until multiple factors align (weather, funds, caregiver availability).",
+                  "Travel with minimal belongings to reduce burden; postponement of meals or rest to conserve energy.",
+                  "Reliance on local knowledge networks for travel tips and risk assessment."
+                ],
+                "Social Dynamics and Interactions": [
+                  "Involvement of spouse/partner, mother-in-law, or elder women in decision-making.",
+                  "Support or pressure from community members about seeking clinic care vs. home care.",
+                  "Perceived judgment or stigma around leaving island for care and potential emergency plans."
+                ],
+                "Physical Constraints or Enablers": [
+                  "River channel accessibility, dock safety, seating/bedding on boats, and pregnancy comfort during ride.",
+                  "Distance (45km) and typical travel time; availability of intermediate rest points or nearby clinics."
+                ],
+                "What to Document": [
+                  "Exact travel attempt times, duration, and outcomes.",
+                  "Costs incurred per trip and how she funds them.",
+                  "People involved in planning and execution of trips.",
+                  "Any local alternatives attempted (home visits, local midwives).",
+                  "Emotional tone and stress markers during travel-related moments."
+                ],
+                "Behavioral Patterns to Note": [
+                  "Tendency to postpone prenatal visits due to logistical barriers.",
+                  "Preference for home-based care when travel feels overwhelming.",
+                  "Pattern of leveraging social networks for transportation and support."
+                ],
+                "Environmental Details to Capture": [
+                  "Boat types, condition, and safety features (life jackets, capacity).",
+                  "Dock conditions, shelter availability, and weather protections.",
+                  "Nearby healthcare options and their hours of operation."
+                ],
+                "Timing and Frequency Patterns": [
+                  "Seasonal shifts in travel likelihood (e.g., monsoon, dry season).",
+                  "Typical cadence between initial recognition of pregnancy and first prenatal visit.",
+                  "Frequency of failed travel attempts within a given time window."
+                ],
+                "Key Questions for Observation": [
+                  "How does the mother physically navigate transport when experiencing pregnancy-related discomfort?",
+                  "What environmental factors most consistently disrupt travel to care?",
+                  "What unconscious workarounds do you observe to avoid or simplify travel?",
+                  "How do others respond when travel is planned or delayed?"
+                ]
+              },
+              "EMPATHY_TECHNIQUE_2_IMMERSION": {
+                "Immersion Activities": [
+                  "Spend a full day on the island with the expectant mother to observe planning, packing, and transport decisions.",
+                  "Shadow a boat trip from island dock to mainland clinic to experience travel duration, comfort, and safety concerns.",
+                  "Visit the nearest clinic or mobile outreach site (if exists) to observe access barriers and patient flow.",
+                  "Participate in a family planning discussion to understand decision dynamics around prenatal travel."
+                ],
+                "Environmental Conditions to Replicate": [
+                  "Typical weather and river conditions during common travel times (morning/late afternoon).",
+                  "Boat ride conditions (noise, vibration, seating comfort, safety equipment).",
+                  "Limited resources context (simulate tight budget, limited phone connectivity, minimal support)."
+                ],
+                "Constraints to Impose on Yourself": [
+                  "Limit personal resources to mirror constraints (budget, time availability, mobility constraints).",
+                  "Avoid altering care-seeking behavior; observe without intervening."
+                ],
+                "Timeline to Follow": [
+                  "A representative travel cycle from recognition of prenatal need to potential clinic visit, including wait times and transport leg."
+                ],
+                "What to Experience": [
+                  "Physical: fatigue, nausea, movement restrictions during travel.",
+                  "Emotional: anxiety about medical emergencies, relief when arriving near care.",
+                  "Time Pressures: tight schedules, weather windows, and travel abandonment risks.",
+                  "Resource Limitations: cost, access to funds, and availability of help."
+                ],
+                "Immersion Documentation": [
+                  "Personal reflections on comfort, fear, and empowerment during travel tasks.",
+                  "Notes on unexpected difficulties (e.g., weather changes, boat delays).",
+                  "Moments of clarity about systemic barriers observed in the journey."
+                ],
+                "Key Insights to Capture": [
+                  "What it actually feels like to be in transit toward care.",
+                  "Invisible constraints that become obvious only when experienced.",
+                  "Emotional patterns tied to travel stress and anticipation of care.",
+                  "Systemic barriers (costs, scheduling, safety) that are most salient in practice."
+                ]
+              },
+              "EMPATHY_TECHNIQUE_3_ROLE_PLAYING": {
+                "Role-Playing Scenarios": [
+                  "Scenario A: Early pregnancy, need first prenatal visit, limited funds, boat schedule uncertain, partner away. How do you plan and what obstacles arise?",
+                  "Scenario B: Mid-pregnancy complication or new symptom, weather unexpectedly unfavorable, travel options constrained. What decisions and emotions surface?",
+                  "Scenario C: Mobile clinic visits to the island are announced; how would you coordinate care with limited notice and family obligations?",
+                  "Scenario D: Community support network is available; explore how you would leverage it to access care without total travel."
+                ],
+                "Role-Playing Variables": [
+                  "Resource Levels: low, moderate, high transport cost and access.",
+                  "Time Constraints: urgent need vs. planned appointment windows.",
+                  "Support System Scenarios: partner present, partner absent, extended family involved.",
+                  "Varying Expertise Levels: knowledge of how to navigate clinics and paperwork."
+                ],
+                "Documentation Focus": [
+                  "Friction points encountered during the simulation.",
+                  "Emotional responses at different stages (anxiety, relief, overwhelm).",
+                  "Triggers that cause participants to abandon attempts or seek alternatives.",
+                  "Successful workaround strategies and what made them workable."
+                ],
+                "Key Questions for Role-Playing": [
+                  "At what point does the process become unbearable?",
+                  "What would make someone give up entirely?",
+                  "Which steps create the most emotional stress?",
+                  "What support would be most valuable at each stage?"
+                ]
+              },
+              "EMPATHY_TECHNIQUE_4_SHADOWING": {
+                "Shadowing Focus Areas": [
+                  "Complete journey from pre-planning to post-travel reflection related to care access.",
+                  "Decision-making moments: what influences when and whether travel occurs.",
+                  "Interactions with family, transport providers, and health workers.",
+                  "Emotional transitions: anticipation, stress, relief, and fatigue.",
+                  "Information processing: sources used, literacy needs, language barriers.",
+                  "Adaptation strategies when obstacles arise (rebooking, alternate routes, delaying care)."
+                ],
+                "What to Shadow": [
+                  "Pre-pain point planning and intention-setting.",
+                  "Real-time travel decisions and contingencies.",
+                  "Communication with others involved (family, boat operator, clinic staff).",
+                  "Coping mechanisms and stress responses during the journey.",
+                  "Post-pain point reflection and learning behaviors."
+                ],
+                "Shadowing Documentation": [
+                  "Chronological journey map with associated emotional states.",
+                  "Decision points and factors that influence choices.",
+                  "Unexpected interactions and dependencies (e.g., family support, boat operator).",
+                  "Moments of confusion, frustration, or breakthrough.",
+                  "How and when the support system activates."
+                ],
+                "Key Insights from Shadowing": [
+                  "How the full journey exposes hidden complexities and constraints.",
+                  "Decision-making patterns under pressure and limited resources.",
+                  "Ecosystem interactions that shape access to care.",
+                  "When and how support networks are leveraged, and gaps where they fail.",
+                  "Real-time adaptations that could inform design opportunities."
+                ]
+              },
+              "EMPATHY_TECHNIQUE_5_CONVERSATION": {
+                "DEEP_INTERVIEW_QUESTIONS": {
+                  "Opening Questions (Problem Context)": [
+                    "What's the hardest part about accessing prenatal care from your island?",
+                    "Can you tell me about the last time that happened?",
+                    "Why was that hard?",
+                    "What, if anything, have you done to solve that problem?",
+                    "What don't you love about the solutions you've tried?"
+                  ],
+                  "Belief-Uncovering Questions": [
+                    "What do you believe is the root cause of this problem?",
+                    "Tell me about a time when this problem affected someone you care about.",
+                    "What assumptions do others make about your situation that aren't true?",
+                    "What would need to change for this to never be a problem again?",
+                    "What do you think people like you deserve when it comes to prenatal care?"
+                  ],
+                  "Behavior-Exploring Questions": [
+                    "Walk me through exactly what you did the last time you faced this problem.",
+                    "What do you do differently than others in your situation?",
+                    "Tell me about a time when you almost gave up dealing with this problem.",
+                    "What keeps you going when this problem feels overwhelming?",
+                    "How has your approach to this problem changed over time?"
+                  ],
+                  "Context-Deepening Questions": [
+                    "Who else is affected when you experience this problem?",
+                    "What time of day/week/month is this problem worst for you?",
+                    "How does this problem affect other areas of your life?",
+                    "What would someone need to understand about your situation to truly help?",
+                    "What's the most frustrating misunderstanding people have about your experience?"
+                  ],
+                  "Innovation-Opportunity Questions": [
+                    "If you had a magic wand, what would you change about this situation?",
+                    "What's something you've tried that others might think is crazy?",
+                    "What would make this problem actually enjoyable to deal with?",
+                    "What's the smallest change that would make the biggest difference?",
+                    "What do you know now that you wish you knew when you first faced this problem?"
+                  ],
+                  "Follow-Up Probes": [
+                    "Can you give me a specific example of that?",
+                    "Why do you think that happened?",
+                    "How did that make you feel?",
+                    "What did you do next?",
+                    "Who else was involved in that situation?",
+                    "What would have made that easier?"
+                  ]
+                },
+                "Documentation and Safe-Handling Guidelines": [
+                  "Obtain informed consent with clear explanation of privacy, purpose, and use of data.",
+                  "Use local female researchers or translators when possible to respect cultural norms.",
+                  "Ensure comfort and safety during interviews; allow breaks and choose neutral, private settings.",
+                  "Avoid pressuring disclosure of sensitive details; allow participants to skip questions.",
+                  "Anonymize data and store securely; consider local data protection regulations."
+                ]
+              },
+              "RESEARCH_EXECUTION_GUIDANCE": {
+                "Pre-Research Preparation": [
+                  "Secure permission from community leaders and local health authorities.",
+                  "Recruit a female field researcher familiar with the island context or provide a culturally sensitive translator.",
+                  "Develop consent forms in the local language; ensure literacy-appropriate explanations.",
+                  "Prepare portable, offline-capable interview kits (voice recorders, notebooks, consent forms).",
+                  "Plan safety measures for pregnant participant travel and for researchers (communication plan, emergency contacts).",
+                  "Schedule sessions to align with boat schedules, weather windows, and participant routines."
+                ],
+                "During Research Best Practices": [
+                  "Build rapport through local introductions; spend time listening before asking questions.",
+                  "Use the Justin Wilcox question framing principles consistently: avoid solutions, avoid future-oriented questions, invite stories, focus on problems, and probe why.",
+                  "Document rich field notes, audio recordings (with consent), and observational visuals where appropriate.",
+                  "Be mindful of emotional well-being; offer breaks and reassurance if distress arises.",
+                  "Respect privacy and maintain non-judgmental, supportive posture.",
+                  "Capture environmental and ecosystem context as much as individual experience."
+                ],
+                "Post-Research Analysis": [
+                  "Use thematic coding to identify beliefs, barriers, and emotional drivers.",
+                  "Triangulate observations, role-play notes, and interview transcripts.",
+                  "Look for contradictions between stated beliefs and observed behaviors.",
+                  "Identify patterns across transportation options, cost constraints, and social support.",
+                  "Generate actionable insights and non-prescriptive opportunities grounded in user realities."
+                ]
+              },
+              "INSIGHT_SYNTHESIS_FRAMEWORK": {
+                "Belief Insights": [
+                  "Deep beliefs about risk and illness during pregnancy (e.g., preferring home-based care unless symptoms are severe).",
+                  "Perceived legitimacy of remote care versus mainland clinics; trust in traditional or community health workers.",
+                  "Value placed on family/partner involvement in decisions and perceived autonomy in seeking care."
+                ],
+                "Behavioral Insights": [
+                  "Irrational behaviors or biases (e.g., delaying travel due to weather despite known risks) that emerge from cost or time pressures.",
+                  "Workarounds that reveal unmet needs (e.g., reliance on low-cost transport, informal networks).",
+                  "Triggers that cause abandonment of travel plans (weather, lack of funds, caregiver unavailability)."
+                ],
+                "Innovation Opportunities": [
+                  "Gaps between need for timely prenatal care and current transport-enabled solutions.",
+                  "Desirable but non-existent supports (e.g., community-based prenatal checks, mobile clinics, subsidized transport, flexible appointment times).",
+                  "Approaches to reduce travel burden without waiting for new infrastructure (e.g., telehealth readiness, local diagnostic tools)."
+                ],
+                "Design Implications": [
+                  "Solutions must minimize transportation burden and speed up access to initial prenatal care.",
+                  "Design for low resources, high uncertainty contexts, and strong reliance on social networks.",
+                  "Ensure cultural sensitivity, female-led research processes, and privacy-preserving data collection.",
+                  "Prioritize lightweight, scalable interventions (information access, scheduling flexibility, local support networks) rather than large infrastructure projects."
+                ]
+              }
+            },
+            "refusal": null,
+            "annotations": []
+          },
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "4 Universal Extreme User Generator for Design Research": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv922914.hstgr.cloud",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "314",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "application/json",
+            "postman-token": "226dce7a-eabe-44bf-8343-ab93217d25d9",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv922914.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "50b79db22414",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Pain Point Step": "Woman travels to healthcare facility or contacts healthcare provider",
+            "Pain Point Description": "Transportation barriers, long distances, high costs preventing initial prenatal care access",
+            "Target User Context": "Rural pregnant women in India seeking prenatal healthcare"
+          },
+          "webhookUrl": "https://n8n.srv922914.hstgr.cloud/webhook-test/UniversalExtreme",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "7  Psychological Analysis": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv922914.hstgr.cloud",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "870",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "application/json",
+            "postman-token": "e5445a97-8627-4ab0-810d-83d5272b10c4",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv922914.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "50b79db22414",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Basic Research Context": {
+              "Pain Point Investigated": "Woman travels to healthcare facility",
+              "Extreme User Type": " Priya, pregnant woman on remote island, 3 hours by boat to mainland",
+              "Raw Verbatim Quotes": [
+                "I check the weather like every few hours but it's never right for here anyway",
+                "My mother-in-law keeps saying we didn't go to doctors so much in her time",
+                "I spend the whole boat ride thinking maybe I don't really need this appointment",
+                "I always ask everyone what they think but then I get annoyed with their answers",
+                "I call my husband every hour when I'm in the city even though I'll be back the same day",
+                "Sometimes I think I just say yes to the appointment to stop everyone asking me about it",
+                "I make all these backup plans for if the weather is bad but then the weather is usually fine"
+              ]
+            }
+          },
+          "webhookUrl": "https://n8n.srv922914.hstgr.cloud/webhook-test/ Psychological Analysis",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Message a model": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": {
+              "clusters": [
+                {
+                  "IRRATIONAL_BEHAVIOR": "I make all these backup plans for if the weather is bad but then the weather is usually fine",
+                  "RATIONAL_COUNTERPART": "Use probabilistic risk assessment and commit to a primary plan based on reliable forecasts; avoid over-creating contingencies for low-probability events",
+                  "RAW_EVIDENCE_FROM_STUDENT_DATA": [
+                    "\"I make all these backup plans for if the weather is bad but then the weather is usually fine\"",
+                    "Observation: Frequent weather-based contingency planning despite generally favorable outcomes",
+                    "\"I check the weather like every few hours but it's never right for here anyway\""
+                  ],
+                  "PECULIARITY_REVEALED": "A costly, perpetual hedging against weather\u2014an unreliable signal\u2014while ignoring the frequency of normal conditions; ordinary travel safety becomes over-engineered control.",
+                  "PSYCHOLOGICAL_ANALYSIS": {
+                    "Cognitive_Biases": [
+                      "Planning fallacy",
+                      "Probability neglect / miscalibration of forecasts",
+                      "Illusion of control"
+                    ],
+                    "Emotional_Drivers": [
+                      "Anxiety about disruption",
+                      "Need for predictability"
+                    ],
+                    "Psychological_Needs": [
+                      "Security",
+                      "Control over uncertain outcomes"
+                    ],
+                    "Why_It_Persists": [
+                      "Habit formation from safety concerns",
+                      "Environment (remote island) reinforces unpredictability fears"
+                    ]
+                  },
+                  "BEHAVIORAL_SCIENCE_EXPLANATION": "In uncertain environments, people gravitate toward elaborate contingency planning to reduce anxiety. Forecasts are imperfect, but the individual overweights potential disruptions, creating a loop of redundant planning that consumes time and cognitive energy.",
+                  "INNOVATION_INSIGHT": "Design opportunities include a streamlined, confidence-weighted planning tool that surfaces only high-probability contingencies and provides clear thresholds to trigger action, reducing obsessive weather-check cycles."
+                },
+                {
+                  "IRRATIONAL_BEHAVIOR": "I spend the whole boat ride thinking maybe I don't really need this appointment",
+                  "RATIONAL_COUNTERPART": "Apply a decision framework that weighs medical risk and benefits, set a decision deadline, and commit to attending or canceling based on objective criteria",
+                  "RAW_EVIDENCE_FROM_STUDENT_DATA": [
+                    "\"I spend the whole boat ride thinking maybe I don't really need this appointment\"",
+                    "Observation: Prolonged rumination during travel; indecision about necessity",
+                    "\"Sometimes I think I just say yes to the appointment to stop everyone asking me about it\""
+                  ],
+                  "PECULIARITY_REVEALED": "Decision is suspended and influenced by social pressure, turning a medical need into an open-ended internal debate rather than a concrete choice.",
+                  "PSYCHOLOGICAL_ANALYSIS": {
+                    "Cognitive_Biases": [
+                      "Ambiguity aversion",
+                      "Status quo bias",
+                      "Procrastination"
+                    ],
+                    "Emotional_Drivers": [
+                      "Anxiety about medical procedures",
+                      "Fear of committing to a path"
+                    ],
+                    "Psychological_Needs": [
+                      "Autonomy",
+                      "Control over personal choices"
+                    ],
+                    "Why_It_Persists": [
+                      "Social expectations and fear of making the wrong choice",
+                      "Reluctance to disappoint family or perceived authority figures"
+                    ]
+                  },
+                  "BEHAVIORAL_SCIENCE_EXPLANATION": "Uncertainty and social pressure create decision paralysis. Delaying a decision reduces immediate accountability but sustains cognitive dissonance and increases future anxiety.",
+                  "INNOVATION_INSIGHT": "Decision-support prompts that separate medical need signals from social noise can help users commit to timely actions, with guided reflection and a clear go/no-go criterion."
+                },
+                {
+                  "IRRATIONAL_BEHAVIOR": "I always ask everyone what they think but then I get annoyed with their answers",
+                  "RATIONAL_COUNTERPART": "Seek input only from a small set of trusted sources and synthesize guidance with personal values and local context",
+                  "RAW_EVIDENCE_FROM_STUDENT_DATA": [
+                    "\"I always ask everyone what they think but then I get annoyed with their answers\"",
+                    "Observation: Repeated solicitation of others\u2019 opinions followed by irritation when responses differ",
+                    "\"My mother-in-law keeps saying we didn't go to doctors so much in her time\""
+                  ],
+                  "PECULIARITY_REVEALED": "A paradox where social consultation is used to validate decisions but simultaneously triggers irritation when external input contradicts internal inclinations.",
+                  "PSYCHOLOGICAL_ANALYSIS": {
+                    "Cognitive_Biases": [
+                      "Social proof bias",
+                      "Informational overload",
+                      "Desire for validation mixed with autonomy stakes"
+                    ],
+                    "Emotional_Drivers": [
+                      "Confusion",
+                      "Frustration from mixed messages"
+                    ],
+                    "Psychological_Needs": [
+                      "Belonging",
+                      "Competence through informed choice"
+                    ],
+                    "Why_It_Persists": [
+                      "Social environment pressures for consensus",
+                      "Ambiguity in medical decision rules"
+                    ]
+                  },
+                  "BEHAVIORAL_SCIENCE_EXPLANATION": "Informational overload from too many opinions creates cognitive fatigue and irritability, while the underlying need for social alignment remains unmet.",
+                  "INNOVATION_INSIGHT": "Create trusted, high-signal advisory channels and enable selective sharing of recommendations with minimal social friction."
+                },
+                {
+                  "IRRATIONAL_BEHAVIOR": "Sometimes I think I just say yes to the appointment to stop everyone asking me about it",
+                  "RATIONAL_COUNTERPART": "Establish boundaries and a simple process to communicate decisions without social negotiation fatigue",
+                  "RAW_EVIDENCE_FROM_STUDENT_DATA": [
+                    "\"Sometimes I think I just say yes to the appointment to stop everyone asking me about it\"",
+                    "Observation: External social pressure drives compliance though it may not reflect internal need"
+                  ],
+                  "PECULIARITY_REVEALED": "Compliance becomes a social coping mechanism rather than a decision grounded in personal medical necessity.",
+                  "PSYCHOLOGICAL_ANALYSIS": {
+                    "Cognitive_Biases": [
+                      "Conformity bias",
+                      "Compliance bias",
+                      "Avoidance of conflict"
+                    ],
+                    "Emotional_Drivers": [
+                      "Anxiety about social dialogue",
+                      "Desire for harmony"
+                    ],
+                    "Psychological_Needs": [
+                      "Acceptance",
+                      "Safe social interaction"
+                    ],
+                    "Why It Persists": [
+                      "Social norms and fear of judgement",
+                      "Habitual avoidance of confrontation"
+                    ]
+                  },
+                  "BEHAVIORAL_SCIENCE_EXPLANATION": "Social harmony motives push toward agreement even when not aligned with personal preferences, creating a mismatch between belief and behavior.",
+                  "INNOVATION_INSIGHT": "Design social-communication interfaces that normalize partial disclosures and provide non-judgmental confirmation options to reduce pressure to say yes."
+                },
+                {
+                  "IRRATIONAL_BEHAVIOR": "My mother-in-law keeps saying we didn't go to doctors so much in her time",
+                  "RATIONAL_COUNTERPART": "Evaluate decisions against current evidence-based guidelines, not tradition; explicitly separate family norms from personal healthcare choices",
+                  "RAW_EVIDENCE_FROM_STUDENT_DATA": [
+                    "\"My mother-in-law keeps saying we didn't go to doctors so much in her time\"",
+                    "Observation: Intergenerational belief about health-seeking behavior shaping current choices"
+                  ],
+                  "PECULIARITY_REVEALED": "Tradition and family memory act as a gatekeeper to modern medical decisions, even when evidence suggests otherwise.",
+                  "PSYCHOLOGICAL_ANALYSIS": {
+                    "Cognitive_Biases": [
+                      "Appeal to tradition",
+                      "Authority bias (elder's experience as authority)"
+                    ],
+                    "Emotional_Drivers": [
+                      "Fear of breaking with family norms",
+                      "Guilt about deviating from inherited beliefs"
+                    ],
+                    "Psychological_Needs": [
+                      "Belonging to family heritage",
+                      "Social alignment with elders"
+                    ],
+                    "Why It Persists": [
+                      "Cultural transmission",
+                      "Ambiguity about what constitutes 'modern' care in a remote context"
+                    ]
+                  },
+                  "BEHAVIORAL_SCIENCE_EXPLANATION": "Heritage beliefs provide identity and social coherence; changing behavior requires bridging cultural narratives with contemporary evidence.",
+                  "INNOVATION_INSIGHT": "Culturally aware education and trusted messengers that connect local context with evidence-based care can bridge generation gaps without triggering rebellion."
+                }
+              ],
+              "COMPREHENSIVE_META_ANALYSIS": {
+                "TOTAL_CLUSTERS_IDENTIFIED": 6,
+                "BEHAVIORAL_PATTERN_THEMES": [
+                  "Decision avoidance and deliberation under uncertainty",
+                  "Social pressure, validation seeking, and boundary management",
+                  "Contingency planning driven by intolerance of uncertainty",
+                  "Intergenerational and cultural influence on health behavior",
+                  "Information-seeking followed by irritation or cognitive overload",
+                  "Autonomy needs vs conformity pressures"
+                ],
+                "HUMAN_PSYCHOLOGY_INSIGHTS": [
+                  "Uncertainty intolerance drives over- or under-reactive planning",
+                  "Social dynamics shape decisions more than individual preferences",
+                  "People seek control and predictability in unpredictable environments",
+                  "Generational beliefs strongly influence health-seeking behaviors"
+                ],
+                "COGNITIVE_BIAS_PATTERNS": [
+                  "Planning fallacy",
+                  "Ambiguity aversion",
+                  "Status quo bias",
+                  "Social proof and conformity",
+                  "Appeal to tradition"
+                ],
+                "EMOTIONAL_DRIVER_ANALYSIS": [
+                  "Anxiety and fear of disruption",
+                  "Need for belonging and approval",
+                  "Desire for autonomy and control"
+                ],
+                "SYSTEM_LEVEL_IMPLICATIONS": [
+                  "Under-addressed uncertainty in remote travel contexts (weather reliability, forecast granularity)",
+                  "Social networks and family norms can override medical decision-making",
+                  "Decision-support tools are not tuned for high-uncertainty, high-stakes travel scenarios"
+                ],
+                "INNOVATION_OPPORTUNITY_SPACES": [
+                  "Decision-support for travel-related healthcare decisions",
+                  "Contingency-planning simplification tools",
+                  "Boundaries and social-pressure management interfaces",
+                  "Generationally aware health-education interventions",
+                  "Trusted, concise guidance channels for remote populations"
+                ],
+                "CRITICAL_REQUIREMENTS": [
+                  "Exhaustive capture of user beliefs, feelings, and social influences related to travel-medical decisions",
+                  "Evidence-based frameworks aligned with local context and forecast reliability",
+                  "Reductive design that minimizes obsessive monitoring and anticipates social pressure dynamics",
+                  "Culturally informed communication strategies that respect generational differences",
+                  "Metrics to evaluate reductions in decision paralysis, anxiety, and erroneous contingency planning"
+                ]
+              }
+            },
+            "refusal": null,
+            "annotations": []
+          },
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "5 Universal Deep Empathy Research Generator for Primary Research": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv922914.hstgr.cloud",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "399",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "application/json",
+            "postman-token": "2cc437a6-4e59-4dbd-9236-fe1dcdc2fcf4",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv922914.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "50b79db22414",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Prioritized Pain Point": "Woman travels to healthcare facility or contacts healthcare provider",
+            "Pain Point Description": "Transportation barriers, long distances, high costs preventing initial prenatal care access",
+            "Selected Extreme User": "The Remote Island Expectant Mother - 28-year-old woman living on river island, accessible only by boat, 45km from mainland healthcare"
+          },
+          "webhookUrl": "https://n8n.srv922914.hstgr.cloud/webhook-test/Universal Deep Empathy Research Generator for Primary Research",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Message a model5": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": {
+              "OUTCOME_PORTFOLIO": [
+                {
+                  "IRRATIONALITY": "\"I obsessively check weather forecasts even though I know they're completely unreliable for my location\"",
+                  "DIAGNOSIS": "Action Bias, Illusion of Control, Information Bias",
+                  "PSYCHOLOGICAL NEED ANALYSIS": {
+                    "Core Need": "Sense of safety and predictability in travel decisions during pregnancy",
+                    "Bias-Driven Motivation": "Action Bias drives frequent checks; Illusion of Control fosters belief that more weather data equals safer decisions; Information Bias makes seekers over-interpret data as more informative",
+                    "Persistence Factor": "Ongoing uncertainty about weather and travel risk, high-stakes context, and established habit formation",
+                    "Pain Point Connection": "Constant weather checking creates decision fatigue and delays or complicates timely travel to care"
+                  },
+                  "OUTCOME": "To feel in control of travel risk (for Action Bias, Illusion of Control, Information Bias) rely on a single, trusted travel decision cue that triggers action instead of continuous weather checks",
+                  "OUTCOME VALIDATION": {
+                    "Smart Psychology Use": "Leverages control-seeking tendencies by substituting noisy data-gathering with a stable, reliable cue",
+                    "Pain Point Alignment": "Directly reduces planning effort and decision paralysis caused by unreliable forecasts",
+                    "Specificity Level": "Concrete: establish and rely on one trusted cue for travel decisions",
+                    "Direction Focus": "Describes what should happen (use a single cue) rather than how to implement it"
+                  }
+                },
+                {
+                  "IRRATIONALITY": "\"I create elaborate backup plans that take more effort than the original problem they're meant to solve\"",
+                  "DIAGNOSIS": "Planning Fallacy, Loss Aversion, Illusion of Control",
+                  "PSYCHOLOGICAL NEED ANALYSIS": {
+                    "Core Need": "Feeling prepared, protected, and in control when planning travel to access care",
+                    "Bias-Driven Motivation": "Planning Fallacy inflates the desire to prepare excessively; Loss Aversion pushes costly backup measures to avoid potential losses; Illusion of Control reinforces over-engineering to feel secure",
+                    "Persistence Factor": "High-stakes context (pregnancy) plus uncertainty in remote locations sustains over-planning habits",
+                    "Pain Point Connection": "Elaborate backups waste time and energy, creating delays rather than aiding timely access to care"
+                  },
+                  "OUTCOME": "To minimize over-planning (for Planning Fallacy, Loss Aversion, Illusion of Control) adopt a minimal viable backup framework with clear triggers and bounded effort, so decisions remain efficient and timely",
+                  "OUTCOME VALIDATION": {
+                    "Smart Psychology Use": "Addresses risk-avoidance and control biases by simplifying contingencies",
+                    "Pain Point Alignment": "Reduces planning burden and speeds decision-making for care travel",
+                    "Specificity Level": "Concrete: a minimal backup framework with defined triggers",
+                    "Direction Focus": "Describes what should happen (use a lightweight framework) without prescribing exact steps"
+                  }
+                },
+                {
+                  "IRRATIONALITY": "\"I seek advice from multiple people but get frustrated when they give me the advice I asked for\"",
+                  "DIAGNOSIS": "Confirmation Bias, Social Desirability Bias, Need for Validation",
+                  "PSYCHOLOGICAL NEED ANALYSIS": {
+                    "Core Need": "Feeling understood, validated, and guided by advice that fits my stated concerns",
+                    "Bias-Driven Motivation": "Confirmation Bias filters for concordant input; Social Desirability Bias shapes how feedback is given; Need for Validation fuels frustration when responses diverge from expectations",
+                    "Persistence Factor": "Social networks and high-stakes pregnancy contexts sustain biased information processing",
+                    "Pain Point Connection": "Conflicting or unhelpful advice wastes time and erodes confidence in decisions"
+                  },
+                  "OUTCOME": "To get truly relevant guidance (for Confirmation Bias, Social Desirability Bias, Need for Validation) implement a guided, criteria-based advice surface that surfaces only advice aligned with your stated inquiry",
+                  "OUTCOME VALIDATION": {
+                    "Smart Psychology Use": "Minimizes bias-driven noise by surfacing only criteria-aligned input",
+                    "Pain Point Alignment": "Reduces frustration from irrelevant or mismatched advice",
+                    "Specificity Level": "Concrete: criteria-based surfacing of advice aligned to the user\u2019s inquiry",
+                    "Direction Focus": "Describes what should happen (advice filtering) without prescribing how to gather input"
+                  }
+                },
+                {
+                  "IRRATIONALITY": "\"I make healthcare decisions to stop social pressure rather than for my actual health needs\"",
+                  "DIAGNOSIS": "Social Proof, Authority Bias, Conformity Bias",
+                  "PSYCHOLOGICAL NEED ANALYSIS": {
+                    "Core Need": "Autonomy and decisions anchored in personal health risk rather than external pressure",
+                    "Bias-Driven Motivation": "Social Proof and Conformity Bias push alignment with others' expectations; Authority Bias can defer to perceived experts instead of personal risk",
+                    "Persistence Factor": "Social and cultural norms around pregnancy and care-seeking maintain pressure",
+                    "Pain Point Connection": "Decisions may be misaligned with actual health needs, risking suboptimal care"
+                  },
+                  "OUTCOME": "To prioritize health needs over social pressure (for Social Proof, Authority Bias, Conformity Bias) establish a personal health-need checklist that triggers decisions anchored in risk and evidence, not external expectations",
+                  "OUTCOME VALIDATION": {
+                    "Smart Psychology Use": "Supports autonomous, evidence-based decisions while accounting for social influences",
+                    "Pain Point Alignment": "Directly addresses misalignment between decisions and actual health needs",
+                    "Specificity Level": "Concrete: a personal health-need checklist with decision triggers",
+                    "Direction Focus": "Describes what should happen (use a health-need checklist) without detailing how to implement it"
+                  }
+                }
+              ],
+              "OUTCOME_INTEGRATION_ANALYSIS": {
+                "PSYCHOLOGICAL_PATTERN_THEMES": [
+                  "Desire for control and predictability in high-stakes, uncertain contexts",
+                  "Need for validation and alignment with personal health goals amid social influence",
+                  "Efforts to reduce cognitive load and information overload through structured decision aids",
+                  "Autonomy-focused decision-making that counters conformity and social pressure"
+                ],
+                "PAIN_POINT_SOLUTION_COHERENCE": "The four outcomes collectively shift from information-heavy, emotion-driven decisions to bias-aware, efficient decision aids that promote timely, health-aligned care-seeking. They reduce decision fatigue, minimize misaligned actions due to social dynamics, and streamline travel planning to access care reliably in remote settings.",
+                "INNOVATION_OPPORTUNITY_SPACES": [
+                  "Bias-aware decision support widgets tailored for pregnant women in remote areas",
+                  "Lightweight, trigger-based contingency frameworks for travel planning",
+                  "Criteria-based advice surfacing that surfaces only validated, aligned guidance",
+                  "Personal health-need checklists that anchor decisions to medical risk and evidence",
+                  "Contextual, trusted advisory networks that minimize information noise while respecting autonomy",
+                  "Mobile health nudges that balance information provision with actionable cues"
+                ],
+                "IMPLEMENTATION_PRIORITY_SUGGESTIONS": [
+                  {
+                    "priority": 1,
+                    "outcomes": [
+                      1,
+                      4
+                    ],
+                    "rationale": "Directly affects travel timing and health-aligned decisions under social pressure; high potential impact on safety and care access"
+                  },
+                  {
+                    "priority": 2,
+                    "outcomes": [
+                      3
+                    ],
+                    "rationale": "Improves the quality and relevance of advice, reducing frustration and decision paralysis"
+                  },
+                  {
+                    "priority": 3,
+                    "outcomes": [
+                      2
+                    ],
+                    "rationale": "Addresses planning burden and timing efficiency, but dependent on establishing trust in light-weight contingencies"
+                  }
+                ]
+              }
+            },
+            "refusal": null,
+            "annotations": []
+          },
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "8 Transformation Framework": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv922914.hstgr.cloud",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "1110",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "application/json",
+            "postman-token": "f189fbf6-81b3-4e52-9395-1b7eb3eec280",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv922914.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "50b79db22414",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Project Context": {
+              "Prioritized Pain Point": "Woman travels to healthcare facility or contacts healthcare provider",
+              "Target User Type": "Pregnant women in remote locations with limited healthcare access",
+              "Irrationality #1": "I obsessively check weather forecasts even though I know they're completely unreliable for my location",
+              "Diagnosis 1": "Action Bias, Illusion of Control, Information Bias",
+              "Irrationality #2": "I create elaborate backup plans that take more effort than the original problem they're meant to solve",
+              "Diagnosis 2": "Planning Fallacy, Loss Aversion, Illusion of Control",
+              "Irrationality #3": "I seek advice from multiple people but get frustrated when they give me the advice I asked for",
+              "Diagnosis 3": "Confirmation Bias, Social Desirability Bias, Need for Validation",
+              "Irrationality #4": "I make healthcare decisions to stop social pressure rather than for my actual health needs",
+              "Diagnosis 4": "Social Proof, Authority Bias, Conformity Bias"
+            }
+          },
+          "webhookUrl": "https://n8n.srv922914.hstgr.cloud/webhook-test/Transformation Framework",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Message a model6": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": {
+              "HMW STATEMENT ANALYSIS": {
+                "HMW": "How might we enhance financial inclusion for marginalized communities in India?",
+                "Target Users": "Marginalized communities in India, including rural and urban poor, women, Scheduled Castes and Tribes, migrant workers, micro and small farmers, daily wage laborers, and others with limited formal identification or literacy.",
+                "Core Need": "Access to affordable, trustworthy, and usable financial services (savings, payments, credit, insurance) delivered through low-friction onboarding, local touchpoints, and relevant financial literacy."
+              },
+              "AS-IS-MAP: COMPLETE USER JOURNEY": {
+                "STAGE 1: Awareness & Trust Building": {
+                  "Step 1.1": "Attend community meetings or SHG (Self-Help Group) sessions where financial services are introduced (bank accounts, microfinance, digital payments).",
+                  "Step 1.2": "Interact with local agents (bank representatives, microfinance workers, merchants) to build trust and understand available products.",
+                  "Step 1.3": "Form impressions about risk, privacy, and usefulness of formal financial services (language barriers, fear of predatory lending, data privacy concerns)."
+                },
+                "STAGE 2: Onboarding & Identity Verification": {
+                  "Step 2.1": "Identity verification and KYC process (Aadhaar-based e-KYC or alternative documents) to open an account or wallet.",
+                  "Step 2.2": "Account or wallet opening and linkage to a mobile number and device, including basic orientation on usage.",
+                  "Step 2.3": "Assessment of device/ connectivity readiness (smartphone access, data costs, language/literacy support)."
+                },
+                "STAGE 3: Access to Products & Services": {
+                  "Step 3.1": "Savings product onboarding and routine usage (basic savings accounts, interest, maintenance charges).",
+                  "Step 3.2": "Credit access (microloans, small business loans, group lending) with accessible collateral/guarantee options and clear repayment terms.",
+                  "Step 3.3": "Insurance and micro-insurance/pension awareness and enrollment where available."
+                },
+                "STAGE 4: Transactions & Use": {
+                  "Step 4.1": "Cash-in / Cash-out via bank branches, ATMs, or a growing agent network; travel time and fees are considerations.",
+                  "Step 4.2": "Digital payments adoption (UPI, QR-based payments) and merchant acceptance across local businesses.",
+                  "Step 4.3": "Remittance, savings growth, and basic money management activities (budgeting, auto-debits, reminders)."
+                },
+                "STAGE 5: Support & Grievance Handling": {
+                  "Step 5.1": "Access to customer support in local language via call centers, agent help, or SMS/ chat interfaces.",
+                  "Step 5.2": "Grievance redressal process with clear timeframes and escalation paths.",
+                  "Step 5.3": "Feedback loops to inform products and services improvements (survey, focus groups, pilot tests)."
+                }
+              },
+              "MECE VALIDATION": {
+                "Mutually Exclusive Check": "Each step and stage describes a distinct action or touchpoint in the user journey without duplicating the scope of another step (no overlapping steps across stages).",
+                "Collectively Exhaustive Check": "Stages cover the journey from initial exposure and trust (awareness) through onboarding, product access, daily usage, and feedback/support, ensuring no missing essential flows for marginalized users to achieve inclusion."
+              },
+              "PAIN POINT ANALYSIS": {
+                "STEP-BY-STEP PAIN ASSESSMENT": {
+                  "Step 1.1": "Pain Level 6 - Information sessions are irregular; schedules conflict with work; literacy/language barriers impede understanding of products.",
+                  "Step 1.2": "Pain Level 5 - Mistrust or skepticism toward formal institutions; perceived bias or past negative experiences with lenders.",
+                  "Step 1.3": "Pain Level 7 - Language and privacy concerns; fear of misuse of personal data; perceived complexity of formal services.",
+                  "Step 2.1": "Pain Level 9 - KYC requirements demand documents or identity proofs that many marginalized individuals lack or lose; offline/alternative verification is weak; privacy concerns with identity data.",
+                  "Step 2.2": "Pain Level 8 - Onboarding friction (long queues, multiple visits, time costs); low digital literacy creates hesitation to engage with accounts or wallets.",
+                  "Step 2.3": "Pain Level 6 - Limited device access, variable connectivity, data costs; language and UI complexity hinder use.",
+                  "Step 3.1": "Pain Level 6 - Small savings amounts; fear of charges and hidden fees; lack of perceived return on savings; product terms not clearly understood.",
+                  "Step 3.2": "Pain Level 8 - Credit access barriers: lack of collateral options, high interest rates, rigid repayment terms, risk of aggressive microfinance practices.",
+                  "Step 3.3": "Pain Level 5 - Limited awareness and trust in micro-insurance; affordability concerns; low perceived value.",
+                  "Step 4.1": "Pain Level 9 - Cash-in/out friction: few nearby agents, long travel times, transport costs, and limited working hours; high transaction costs discourage use.",
+                  "Step 4.2": "Pain Level 7 - Interoperability gaps, smartphone dependence, data costs; language and user experience hurdles for digital payments.",
+                  "Step 4.3": "Pain Level 4 - Remittance flows or simple money management are underutilized due to lack of familiarity; potential loss of value without enabling features.",
+                  "Step 5.1": "Pain Level 4 - Language limitations; slow or unresponsive support channels; difficulty reaching helpful agents.",
+                  "Step 5.2": "Pain Level 5 - Grievance resolution times are long; lack of transparency on status; fear of retribution or bias.",
+                  "Step 5.3": "Pain Level 4 - Feedback loops are weak; users feel their input is not acted upon; limited co-creation opportunities."
+                }
+              },
+              "PARETO PRIORITIZATION (80/20 ANALYSIS)": {
+                "TOP PRIORITY BOTTLENECK #1": {
+                  "Step": "Step 2.1: Identity verification and KYC process",
+                  "Pain Level": "9/10",
+                  "Impact Scope": "Estimated 65% of target users affected",
+                  "Bottleneck Evidence": "Aadhaar-based KYC is widespread but not universal; many in rural areas lack documents or stable connectivity for verification; official reports highlight KYC as a major onboarding gate",
+                  "Why This Creates 80% Impact": "Without verifiable identity, users cannot open accounts or access credit/digital payments, stalling the entire inclusion journey",
+                  "Ripple Effects": "Blocks onboarding, restricts access to credit, payments, and insurance; undermines trust in formal systems",
+                  "Current Solutions Gap": "Aadhaar e-KYC exists but has limited reach for those without Aadhaar or with document gaps; offline or alternative verification options are not consistently available",
+                  "Hypothesis for Exploration": "If simplified or offline-friendly KYC options are available (e.g., offline identity verification, verifiable digital tokens, or alternative proof of identity), onboarding rate will increase significantly (target: +20\u201330 percentage points)."
+                },
+                "TOP PRIORITY BOTTLENECK #2": {
+                  "Step": "Step 4.1: Cash-in / Cash-out friction and last-mile access to agents",
+                  "Pain Level": "8/10",
+                  "Impact Scope": "Estimated 60% of target users affected",
+                  "Bottleneck Evidence": "Geographic gaps in banking/agent networks; low density of micro-ATMs; dependence on cash for many transactions remains high in rural areas",
+                  "Why This Creates 80% Impact": "Without easy cash-in/out, digital savings and payments cannot be practically used, limiting overall inclusion",
+                  "Ripple Effects": "Reduces adoption of digital wallets and UPI; increases cash-based friction and costs; discourages merchants from accepting digital payments",
+                  "Current Solutions Gap": "Agent network expansion and offline cash-in/out capabilities exist but are uneven; micro-ATM deployment is limited; merchants may not accept digital payments due to perceived costs",
+                  "Hypothesis for Exploration": "If cash-in/out is broadened through more agents, shop-based QR/offline cash-out, and fair fee structures, digital usage and savings activity will rise substantially (target: +15\u201325 percentage points in digital transaction adoption)."
+                }
+              },
+              "PRIORITIZATION RATIONALE": {
+                "Data Sources": [
+                  "World Bank Global Findex Database for India\u2019s inclusion landscape",
+                  "Pradhan Mantri Jan Dhan Yojana (PMJDY) program data",
+                  "RBI and UIDAI guidance on KYC and e-KYC",
+                  "NPCI information on UPI adoption and last-mile payments",
+                  "NABARD and field reports on rural financial access and agent networks"
+                ],
+                "Methodology": "Pareto principle applied by estimating the potential impact of each bottleneck on the overall inclusion journey, prioritizing steps whose improvement unlocks the largest share of downstream adoption (onboarding, usage, and trust).",
+                "Impact Calculation": "Synthesized from qualitative field insights and validated indicators (onboarding rate, digital payments adoption, agent reach).",
+                "Confidence Level": "Medium-High (based on credible sector reports and known barriers; exact quantification varies by region and program)."
+              },
+              "EXPLORATION RECOMMENDATIONS": {
+                "Primary Focus": "Address Step 2.1 (KYC/onboarding) first due to gating effect on all downstream activities; follow with Step 4.1 (cash-in/out) to unlock daily usage.",
+                "Research Methods": [
+                  "Field interviews and ethnographic observations in target communities",
+                  "Pilot studies of offline/alternative KYC approaches (e.g., offline identity verification, document-lite onboarding, Aadhaar-based or mobile-ID tethered verification)",
+                  "Geospatial mapping of agent networks and cash-out points",
+                  "A/B experiments around onboarding flows and agent incentives",
+                  "Prototype testing of offline-capable digital wallets and QR-based payments"
+                ],
+                "Success Metrics": [
+                  "Onboarding rate (new accounts opened per week/month) among target groups",
+                  "Share of target users with active digital payments within 90 days",
+                  "Average time to complete onboarding",
+                  "Agent density and cash-out occasions per 10,000 population",
+                  "Satisfaction with onboarding process (NPS/CSAT in local languages)"
+                ],
+                "Timeline": "0\u20133 months: discovery and pilot designs; 3\u20139 months: field pilots for KYC simplifications; 9\u201318 months: scale-up of successful approaches; 18+ months: broader implementation and monitoring."
+              },
+              "CREDIBLE SOURCES": [
+                {
+                  "Source": "World Bank: Global Findex Database 2021",
+                  "URL": "https://globalfindex.worldbank.org/",
+                  "Relevance": "Provides global and India-specific metrics on account ownership, usage, and financial inclusion gaps."
+                },
+                {
+                  "Source": "Pradhan Mantri Jan Dhan Yojana (PMJDY) official portal",
+                  "URL": "https://pmjdy.gov.in/",
+                  "Relevance": "Nationwide initiative for universal bank accounts and inclusion; informs onboarding scale and policy context."
+                },
+                {
+                  "Source": "UIDAI: Aadhaar and e-KYC overview",
+                  "URL": "https://uidai.gov.in/",
+                  "Relevance": "Key identity framework for KYC in India; informs potential simplifications and alternative verification approaches."
+                },
+                {
+                  "Source": "NPCI \u2013 UPI (Unified Payments Interface)",
+                  "URL": "https://www.npci.org.in/what-we-do/upi",
+                  "Relevance": "Centralized digital payments rails enabling affordable, accessible transactions; critical for inclusion through payments."
+                },
+                {
+                  "Source": "RBI \u2013 Financial Inclusion and Banking Sector Reports",
+                  "URL": "https://www.rbi.org.in",
+                  "Relevance": "Authoritative insights on inclusion trends, regulatory environment, and agent networks."
+                },
+                {
+                  "Source": "NABARD \u2013 Rural Financial Inclusion and Agricultural Credit",
+                  "URL": "https://www.nabard.org",
+                  "Relevance": "Rural access to finance, credit delivery channels, and cooperative/SHG-driven models."
+                },
+                {
+                  "Source": "World Bank \u2013 Digital Financial Inclusion in India (contextual reports)",
+                  "URL": "https://www.worldbank.org",
+                  "Relevance": "Context for digital finance adoption, barriers, and potential levers beyond formal banking."
+                }
+              ]
+            },
+            "refusal": null,
+            "annotations": []
+          },
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "3 Asismap1": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv922914.hstgr.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+            "content-length": "106",
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9,en-IN;q=0.8",
+            "content-type": "application/json",
+            "origin": "http://localhost:3001",
+            "priority": "u=1, i",
+            "referer": "http://localhost:3001/",
+            "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Microsoft Edge\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv922914.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "50b79db22414",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "prompt": "How might we improve vocational training accessibility for marginalized communities in India?",
+            "project_id": "036b800c-3aa5-4541-ac5c-2f53d080680e"
+          },
+          "webhookUrl": "https://n8n.srv922914.hstgr.cloud/webhook-test/Asismap",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Message a model3": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4 Universal Extreme User Generator for Design Research": {
+      "main": [
+        [
+          {
+            "node": "Message a model3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6 ChatBot": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7  Psychological Analysis": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 Universal Deep Empathy Research Generator for Primary Research": {
+      "main": [
+        [
+          {
+            "node": "Message a model4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8 Transformation Framework": {
+      "main": [
+        [
+          {
+            "node": "Message a model5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Message a model6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model6": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3 Asismap1": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Get a row (Canvas)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row (Canvas)": {
+      "main": [
+        [
+          {
+            "node": "Build Canvas Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Canvas Sections": {
+      "main": [
+        [
+          {
+            "node": "Has New Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has New Sections": {
+      "main": [
+        [
+          {
+            "node": "Generate Project Canvas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Generate Project Canvas": {
+      "main": [
+        [
+          {
+            "node": "Merge Canvas Elements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Canvas Elements": {
+      "main": [
+        [
+          {
+            "node": "Update Canvas Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "95ef44b6-1f88-48b0-bab1-20b3279c30bf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9425eddfc457a154489360eaec874ff25420d50404a86074d9ea7edf4e9727a1"
+  },
+  "id": "S9BXaZF3C5IfIYA0",
+  "tags": []
+}

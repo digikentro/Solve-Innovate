@@ -19,11 +19,19 @@ export const TransformationFrameworkReportViewer = ({ data, onGenerateNew, proje
     const [showErrorMessage, setShowErrorMessage] = useState(false);
     const [errorText, setErrorText] = useState('');
 
-    const reportData = isEditMode ? editedData : (data?.content || data);
+    const parsedData = typeof data === 'string' ? (() => {
+        try {
+            return JSON.parse(data);
+        } catch {
+            return data;
+        }
+    })() : data;
+
+    const reportData = isEditMode ? editedData : (parsedData?.content || parsedData);
 
     const handleEditToggle = () => {
         if (!isEditMode) {
-            const dataToEdit = data?.content || data;
+            const dataToEdit = parsedData?.content || parsedData;
             setOriginalData(structuredClone(dataToEdit));
             setEditedData(structuredClone(dataToEdit));
             setIsEditMode(true);

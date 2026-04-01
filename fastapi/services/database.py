@@ -36,23 +36,6 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-# Container DB (Lives inside the container)
-_container_db_dir = os.getenv("APP_DATA_DIRECTORY") or "/app"
-_container_db_path = os.path.join(_container_db_dir, "container.db")
-container_db_url = f"sqlite+aiosqlite:///{_container_db_path}"
-container_db_engine: AsyncEngine = create_async_engine(
-    container_db_url, connect_args={"check_same_thread": False}
-)
-container_db_async_session_maker = async_sessionmaker(
-    container_db_engine, expire_on_commit=False
-)
-
-
-async def get_container_db_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with container_db_async_session_maker() as session:
-        yield session
-
-
 # Create Database and Tables
 async def create_db_and_tables():
     async with sql_engine.begin() as conn:
@@ -71,14 +54,7 @@ async def create_db_and_tables():
                     MarkdownPresentationModel.__table__,
                     ProjectPresentationModel.__table__,
                     ProjectPresentationRevisionModel.__table__,
+                    OllamaPullStatus.__table__,
                 ],
-            )
-        )
-
-    async with container_db_engine.begin() as conn:
-        await conn.run_sync(
-            lambda sync_conn: SQLModel.metadata.create_all(
-                sync_conn,
-                tables=[OllamaPullStatus.__table__],
             )
         )

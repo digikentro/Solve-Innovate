@@ -111,6 +111,8 @@ def get_markdown_generation_messages(
     instructions: Optional[str] = None,
     slides_markdown: Optional[List[str]] = None,
     per_slide_instructions: Optional[List[str]] = None,
+    include_images: bool = False,
+    include_charts: bool = False,
     generation_scope: GenerationScope = "deck",
 ) -> List[LLMSystemMessage | LLMUserMessage]:
     """
@@ -166,6 +168,17 @@ def get_markdown_generation_messages(
 - Do not invent unsupported data.
 - If the source follows a 12-stage innovation pipeline, preserve stage order as guidance only.
 - Do not force any fixed slide count template.
+
+## Visual Generation (Experimental)
+- Include AI Images: {include_images}
+- Include Data Charts: {include_charts}
+
+{
+    "If 'Include AI Images' is True: You MUST insert exactly one relevant image per every 2-3 slides using: ![alt description](image:prompt for image generation)." if include_images else ""
+}
+{
+    "If 'Include Data Charts' is True: For slides with dense numeric tables, you MUST also add a :::chart[type=bar|line|pie|donut] block below the table summarizing the key trend." if include_charts else ""
+}
 
 ## Additional Instructions
 {instructions or "None"}

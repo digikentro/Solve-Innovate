@@ -6,7 +6,7 @@ import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
 import { ProjectInfo } from '@/components/project-detail/ProjectInfo';
 import { PresentableSlideSection } from '@/components/project-detail/PresentableSlideSection';
-import { ProjectCanvasSection } from '@/components/project-detail/ProjectCanvasSection';
+
 import { ProjectAnalysisSection } from '@/components/project-detail/ProjectAnalysisSection';
 import { AsIsMapSection } from '@/components/project-detail/AsIsMapSection';
 import { ResearchGeneratorSection } from '@/components/project-detail/ResearchGeneratorSection';
@@ -420,7 +420,7 @@ export const ProjectDetailPage = () => {
                         presentableSlide={presentableSlide}
                         setPresentableSlide={setPresentableSlide}
                       />
-                      <ProjectCanvasSection project={project} />
+
                     </dl>
                   </div>
                 </div>

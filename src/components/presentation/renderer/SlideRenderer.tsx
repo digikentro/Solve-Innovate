@@ -26,7 +26,7 @@ export const SlideRenderer = ({
   blocks,
   theme,
   className = '',
-  scale,
+  scale: externalScale,
   logoUrl,
   logoPosition = 'top-right',
   role,
@@ -37,77 +37,182 @@ export const SlideRenderer = ({
   onBlockReorder,
   onBlockAdd,
 }: SlideRendererProps) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [internalScale, setInternalScale] = useState(1);
+  
+  const naturalWidth = 1280;
+  const naturalHeight = 720;
+
+  useEffect(() => {
+    if (externalScale !== undefined) return;
+    
+    // If no explicit scale provided, auto-scale based on container width
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width } = entry.contentRect;
+        if (width > 0) {
+          setInternalScale(width / naturalWidth);
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, [externalScale, naturalWidth]);
+
+  const scale = externalScale !== undefined ? externalScale : internalScale;
+
   const logoStyle: React.CSSProperties = (() => {
+    const offset = '2rem';
     switch (logoPosition) {
       case 'top-left':
-        return { float: 'left', margin: '0 1rem 1rem 0' };
+        return { position: 'absolute', top: offset, left: offset };
       case 'bottom-left':
-        // using clear to try pushing it down can be tricky, typically floats stay at top.
-        // We will default to float: left
-        return { float: 'left', margin: '0 1rem 1rem 0' };
+        return { position: 'absolute', bottom: offset, left: offset };
       case 'bottom-right':
-        return { float: 'right', margin: '0 0 1rem 1rem' };
-      default:
-        return { float: 'right', margin: '0 0 1rem 1rem' };
+        return { position: 'absolute', bottom: offset, right: offset };
+      default: // top-right
+        return { position: 'absolute', top: offset, right: offset };
     }
   })();
 
+  const isEditable = role === 'viewer' && onBlockUpdate;
+
   return (
     <div
-      data-slide-container="true"
-      data-slide-role={role}
-      className={`slide-container relative overflow-hidden ${className}`}
+      ref={containerRef}
+      className={`relative w-full overflow-hidden ${className}`}
       style={{
-        '--primary-color': theme.colors.primary,
-        '--background-color': theme.colors.bg,
-        '--text-color': theme.colors.text,
-        '--subtext-color': theme.colors.subtext,
-        '--heading-font': theme.fonts.heading,
-        '--body-font': theme.fonts.body,
-        backgroundColor: theme.colors.bg,
-        color: theme.colors.text,
-        fontFamily: theme.fonts.body,
-        aspectRatio: '16 / 9',
-        padding: scale ? `${2 * (scale || 1)}rem` : '2.5rem 3rem',
-        transform: scale ? `scale(${scale})` : undefined,
-        transformOrigin: 'top left',
-      } as React.CSSProperties}
+        height: externalScale !== undefined ? naturalHeight * scale : undefined,
+        aspectRatio: externalScale === undefined ? '16 / 9' : undefined,
+      }}
     >
-      <div data-slide-content="true" className="h-full overflow-hidden relative">
+      <div
+        data-slide-container="true"
+        data-slide-role={role}
+        className="absolute top-0 left-0 overflow-hidden box-border"
+        style={{
+          '--primary-color': theme.colors.primary,
+          '--background-color': theme.colors.bg,
+          '--text-color': theme.colors.text,
+          '--subtext-color': theme.colors.subtext,
+          '--heading-font': theme.fonts.heading,
+          '--body-font': theme.fonts.body,
+          backgroundColor: theme.colors.bg,
+          color: theme.colors.text,
+          fontFamily: theme.fonts.body,
+          width: naturalWidth,
+          height: naturalHeight,
+          padding: '3rem 4rem',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        } as React.CSSProperties}
+      >
         {logoUrl && (
           <img
             src={logoUrl}
             alt="Logo"
-            className="w-14 h-14 object-contain opacity-90 relative z-10"
-            style={{ ...logoStyle, shapeOutside: 'margin-box' }}
+            className="w-24 h-24 object-contain opacity-90 z-50"
+            style={{ ...logoStyle }}
           />
         )}
-        {blocks.map((block, i) => {
-          const isEditable = role === 'viewer' && onBlockUpdate;
-
-          if (!isEditable) {
-            return (
-              <div key={i} className="mb-4">
-                <BlockRenderer block={block} />
-              </div>
+        <div data-slide-content="true" className="h-full relative flex flex-col w-full text-3xl font-medium leading-tight">
+          {blocks.map((block, i) => {
+            const blockContent = isEditable ? (
+              <EditableBlock
+                key={`${block.type}-${i}`}
+                index={i}
+                block={block}
+                dragIndex={dragIndex ?? null}
+                setDragIndex={setDragIndex}
+                onUpdate={(newBlock) => onBlockUpdate?.(i, newBlock)}
+                onDelete={() => onBlockDelete?.(i)}
+                onReorder={(to) => onBlockReorder?.(dragIndex ?? i, to)}
+                onAdd={(type) => onBlockAdd?.(i, type)}
+              />
+            ) : (
+              <BlockRenderer block={block} />
             );
-          }
 
-          // In viewer mode with callbacks, wrap with EditableBlock
-          return (
-            <EditableBlock
-              key={`${block.type}-${i}`}
-              index={i}
-              block={block}
-              dragIndex={dragIndex ?? null}
-              setDragIndex={setDragIndex}
-              onUpdate={(newBlock) => onBlockUpdate?.(i, newBlock)}
-              onDelete={() => onBlockDelete?.(i)}
-              onReorder={(to) => onBlockReorder?.(dragIndex ?? i, to)}
-              onAdd={(type) => onBlockAdd?.(i, type)}
-            />
-          );
-        })}
+            return (
+              <ResizableBlockContainer
+                key={i}
+                block={block}
+                onUpdate={(layout) => onBlockUpdate?.(i, { ...block, layout })}
+                isEditable={!!isEditable}
+              >
+                {blockContent}
+              </ResizableBlockContainer>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Resizable Block Wrapper ────────────────────────────────────────────────
+
+const ResizableBlockContainer = ({
+  block,
+  onUpdate,
+  children,
+  isEditable,
+}: {
+  block: MarkdownBlock;
+  onUpdate: (layout: any) => void;
+  children: React.ReactNode;
+  isEditable: boolean;
+}) => {
+  const layout = block.layout || { width: 100 };
+  const [resizing, setResizing] = useState(false);
+
+  if (!isEditable) {
+    return (
+      <div 
+        className="mb-6 last:mb-0" 
+        style={{ width: `${layout.width || 100}%` }}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="relative group mb-6 last:mb-0 border border-transparent hover:border-indigo-500/30 rounded-xl transition-all"
+      style={{ width: `${layout.width || 100}%` }}
+    >
+      {children}
+      <div
+        className="absolute -right-2 top-0 bottom-0 w-4 cursor-col-resize opacity-0 group-hover:opacity-100 flex items-center justify-center"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setResizing(true);
+          const startX = e.pageX;
+          const startWidth = layout.width || 100;
+
+          const onMouseMove = (moveEvent: MouseEvent) => {
+            const deltaX = moveEvent.pageX - startX;
+            // Rough estimation: 1280px is 100%
+            const deltaPercent = (deltaX / 1280) * 100;
+            const newWidth = Math.max(10, Math.min(100, Math.round(startWidth + deltaPercent)));
+            onUpdate({ ...layout, width: newWidth });
+          };
+
+          const onMouseUp = () => {
+            setResizing(false);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        }}
+      >
+        <div className="h-8 w-1 bg-indigo-500 rounded-full" />
       </div>
     </div>
   );
@@ -222,11 +327,10 @@ const EditableBlock = ({
       onDragEnd={() => {
         if (setDragIndex) setDragIndex(null);
       }}
-      className={`group relative mb-2 transition-all p-1 border-2 min-w-[150px]
-        ${isEditing ? 'border-indigo-400 border-dashed bg-white/5 shadow-sm' : 'border-transparent hover:border-blue-400 hover:border-dashed'}
-        ${!isEditing && 'resize-x overflow-auto' /* allow resizing horizontal when not actively editing text */}
+      className={`group relative mb-2 transition-all p-1 border-2 min-w-[150px] rounded
+        ${isEditing ? 'border-indigo-400 border-dashed bg-white/5 shadow-sm' : 'border-gray-200/60 hover:border-indigo-300 hover:border-dashed'}
       `}
-      style={!isEditing ? { resize: 'horizontal', overflow: 'visible', maxWidth: '100%' } : {}}
+      style={!isEditing ? { maxWidth: '100%' } : {}}
       onDoubleClick={() => { if (!isEditing) setIsEditing(true); }}
     >
       {!isEditing && (
@@ -298,8 +402,17 @@ const EditableBlock = ({
              <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border p-3 flex flex-col gap-2">
                 <textarea 
                   value={editValue} 
-                  onChange={e => setEditValue(e.target.value)}
-                  className="w-full h-24 p-2 text-sm border rounded outline-none text-black"
+                  onChange={e => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                    setEditValue(e.target.value);
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  className="w-full min-h-[96px] p-2 text-sm border rounded outline-none text-black resize-none"
+                  style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
                 />
                 <button onClick={() => { onUpdate(patchBlockText(block, editValue)); setIsEditing(false); }} className="self-end px-3 py-1 text-xs bg-indigo-600 font-medium text-white rounded">Save</button>
              </div>

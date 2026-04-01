@@ -75,6 +75,7 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     exportPptx,
     resetToConfig,
     presentationId,
+    isExporting,
     replaceSlides,
   } = usePresentation(project, activeMarkdownId);
 
@@ -540,11 +541,18 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
                     </div>
                     <textarea
                       value={detailLinesToText(slide.details)}
-                      onChange={(e) =>
-                        updateSlideOutline(idx, { ...slide, details: textToDetailLines(e.target.value) })
-                      }
+                      onChange={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                        updateSlideOutline(idx, { ...slide, details: textToDetailLines(e.target.value) });
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
                       placeholder="Outline notes for this slide (one point per line)"
-                      className="w-full min-h-[110px] px-3 py-2 text-sm text-gray-700 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
+                      className="w-full min-h-[110px] px-3 py-2 text-sm text-gray-700 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
                     />
                   </div>
                 ))}
@@ -596,6 +604,7 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
               onSwitchTheme={switchTheme}
               onRegenerateSlide={regenerateSlide}
               onExportPptx={exportPptx}
+              isExporting={isExporting}
               onSlidesUpdate={replaceSlides}
               saveState={saveState}
               onNewPresentation={() => {
