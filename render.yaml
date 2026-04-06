@@ -20,7 +20,7 @@ services:
       - key: LLM
         value: openai
       - key: IMAGE_PROVIDER
-        value: dalle
+        value: dall-e-3
       - key: APP_DATA_DIRECTORY
         value: /app/app_data
     disk:

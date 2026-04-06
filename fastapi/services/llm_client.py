@@ -1,23 +1,36 @@
+from __future__ import annotations
+
 import asyncio
 import dirtyjson
 import json
 from copy import deepcopy
-from typing import AsyncGenerator, List, Optional
+from typing import Any, AsyncGenerator, List, Optional
 from fastapi import HTTPException
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion_chunk import (
     ChatCompletionChunk as OpenAIChatCompletionChunk,
 )
-from google import genai
-from google.genai.types import Content as GoogleContent, Part as GoogleContentPart
-from google.genai.types import (
-    GenerateContentConfig,
-    GoogleSearch,
-    ToolConfig as GoogleToolConfig,
-    FunctionCallingConfig as GoogleFunctionCallingConfig,
-    FunctionCallingConfigMode as GoogleFunctionCallingConfigMode,
-)
-from google.genai.types import Tool as GoogleTool
+try:
+    from google import genai
+    from google.genai.types import Content as GoogleContent, Part as GoogleContentPart
+    from google.genai.types import (
+        GenerateContentConfig,
+        GoogleSearch,
+        ToolConfig as GoogleToolConfig,
+        FunctionCallingConfig as GoogleFunctionCallingConfig,
+        FunctionCallingConfigMode as GoogleFunctionCallingConfigMode,
+    )
+    from google.genai.types import Tool as GoogleTool
+except ModuleNotFoundError:
+    genai = None
+    GoogleContent = Any
+    GoogleContentPart = Any
+    GenerateContentConfig = Any
+    GoogleSearch = Any
+    GoogleToolConfig = Any
+    GoogleFunctionCallingConfig = Any
+    GoogleFunctionCallingConfigMode = Any
+    GoogleTool = Any
 from anthropic import AsyncAnthropic
 from anthropic.types import Message as AnthropicMessage
 from anthropic import MessageStreamEvent as AnthropicMessageStreamEvent
@@ -117,6 +130,11 @@ class LLMClient:
         return AsyncOpenAI()
 
     def _get_google_client(self):
+        if genai is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Google SDK is not installed. Install package 'google-genai' to use google provider.",
+            )
         if not get_google_api_key_env():
             raise HTTPException(
                 status_code=400,
@@ -839,6 +857,22 @@ class LLMClient:
                 status_code=400,
                 detail="LLM did not return any content",
             )
+
+        if isinstance(content, str):
+            try:
+                content = dict(dirtyjson.loads(content))
+            except Exception as exc:  # noqa: BLE001
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"LLM returned non-JSON structured content: {exc}",
+                ) from exc
+
+        if not isinstance(content, dict):
+            raise HTTPException(
+                status_code=400,
+                detail="LLM structured response must be a JSON object",
+            )
+
         return content
 
     # ? Stream Unstructured Content

@@ -45,11 +45,11 @@ export const PresentationStreamView = ({
           <div key={slide.id} className="animate-fadeIn">
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
               <div className="p-2">
-                <SlideRenderer blocks={slide.blocks} theme={theme} className="rounded-2xl" />
+                <SlideRenderer slide={slide} theme={theme} className="rounded-2xl" role="thumbnail" />
               </div>
               <div className="px-4 py-2 border-t border-gray-100">
                 <span className="text-xs text-gray-400 font-medium">
-                  Slide {slide.index + 1}
+                  Slide
                 </span>
               </div>
             </div>

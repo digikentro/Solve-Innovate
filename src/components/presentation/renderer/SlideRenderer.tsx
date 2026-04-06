@@ -1,463 +1,650 @@
-import React, { useState, useEffect } from 'react';
-import type { MarkdownBlock } from '@/types/presentation';
-import type { Theme } from '@/types/presentation';
-import { BlockRenderer } from './BlockRenderer';
-import { TiptapInlineEditor } from './TiptapInlineEditor';
-import { editorHtmlToMarkdown, richMarkdownToBlockValue, blockToRichHtml } from '@/utils/slideEditor';
+import { useEffect, useRef, useState } from 'react';
+import { useDrag } from '@use-gesture/react';
+import ReactECharts from 'echarts-for-react';
+
+import { LightweightWysiwyg } from '@/components/presentation/LightweightWysiwyg';
+import type {
+  SlideData,
+  SpatialBlock,
+  SpatialChartBlock,
+  SpatialChartDataPoint,
+  SpatialImageBlock,
+  SpatialTextBlock,
+  Theme,
+} from '@/types/presentation';
 
 interface SlideRendererProps {
-  blocks: MarkdownBlock[];
+  slide: SlideData;
   theme: Theme;
   className?: string;
-  scale?: number;
   logoUrl?: string;
   logoPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   role?: 'viewer' | 'thumbnail' | 'measure';
-  // Inline editing callbacks
-  dragIndex?: number | null;
-  setDragIndex?: (index: number | null) => void;
-  onBlockUpdate?: (index: number, newBlock: MarkdownBlock) => void;
-  onBlockDelete?: (index: number) => void;
-  onBlockReorder?: (from: number, to: number) => void;
-  onBlockAdd?: (index: number, type: 'text' | 'image' | 'chart') => void;
+  selectedBlockIds?: string[];
+  onSelectBlocks?: (ids: string[]) => void;
+  onSlideChange?: (nextSlide: SlideData) => void;
+  onBlockSelect?: (blockId: string | null) => void;
 }
 
-export const SlideRenderer = ({
-  blocks,
-  theme,
-  className = '',
-  scale: externalScale,
-  logoUrl,
-  logoPosition = 'top-right',
-  role,
-  dragIndex,
-  setDragIndex,
-  onBlockUpdate,
-  onBlockDelete,
-  onBlockReorder,
-  onBlockAdd,
-}: SlideRendererProps) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [internalScale, setInternalScale] = useState(1);
-  
-  const naturalWidth = 1280;
-  const naturalHeight = 720;
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
 
-  useEffect(() => {
-    if (externalScale !== undefined) return;
-    
-    // If no explicit scale provided, auto-scale based on container width
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width } = entry.contentRect;
-        if (width > 0) {
-          setInternalScale(width / naturalWidth);
-        }
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return value;
+};
+
+const getNormalizedPosition = (
+  block: SpatialBlock,
+  fallbackIndex: number
+): { x: number; y: number; width: number; height: number } => {
+  const position = (block as any).position || {};
+  const width = clamp(toFiniteNumber(position.width, 80), 4, 100);
+  const height = clamp(toFiniteNumber(position.height, 18), 4, 100);
+  const x = clamp(toFiniteNumber(position.x, 10), 0, 100 - width);
+  const y = clamp(toFiniteNumber(position.y, 8 + fallbackIndex * 6), 0, 100 - height);
+  return { x, y, width, height };
+};
+
+const pxToPercent = (px: number, total: number): number => {
+  if (!total) return 0;
+  return (px / total) * 100;
+};
+
+const toChartPoints = (raw: unknown): SpatialChartDataPoint[] => {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => {
+        const point = item as Record<string, unknown>;
+        const label = typeof point.label === 'string' ? point.label : '';
+        const value = typeof point.value === 'number' ? point.value : Number(point.value || 0);
+        return { label: label || 'Item', value: Number.isFinite(value) ? value : 0 };
+      })
+      .filter((point) => point.label.trim().length > 0);
+  }
+  if (raw && typeof raw === 'object') {
+    const candidate = raw as { headers?: unknown; rows?: unknown };
+    if (Array.isArray(candidate.rows)) {
+      return candidate.rows
+        .map((row) => {
+          if (!Array.isArray(row) || row.length < 2) return null;
+          const label = String(row[0] ?? 'Item');
+          const value = Number(row[1] ?? 0);
+          return { label, value: Number.isFinite(value) ? value : 0 };
+        })
+        .filter((point): point is SpatialChartDataPoint => Boolean(point));
+    }
+  }
+  return [];
+};
+
+const buildChartOption = (block: SpatialChartBlock, primary: string) => {
+  const points = toChartPoints((block as unknown as { data?: unknown }).data);
+  const labels = points.map((p: SpatialChartDataPoint) => p.label);
+  const values = points.map((p: SpatialChartDataPoint) => p.value);
+
+  if (block.chart_type === 'pie' || block.chart_type === 'donut') {
+    return {
+      animation: false,
+      tooltip: { trigger: 'item' },
+      series: [{
+        type: 'pie',
+        radius: block.chart_type === 'donut' ? ['45%', '70%'] : '70%',
+        data: points.map((p) => ({ value: p.value, name: p.label })),
+        itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
+      }],
+    };
+  }
+  if (block.chart_type === 'line' || block.chart_type === 'area') {
+    return {
+      animation: false,
+      xAxis: { type: 'category', data: labels },
+      yAxis: { type: 'value' },
+      series: [{
+        data: values,
+        type: 'line',
+        areaStyle: block.chart_type === 'area' ? {} : undefined,
+        smooth: true,
+        lineStyle: { width: 3, color: block.color || primary },
+        itemStyle: { color: block.color || primary },
+      }],
+      grid: { left: 32, right: 16, top: 24, bottom: 28 },
+    };
+  }
+  return {
+    animation: false,
+    xAxis: { type: 'category', data: labels },
+    yAxis: { type: 'value' },
+    series: [{
+      data: values,
+      type: 'bar',
+      itemStyle: { color: block.color || primary, borderRadius: [8, 8, 0, 0] },
+    }],
+    grid: { left: 32, right: 16, top: 24, bottom: 28 },
+  };
+};
+
+// ─── Resize Handle ──────────────────────────────────────────────────────────
+
+type ResizeHandleDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
+interface ResizeHandleDivProps {
+  direction: ResizeHandleDirection;
+  blockPosition: { x: number; y: number; width: number; height: number };
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  isInteractive: boolean;
+  onSizeChange: (pos: { x: number; y: number; width: number; height: number }) => void;
+  onDragStateChange: (dragging: boolean) => void;
+  style: React.CSSProperties;
+  className: string;
+}
+
+const ResizeHandleDiv = ({
+  direction,
+  blockPosition,
+  stageRef,
+  isInteractive,
+  onSizeChange,
+  onDragStateChange,
+  style,
+  className,
+}: ResizeHandleDivProps) => {
+  const resizeStartPos = useRef({ ...blockPosition });
+
+  const bind = useDrag(
+    ({ first, last, movement: [mx, my], event }) => {
+      if (!isInteractive) return;
+      event?.stopPropagation();
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      if (first) {
+        resizeStartPos.current = { ...blockPosition };
+        onDragStateChange(true);
       }
-    });
+      if (last) {
+        onDragStateChange(false);
+        return;
+      }
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+      const dxPct = (mx / rect.width) * 100;
+      const dyPct = (my / rect.height) * 100;
+      const start = resizeStartPos.current;
+
+      let newX = start.x;
+      let newY = start.y;
+      let newWidth = start.width;
+      let newHeight = start.height;
+
+      if (direction.includes('e')) {
+        newWidth = clamp(start.width + dxPct, 4, 100 - start.x);
+      }
+      if (direction.includes('w')) {
+        const maxDx = start.width - 4;
+        const actualDx = clamp(dxPct, -start.x, maxDx);
+        newX = start.x + actualDx;
+        newWidth = start.width - actualDx;
+      }
+      if (direction.includes('s')) {
+        newHeight = clamp(start.height + dyPct, 4, 100 - start.y);
+      }
+      if (direction.includes('n')) {
+        const maxDy = start.height - 4;
+        const actualDy = clamp(dyPct, -start.y, maxDy);
+        newY = start.y + actualDy;
+        newHeight = start.height - actualDy;
+      }
+
+      onSizeChange({ x: newX, y: newY, width: newWidth, height: newHeight });
+    },
+    {
+      filterTaps: true,
+      threshold: 2,
+      pointer: { keys: false },
+      from: () => [0, 0],
     }
-    return () => observer.disconnect();
-  }, [externalScale, naturalWidth]);
-
-  const scale = externalScale !== undefined ? externalScale : internalScale;
-
-  const logoStyle: React.CSSProperties = (() => {
-    const offset = '2rem';
-    switch (logoPosition) {
-      case 'top-left':
-        return { position: 'absolute', top: offset, left: offset };
-      case 'bottom-left':
-        return { position: 'absolute', bottom: offset, left: offset };
-      case 'bottom-right':
-        return { position: 'absolute', bottom: offset, right: offset };
-      default: // top-right
-        return { position: 'absolute', top: offset, right: offset };
-    }
-  })();
-
-  const isEditable = role === 'viewer' && onBlockUpdate;
+  );
 
   return (
     <div
-      ref={containerRef}
-      className={`relative w-full overflow-hidden ${className}`}
+      {...bind()}
+      className={className}
+      style={{ ...style, touchAction: 'none' }}
+    />
+  );
+};
+
+// ─── Draggable Block ─────────────────────────────────────────────────────────
+
+interface DraggableBlockProps {
+  block: SpatialBlock;
+  blockIndex: number;
+  theme: Theme;
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  isSelected: boolean;
+  isEditing: boolean;
+  isInteractive: boolean;
+  isDragging: boolean;
+  onSelect: (blockId: string, shiftKey: boolean) => void;
+  onBlockSelect: (blockId: string | null) => void;
+  onPositionChange: (blockId: string, x: number, y: number) => void;
+  onSizeChange: (blockId: string, position: { x: number; y: number; width: number; height: number }) => void;
+  onDoubleClick: (blockId: string) => void;
+  onTextChange: (value: string) => void;
+  onTextBlur: () => void;
+  onChartRef: (instance: ReactECharts | null) => void;
+  onDragStateChange: (dragging: boolean) => void;
+}
+
+const DraggableBlock = ({
+  block,
+  blockIndex,
+  theme,
+  stageRef,
+  isSelected,
+  isEditing,
+  isInteractive,
+  isDragging,
+  onSelect,
+  onBlockSelect,
+  onPositionChange,
+  onSizeChange,
+  onDoubleClick,
+  onTextChange,
+  onTextBlur,
+  onChartRef,
+  onDragStateChange,
+}: DraggableBlockProps) => {
+  const position = getNormalizedPosition(block, blockIndex);
+  const dragStartPos = useRef({ x: position.x, y: position.y });
+
+  const bind = useDrag(
+    ({ first, last, movement: [mx, my], event }) => {
+      // Don't drag while editing text
+      if (!isInteractive || isEditing) return;
+      event?.stopPropagation();
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      if (first) {
+        dragStartPos.current = { x: position.x, y: position.y };
+        onDragStateChange(true);
+      }
+      if (last) {
+        onDragStateChange(false);
+        return;
+      }
+
+      const dxPct = (mx / rect.width) * 100;
+      const dyPct = (my / rect.height) * 100;
+      const newX = clamp(dragStartPos.current.x + dxPct, 0, 100 - position.width);
+      const newY = clamp(dragStartPos.current.y + dyPct, 0, 100 - position.height);
+      onPositionChange(block.id, newX, newY);
+    },
+    {
+      filterTaps: true,
+      threshold: 3,
+      pointer: { keys: false },
+      from: () => [0, 0],
+    }
+  );
+
+  const HANDLE_SIZE = 8;
+  const HANDLE_OFFSET = -HANDLE_SIZE / 2;
+
+  const handleSharedProps = {
+    blockPosition: position,
+    stageRef,
+    isInteractive,
+    onSizeChange: (pos: { x: number; y: number; width: number; height: number }) =>
+      onSizeChange(block.id, pos),
+    onDragStateChange,
+  };
+
+  const handleBase = 'absolute bg-white border-2 border-sky-500 rounded-sm z-20';
+
+  return (
+    <div
+      {...bind()}
+      data-block-id={block.id}
+      className={`canvas-block absolute rounded-lg transition-shadow ${
+        isSelected ? 'ring-2 ring-sky-500 shadow-lg' : ''
+      } ${isInteractive && !isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
       style={{
-        height: externalScale !== undefined ? naturalHeight * scale : undefined,
-        aspectRatio: externalScale === undefined ? '16 / 9' : undefined,
+        // left/top % are relative to the parent (stage) — correct for our position system
+        left: `${position.x}%`,
+        top: `${position.y}%`,
+        width: `${position.width}%`,
+        height: `${position.height}%`,
+        zIndex: block.z_index ?? 0,
+        transform: `rotate(${block.rotation || 0}deg)`,
+        transformOrigin: 'center',
+        border: isInteractive ? '1px dashed rgba(71,85,105,0.25)' : 'none',
+        background: block.type === 'text' ? 'rgba(255,255,255,0.06)' : 'transparent',
+        // overflow:visible when selected so resize handles render outside bounds,
+        // and when editing so the Tiptap editor is not clipped
+        overflow: isSelected || isEditing ? 'visible' : 'hidden',
+        touchAction: 'none',
+      }}
+      onMouseDown={(e) => {
+        if (!isInteractive) return;
+        e.stopPropagation();
+        onBlockSelect(block.id);
+        onSelect(block.id, e.shiftKey);
+      }}
+      onDoubleClick={() => {
+        if (block.type === 'text' && isInteractive) {
+          onDoubleClick(block.id);
+        }
       }}
     >
+      <BlockBody
+        block={block}
+        theme={theme}
+        isDragging={isDragging}
+        isEditing={isEditing}
+        onTextChange={onTextChange}
+        onTextBlur={onTextBlur}
+        onChartRef={onChartRef}
+      />
+
+      {/* Resize handles — only when selected and not editing text */}
+      {isSelected && isInteractive && !isEditing && (
+        <>
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="n"
+            className={`${handleBase} cursor-n-resize`}
+            style={{ left: '50%', top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateX(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="s"
+            className={`${handleBase} cursor-s-resize`}
+            style={{ left: '50%', bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateX(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="e"
+            className={`${handleBase} cursor-e-resize`}
+            style={{ right: HANDLE_OFFSET, top: '50%', width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateY(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="w"
+            className={`${handleBase} cursor-w-resize`}
+            style={{ left: HANDLE_OFFSET, top: '50%', width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateY(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="ne"
+            className={`${handleBase} cursor-ne-resize`}
+            style={{ right: HANDLE_OFFSET, top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="nw"
+            className={`${handleBase} cursor-nw-resize`}
+            style={{ left: HANDLE_OFFSET, top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="se"
+            className={`${handleBase} cursor-se-resize`}
+            style={{ right: HANDLE_OFFSET, bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="sw"
+            className={`${handleBase} cursor-sw-resize`}
+            style={{ left: HANDLE_OFFSET, bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── Slide Renderer ──────────────────────────────────────────────────────────
+
+export const SlideRenderer = ({
+  slide,
+  theme,
+  className = '',
+  logoUrl,
+  logoPosition = 'top-right',
+  role = 'viewer',
+  selectedBlockIds = [],
+  onSelectBlocks,
+  onSlideChange,
+  onBlockSelect,
+}: SlideRendererProps) => {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const chartRefs = useRef<Map<string, ReactECharts>>(new Map());
+
+  const [editingTextBlockId, setEditingTextBlockId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isInteractive = role === 'viewer' && !!onSlideChange;
+  const slideBlocks = Array.isArray(slide.blocks) ? slide.blocks : [];
+
+  useEffect(() => {
+    if (!stageRef.current) return;
+    const observer = new ResizeObserver(() => {
+      chartRefs.current.forEach((chart) => {
+        chart.getEchartsInstance().resize();
+      });
+    });
+    observer.observe(stageRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const commitBlocks = (updater: (blocks: SpatialBlock[]) => SpatialBlock[]) => {
+    if (!onSlideChange) return;
+    onSlideChange({ ...slide, blocks: updater(slideBlocks) });
+  };
+
+  const updateBlock = (blockId: string, updater: (block: SpatialBlock) => SpatialBlock) => {
+    commitBlocks((blocks) =>
+      blocks.map((block) => (block.id === blockId ? updater(block) : block))
+    );
+  };
+
+  const handlePositionChange = (blockId: string, x: number, y: number) => {
+    updateBlock(blockId, (block) => ({
+      ...block,
+      position: { ...getNormalizedPosition(block, 0), x, y },
+    }));
+  };
+
+  const handleSizeChange = (
+    blockId: string,
+    position: { x: number; y: number; width: number; height: number }
+  ) => {
+    updateBlock(blockId, (block) => ({ ...block, position }));
+  };
+
+  const handleSelect = (blockId: string, shiftKey: boolean) => {
+    if (!onSelectBlocks) return;
+    const isSelected = selectedBlockIds.includes(blockId);
+    if (shiftKey) {
+      const next = isSelected
+        ? selectedBlockIds.filter((id) => id !== blockId)
+        : [...selectedBlockIds, blockId];
+      onSelectBlocks(next);
+    } else {
+      onSelectBlocks([blockId]);
+    }
+  };
+
+  const logoStyle: Record<string, string> = {
+    top: logoPosition.startsWith('top') ? '2%' : 'auto',
+    left: logoPosition.endsWith('left') ? '2%' : 'auto',
+    right: logoPosition.endsWith('right') ? '2%' : 'auto',
+    bottom: logoPosition.startsWith('bottom') ? '2%' : 'auto',
+  };
+
+  return (
+    <div className={`relative w-full aspect-video rounded-2xl overflow-hidden ${className}`}>
       <div
-        data-slide-container="true"
-        data-slide-role={role}
-        className="absolute top-0 left-0 overflow-hidden box-border"
+        ref={stageRef}
+        className="relative h-full w-full"
         style={{
-          '--primary-color': theme.colors.primary,
-          '--background-color': theme.colors.bg,
-          '--text-color': theme.colors.text,
-          '--subtext-color': theme.colors.subtext,
-          '--heading-font': theme.fonts.heading,
-          '--body-font': theme.fonts.body,
-          backgroundColor: theme.colors.bg,
+          background: theme.colors.bg,
           color: theme.colors.text,
           fontFamily: theme.fonts.body,
-          width: naturalWidth,
-          height: naturalHeight,
-          padding: '3rem 4rem',
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-        } as React.CSSProperties}
+        }}
+        onMouseDown={() => {
+          if (isInteractive && onSelectBlocks) {
+            onSelectBlocks([]);
+            onBlockSelect?.(null);
+            setEditingTextBlockId(null);
+          }
+        }}
       >
-        {logoUrl && (
+        {logoUrl ? (
           <img
             src={logoUrl}
             alt="Logo"
-            className="w-24 h-24 object-contain opacity-90 z-50"
-            style={{ ...logoStyle }}
+            className="absolute h-[8%] w-[8%] object-contain z-[999]"
+            style={logoStyle}
           />
-        )}
-        <div data-slide-content="true" className="h-full relative flex flex-col w-full text-3xl font-medium leading-tight">
-          {blocks.map((block, i) => {
-            const blockContent = isEditable ? (
-              <EditableBlock
-                key={`${block.type}-${i}`}
-                index={i}
-                block={block}
-                dragIndex={dragIndex ?? null}
-                setDragIndex={setDragIndex}
-                onUpdate={(newBlock) => onBlockUpdate?.(i, newBlock)}
-                onDelete={() => onBlockDelete?.(i)}
-                onReorder={(to) => onBlockReorder?.(dragIndex ?? i, to)}
-                onAdd={(type) => onBlockAdd?.(i, type)}
-              />
-            ) : (
-              <BlockRenderer block={block} />
-            );
+        ) : null}
 
-            return (
-              <ResizableBlockContainer
-                key={i}
-                block={block}
-                onUpdate={(layout) => onBlockUpdate?.(i, { ...block, layout })}
-                isEditable={!!isEditable}
-              >
-                {blockContent}
-              </ResizableBlockContainer>
-            );
-          })}
-        </div>
+        {slideBlocks.map((block, blockIndex) => {
+          const isSelected = selectedBlockIds.includes(block.id);
+          const isEditing = editingTextBlockId === block.id;
+
+          return (
+            <DraggableBlock
+              key={block.id}
+              block={block}
+              blockIndex={blockIndex}
+              theme={theme}
+              stageRef={stageRef}
+              isSelected={isSelected}
+              isEditing={isEditing}
+              isInteractive={isInteractive}
+              isDragging={isDragging}
+              onSelect={handleSelect}
+              onBlockSelect={(id) => onBlockSelect?.(id)}
+              onPositionChange={handlePositionChange}
+              onSizeChange={handleSizeChange}
+              onDoubleClick={(id) => setEditingTextBlockId(id)}
+              onTextChange={(value) => {
+                updateBlock(block.id, (target) => ({
+                  ...(target as SpatialTextBlock),
+                  content: value,
+                }));
+              }}
+              onTextBlur={() => setEditingTextBlockId(null)}
+              onChartRef={(instance) => {
+                if (instance) {
+                  chartRefs.current.set(block.id, instance);
+                } else {
+                  chartRefs.current.delete(block.id);
+                }
+              }}
+              onDragStateChange={setIsDragging}
+            />
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// ─── Resizable Block Wrapper ────────────────────────────────────────────────
+// ─── Block Body ───────────────────────────────────────────────────────────────
 
-const ResizableBlockContainer = ({
+interface BlockBodyProps {
+  block: SpatialBlock;
+  theme: Theme;
+  isDragging: boolean;
+  isEditing: boolean;
+  onTextChange: (value: string) => void;
+  onTextBlur: () => void;
+  onChartRef: (instance: ReactECharts | null) => void;
+}
+
+const BlockBody = ({
   block,
-  onUpdate,
-  children,
-  isEditable,
-}: {
-  block: MarkdownBlock;
-  onUpdate: (layout: any) => void;
-  children: React.ReactNode;
-  isEditable: boolean;
-}) => {
-  const layout = block.layout || { width: 100 };
-  const [resizing, setResizing] = useState(false);
+  theme,
+  isDragging,
+  isEditing,
+  onTextChange,
+  onTextBlur,
+  onChartRef,
+}: BlockBodyProps) => {
+  if (block.type === 'text') {
+    const textStyle: React.CSSProperties = {
+      textAlign: block.style?.align || 'left',
+      color: block.style?.color || theme.colors.text,
+      fontWeight: block.style?.emphasis === 'strong' ? 700 : 400,
+      fontSize: block.style?.font_size
+        ? `${block.style.font_size}px`
+        : 'clamp(12px, 1.2vw, 26px)',
+    };
 
-  if (!isEditable) {
+    if (isEditing) {
+      return (
+        // Wrapper applies the same visual style as the non-editing view,
+        // so the editor feels truly inline (Canva-style)
+        <div className="h-full w-full" style={textStyle}>
+          <LightweightWysiwyg
+            value={block.content}
+            onChange={onTextChange}
+            placeholder="Type here..."
+            minHeight={20}
+            compact
+            transparent
+            readOnly={isDragging}
+            onBlur={onTextBlur}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div 
-        className="mb-6 last:mb-0" 
-        style={{ width: `${layout.width || 100}%` }}
-      >
-        {children}
+      <div
+        className="h-full w-full px-3 py-2 whitespace-pre-wrap overflow-hidden"
+        style={textStyle}
+        dangerouslySetInnerHTML={{ __html: block.content }}
+      />
+    );
+  }
+
+  if (block.type === 'image') {
+    const imageSrc = block.prompt || '';
+    return (
+      <div className="h-full w-full bg-white/10 rounded-md overflow-hidden">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={block.caption || 'Slide image'}
+            className="h-full w-full"
+            style={{ objectFit: (block.object_fit || 'cover') as 'cover' | 'contain' }}
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center text-sm opacity-80">
+            Image
+          </div>
+        )}
       </div>
     );
   }
 
+  const chartOption = buildChartOption(block, theme.colors.primary);
   return (
-    <div 
-      className="relative group mb-6 last:mb-0 border border-transparent hover:border-indigo-500/30 rounded-xl transition-all"
-      style={{ width: `${layout.width || 100}%` }}
-    >
-      {children}
-      <div
-        className="absolute -right-2 top-0 bottom-0 w-4 cursor-col-resize opacity-0 group-hover:opacity-100 flex items-center justify-center"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          setResizing(true);
-          const startX = e.pageX;
-          const startWidth = layout.width || 100;
-
-          const onMouseMove = (moveEvent: MouseEvent) => {
-            const deltaX = moveEvent.pageX - startX;
-            // Rough estimation: 1280px is 100%
-            const deltaPercent = (deltaX / 1280) * 100;
-            const newWidth = Math.max(10, Math.min(100, Math.round(startWidth + deltaPercent)));
-            onUpdate({ ...layout, width: newWidth });
-          };
-
-          const onMouseUp = () => {
-            setResizing(false);
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-          };
-
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
-        }}
-      >
-        <div className="h-8 w-1 bg-indigo-500 rounded-full" />
-      </div>
+    <div className="h-full w-full rounded-md bg-white/80">
+      <ReactECharts
+        ref={onChartRef}
+        option={chartOption}
+        notMerge
+        lazyUpdate
+        style={{ width: '100%', height: '100%' }}
+      />
     </div>
   );
 };
-
-// ─── Inline Editable Block Wrapper ──────────────────────────────────────────
-
-const EditableBlock = ({
-  index,
-  block,
-  dragIndex,
-  setDragIndex,
-  onUpdate,
-  onDelete,
-  onReorder,
-  onAdd,
-}: {
-  index: number;
-  block: MarkdownBlock;
-  dragIndex: number | null;
-  setDragIndex?: (idx: number | null) => void;
-  onUpdate: (b: MarkdownBlock) => void;
-  onDelete: () => void;
-  onReorder: (to: number) => void;
-  onAdd: (type: 'text' | 'image' | 'chart') => void;
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState('');
-  
-  // Custom states for images and charts
-  const [imgPrompt, setImgPrompt] = useState(block.type === 'image' && block.src.startsWith('image:') ? block.src.slice(6) : '');
-  const [chartDataStr, setChartDataStr] = useState(block.type === 'chart' ? JSON.stringify(block.data, null, 2) : '');
-
-  const [isGeneratingImg, setIsGeneratingImg] = useState(false);
-
-  const isDraggable = setDragIndex !== undefined;
-  const isDraggingOver = dragIndex !== null && dragIndex !== index;
-
-  useEffect(() => {
-    if (isEditing) {
-      if (['paragraph', 'heading', 'bullet_list', 'numbered_list', 'quote'].includes(block.type)) {
-        setEditValue(blockToRichHtml(block));
-      } else {
-        setEditValue(blockTextValue(block));
-      }
-    }
-  }, [isEditing, block]);
-
-  const handleTextSave = (htmlContent: string) => {
-    try {
-      const markdown = editorHtmlToMarkdown(htmlContent);
-      const newBlock = richMarkdownToBlockValue(block, markdown);
-      onUpdate(newBlock);
-    } catch {
-      // fallback if parsing fails
-      onUpdate(patchBlockText(block, htmlContent.replace(/<[^>]*>?/gm, '')));
-    }
-    setIsEditing(false);
-  };
-
-  const handleImageUpdate = async () => {
-    if (!imgPrompt.trim()) return;
-    setIsGeneratingImg(true);
-    try {
-      const qs = new URLSearchParams({ prompt: imgPrompt.trim() });
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiBase}/api/v1/images/generate?${qs}`);
-      if (!res.ok) throw new Error("API responded with an error");
-      let data = await res.json();
-      let pathStr = typeof data === 'string' ? data : (data.path || data.url || '');
-      
-      let finalUrl = pathStr;
-      if (pathStr && !pathStr.startsWith('http')) {
-          // Normalize Windows paths and extract relative path assuming server mounts assets, or if it isn't mounted, at least try
-          const relPath = pathStr.replace(/\\/g, '/').split('/assets/').pop();
-          finalUrl = `${apiBase}/assets/${relPath}`;
-      }
-      onUpdate({ ...block, type: 'image', src: finalUrl, alt: imgPrompt } as any);
-      setIsEditing(false);
-    } catch (err) {
-      alert("Failed to generate image: " + err);
-    } finally {
-      setIsGeneratingImg(false);
-    }
-  };
-
-  const handleChartUpdate = () => {
-    try {
-      const parsedData = JSON.parse(chartDataStr);
-      onUpdate({ ...block, type: 'chart', data: parsedData } as any);
-      setIsEditing(false);
-    } catch {
-      alert("Invalid JSON data for chart.");
-    }
-  };
-
-  const isTextLike = ['paragraph', 'heading', 'bullet_list', 'numbered_list', 'quote'].includes(block.type);
-
-  return (
-    <div
-      draggable={isDraggable && !isEditing}
-      onDragStart={(e) => {
-        if (!isEditing && setDragIndex) setDragIndex(index);
-      }}
-      onDragOver={(e) => {
-        if (isDraggingOver) e.preventDefault();
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        onReorder(index);
-      }}
-      onDragEnd={() => {
-        if (setDragIndex) setDragIndex(null);
-      }}
-      className={`group relative mb-2 transition-all p-1 border-2 min-w-[150px] rounded
-        ${isEditing ? 'border-indigo-400 border-dashed bg-white/5 shadow-sm' : 'border-gray-200/60 hover:border-indigo-300 hover:border-dashed'}
-      `}
-      style={!isEditing ? { maxWidth: '100%' } : {}}
-      onDoubleClick={() => { if (!isEditing) setIsEditing(true); }}
-    >
-      {!isEditing && (
-        <div className="absolute -top-3 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-xl border rounded-lg flex items-center p-0.5 gap-0.5 z-50">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-2 py-1 text-[10px] uppercase font-bold text-indigo-700 hover:bg-indigo-50 rounded"
-          >
-            Edit
-          </button>
-          <button
-            onClick={onDelete}
-            className="px-2 py-1 text-[10px] uppercase font-bold text-red-600 hover:bg-red-50 rounded"
-          >
-            Del
-          </button>
-        </div>
-      )}
-
-      {!isEditing && (
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-xl border rounded-lg flex items-center p-0.5 z-50">
-          <button onClick={() => onAdd('text')} className="px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100 rounded">+ Text</button>
-          <button onClick={() => onAdd('image')} className="px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100 rounded">+ Image</button>
-          <button onClick={() => onAdd('chart')} className="px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100 rounded">+ Chart</button>
-        </div>
-      )}
-
-      {isEditing ? (
-        <div className="relative">
-          {isTextLike ? (
-            <TiptapInlineEditor 
-              value={editValue} 
-              onChange={setEditValue} 
-              onBlur={() => handleTextSave(editValue)}
-              className="w-full text-base md:text-lg"
-            />
-          ) : block.type === 'image' ? (
-            <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border p-3 flex flex-col gap-2">
-              <span className="text-xs font-semibold text-gray-600">AI Image Assignment</span>
-              <input 
-                 value={imgPrompt} 
-                 onChange={e => setImgPrompt(e.target.value)} 
-                 placeholder="Describe the image you want here..."
-                 className="w-fulltext-sm p-2 border rounded focus:ring-1 focus:ring-indigo-500 outline-none text-black bg-white"
-                 autoFocus
-              />
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded" disabled={isGeneratingImg}>Cancel</button>
-                <button onClick={handleImageUpdate} disabled={isGeneratingImg} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium disabled:opacity-50">
-                   {isGeneratingImg ? 'Generating...' : 'Generate AI Image'}
-                </button>
-              </div>
-            </div>
-          ) : block.type === 'chart' ? (
-            <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border p-3 flex flex-col gap-2">
-               <span className="text-xs font-semibold text-gray-600">Edit Chart Data (JSON)</span>
-               <textarea 
-                  value={chartDataStr} 
-                  onChange={e => setChartDataStr(e.target.value)}
-                  className="font-mono text-xs p-2 h-32 border outline-none rounded text-black bg-slate-50"
-                  autoFocus
-               />
-               <div className="flex justify-end gap-2">
-                 <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded">Cancel</button>
-                 <button onClick={handleChartUpdate} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium">Update Chart</button>
-               </div>
-            </div>
-          ) : (
-             <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border p-3 flex flex-col gap-2">
-                <textarea 
-                  value={editValue} 
-                  onChange={e => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${e.target.scrollHeight}px`;
-                    setEditValue(e.target.value);
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${e.target.scrollHeight}px`;
-                  }}
-                  className="w-full min-h-[96px] p-2 text-sm border rounded outline-none text-black resize-none"
-                  style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
-                />
-                <button onClick={() => { onUpdate(patchBlockText(block, editValue)); setIsEditing(false); }} className="self-end px-3 py-1 text-xs bg-indigo-600 font-medium text-white rounded">Save</button>
-             </div>
-          )}
-        </div>
-      ) : (
-        <BlockRenderer block={block} />
-      )}
-    </div>
-  );
-};
-
-// ─── Utilities for block text extraction ───
-function blockTextValue(block: MarkdownBlock): string {
-  switch (block.type) {
-    case 'heading':
-    case 'paragraph':
-      return block.text;
-    case 'bullet_list':
-    case 'numbered_list':
-      return block.items.join('\n');
-    case 'quote':
-      return `${block.text}\n- ${block.attribution || ''}`;
-    case 'code':
-      return block.code;
-    default:
-      return JSON.stringify(block, null, 2);
-  }
-}
-
-function patchBlockText(block: MarkdownBlock, value: string): MarkdownBlock {
-  switch (block.type) {
-    case 'heading':
-    case 'paragraph':
-      return { ...block, text: value };
-    case 'bullet_list':
-    case 'numbered_list':
-      return { ...block, items: value.split('\n').map(l => l.trim()).filter(Boolean) };
-    case 'quote': {
-      const parts = value.split('\n- ');
-      return { ...block, text: parts[0], attribution: parts[1] || undefined };
-    }
-    case 'code':
-      return { ...block, code: value };
-    default:
-      return block;
-  }
-}

@@ -4,6 +4,20 @@ from utils.get_env import (
     get_image_provider_env,
 )
 from utils.parsers import parse_bool_or_none
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+IMAGE_PROVIDER_ALIASES: dict[str, ImageProvider] = {
+    "dalle": ImageProvider.DALLE3,
+    "dalle3": ImageProvider.DALLE3,
+    "dall_e_3": ImageProvider.DALLE3,
+    "dall-e-3": ImageProvider.DALLE3,
+    "gpt_image_1_5": ImageProvider.GPT_IMAGE_1_5,
+    "gpt-image-1.5": ImageProvider.GPT_IMAGE_1_5,
+}
 
 
 def is_image_generation_disabled() -> bool:
@@ -46,5 +60,16 @@ def get_selected_image_provider() -> ImageProvider | None:
     """
     image_provider_env = get_image_provider_env()
     if image_provider_env:
-        return ImageProvider(image_provider_env)
+        normalized_value = image_provider_env.strip().lower()
+        if normalized_value in IMAGE_PROVIDER_ALIASES:
+            return IMAGE_PROVIDER_ALIASES[normalized_value]
+
+        try:
+            return ImageProvider(normalized_value)
+        except ValueError:
+            logger.warning(
+                "Unknown IMAGE_PROVIDER '%s'. Image generation will use fallback behavior.",
+                image_provider_env,
+            )
+            return None
     return None

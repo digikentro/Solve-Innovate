@@ -9,6 +9,10 @@ def get_database_url_env():
     return os.getenv("DATABASE_URL")
 
 
+def get_use_database_url_for_sql_writes_env():
+    return os.getenv("USE_DATABASE_URL_FOR_SQL_WRITES")
+
+
 def get_app_data_directory_env():
     return os.getenv("APP_DATA_DIRECTORY")
 

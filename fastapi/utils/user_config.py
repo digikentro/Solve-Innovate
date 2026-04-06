@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 from models.user_config import UserConfig
 from utils.get_env import (
@@ -58,17 +59,19 @@ from utils.set_env import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_user_config():
     user_config_path = get_user_config_path_env()
 
     existing_config = UserConfig()
     try:
-        if os.path.exists(user_config_path):
+        if user_config_path and os.path.exists(user_config_path):
             with open(user_config_path, "r") as f:
                 existing_config = UserConfig(**json.load(f))
     except Exception:
-        print("Error while loading user config")
-        pass
+        logger.exception("Error while loading user config from %s", user_config_path)
 
     return UserConfig(
         LLM=existing_config.LLM or get_llm_provider_env(),

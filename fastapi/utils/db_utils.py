@@ -1,13 +1,28 @@
 import os
-from utils.get_env import get_app_data_directory_env, get_database_url_env
+from utils.get_env import (
+    get_app_data_directory_env,
+    get_database_url_env,
+    get_use_database_url_for_sql_writes_env,
+)
 from urllib.parse import urlsplit, urlunsplit, parse_qsl
 import ssl
 
 
 def get_database_url_and_connect_args() -> tuple[str, dict]:
-    database_url = get_database_url_env() or "sqlite:///" + os.path.join(
+    sqlite_default = "sqlite:///" + os.path.join(
         get_app_data_directory_env() or "/tmp/presenton", "fastapi.db"
     )
+    use_database_url_for_writes = (
+        str(get_use_database_url_for_sql_writes_env() or "").strip().lower() == "true"
+    )
+    configured_database_url = get_database_url_env()
+
+    # Keep SQLite as the default write-store source of truth.
+    # DATABASE_URL is used for SQL writes only when explicitly opted in.
+    if use_database_url_for_writes and configured_database_url:
+        database_url = configured_database_url
+    else:
+        database_url = sqlite_default
 
     if database_url.startswith("sqlite://"):
         database_url = database_url.replace("sqlite://", "sqlite+aiosqlite://", 1)

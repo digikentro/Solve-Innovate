@@ -1,4 +1,56 @@
-// ─── Block Types ─────────────────────────────────────────────────────────────
+// ─── Spatial Deck Types ─────────────────────────────────────────────────────
+
+export interface SpatialPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface SpatialTextStyle {
+  variant?: 'title' | 'subtitle' | 'heading' | 'body' | 'bullets' | 'caption';
+  emphasis?: 'normal' | 'strong';
+  font_size?: number;
+  align?: 'left' | 'center' | 'right';
+  color?: string;
+}
+
+interface SpatialBlockBase {
+  id: string;
+  position: SpatialPosition;
+  rotation?: number;
+  z_index?: number;
+}
+
+export interface SpatialTextBlock extends SpatialBlockBase {
+  type: 'text';
+  content: string;
+  style?: SpatialTextStyle;
+}
+
+export interface SpatialImageBlock extends SpatialBlockBase {
+  type: 'image';
+  prompt: string;
+  caption?: string | null;
+  object_fit?: 'contain' | 'cover';
+}
+
+export interface SpatialChartDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface SpatialChartBlock extends SpatialBlockBase {
+  type: 'chart';
+  chart_type: 'bar' | 'line' | 'pie' | 'donut' | 'area';
+  data: SpatialChartDataPoint[];
+  title?: string | null;
+  color?: string;
+}
+
+export type SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock;
+
+// ─── Legacy Markdown Types (compatibility) ──────────────────────────────────
 
 export interface HeadingBlock {
   type: 'heading';
@@ -85,10 +137,10 @@ export interface ColumnsBlock {
 }
 
 export interface BlockLayout {
-  width?: number; // percentage 0-100
-  height?: number; // pixels on 720 canvas
-  x?: number; // percentage
-  y?: number; // percentage
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
 }
 
 export type MarkdownBlock = (
@@ -111,6 +163,7 @@ export type MarkdownBlock = (
 
 export interface ThemeColors {
   primary: string;
+  accent?: string;
   bg: string;
   text: string;
   subtext: string;
@@ -130,9 +183,13 @@ export interface Theme {
 
 export interface SlideData {
   id: string;
-  index: number;
-  markdown: string;
-  blocks: MarkdownBlock[];
+  title: string;
+  visual_intent?: string;
+  chart_candidate?: boolean;
+  blocks: SpatialBlock[];
+  index?: number;
+  markdown?: string;
+  image_url?: string | null;
 }
 
 // ─── Presentation Settings ───────────────────────────────────────────────────
@@ -140,9 +197,10 @@ export interface SlideData {
 export interface PresentationSettings {
   nSlides: number;
   tone: string;
-  verbosity: 'minimal' | 'concise' | 'standard' | 'text_heavy';
+  verbosity: 'minimal' | 'concise' | 'detailed' | 'extensive' | 'standard' | 'text_heavy';
   textMode: 'generate' | 'condense' | 'preserve';
   audience: string;
+  writingGuidance?: string;
   theme: string;
   language: string;
   instructions: string;
@@ -150,26 +208,69 @@ export interface PresentationSettings {
   logoPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   includeImages: boolean;
   includeCharts: boolean;
+  visualPreference?: 'balanced' | 'visual-first' | 'text-first';
+  imageSource?: 'ai' | 'stock' | 'none';
   customColors?: {
     primary?: string;
-    secondary?: string;
     accent?: string;
+    background?: string;
     bg?: string;
     text?: string;
   };
+  // Visual generation controls
+  imageModel?: 'dalle3' | 'gpt-image-1.5' | 'gemini-flash' | 'pexels' | 'pixabay' | 'none';
+  imageArtStyle?: 'photo' | 'abstract' | '3d' | 'line-art' | 'custom';
+  imageKeywords?: string[];
+  chartEnabled?: boolean;
+  chartTypes?: Array<'bar' | 'line' | 'pie' | 'area' | 'scatter'>;
+  chartFrequency?: number; // every N slides
+  diagramEnabled?: boolean;
+  diagramTypes?: Array<'process_flow' | 'timeline' | 'matrix' | 'org_chart' | 'flowchart'>;
+  diagramFrequency?: number; // every N slides
+}
+
+export interface SpatialDeckConfig {
+  text_mode?: PresentationSettings['textMode'];
+  density?: PresentationSettings['verbosity'];
+  write_for?: string;
+  tone?: string;
+  output_language?: string;
+  image_source?: PresentationSettings['imageSource'];
+  image_model?: PresentationSettings['imageModel'];
+  image_art_style?: PresentationSettings['imageArtStyle'];
+  image_keywords?: string[];
+  theme?: string;
+  visual_preference?: PresentationSettings['visualPreference'];
 }
 
 // ─── Presentation Phase ──────────────────────────────────────────────────────
 
-export type PresentationPhase = 'configure' | 'outline' | 'streaming' | 'viewer';
+export type PresentationPhase = 'configure' | 'outline' | 'viewer';
 
 export interface OutlineSlideDraft {
   title: string;
-  details: string[];
+  bullets: string[];
+  visual_intent: 'Data-Heavy' | 'Visual-Hero' | 'Narrative' | 'Comparison' | 'Process';
+  has_quantitative_data: boolean;
 }
 
 export interface OutlineDraft {
   slides: OutlineSlideDraft[];
+}
+
+export interface SpatialSlide {
+  id: string;
+  title: string;
+  visual_intent: string;
+  chart_candidate?: boolean;
+  blocks: SpatialBlock[];
+}
+
+export interface SpatialDeckPayload {
+  format: 'spatial-json-canvas';
+  version: string;
+  slides: SpatialSlide[];
+  config?: SpatialDeckConfig;
 }
 
 // ─── API Types ───────────────────────────────────────────────────────────────
@@ -188,20 +289,22 @@ export interface PresentationSummaryResponse {
 
 export interface EditorSlidePayload {
   id: string;
-  markdown: string;
-  blocks?: MarkdownBlock[] | null;
+  title: string;
+  visual_intent?: string;
+  chart_candidate?: boolean;
+  blocks: SpatialBlock[];
 }
 
 export interface EditorStatePayload {
-  markdown_presentation_id: string;
-  slides: EditorSlidePayload[];
+  markdown_presentation_id?: string | null;
+  editor_payload: SpatialDeckPayload;
   theme?: string | null;
   logo_url?: string | null;
   logo_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null;
   custom_colors?: {
     primary?: string;
-    secondary?: string;
     accent?: string;
+    background?: string;
     bg?: string;
     text?: string;
   } | null;
@@ -209,7 +312,7 @@ export interface EditorStatePayload {
 
 export interface EditorStateResponse {
   presentation_id: string;
-  editor: EditorStatePayload;
+  editor: SpatialDeckPayload;
 }
 
 export interface RegenerateSlideResponse {
@@ -223,6 +326,10 @@ export interface SwitchThemeResponse {
 }
 
 export interface ExportPptxResponse {
+  path: string;
+}
+
+export interface ExportPdfResponse {
   path: string;
 }
 
@@ -250,27 +357,5 @@ export interface GenerateProjectPresentationResponse {
   presentation_id: string;
   markdown_presentation_id: string;
   revision_id: string;
+  editor_payload: SpatialDeckPayload;
 }
-
-export interface SSESlideEvent {
-  type: 'slide';
-  index: number;
-  markdown: string;
-}
-
-export interface SSEProgressEvent {
-  type: 'progress';
-  message: string;
-}
-
-export interface SSEDoneEvent {
-  type: 'done';
-  total_slides: number;
-}
-
-export interface SSEErrorEvent {
-  type: 'error';
-  detail: string;
-}
-
-export type SSEEvent = SSESlideEvent | SSEProgressEvent | SSEDoneEvent | SSEErrorEvent;

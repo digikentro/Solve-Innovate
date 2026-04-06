@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from api.lifespan import app_lifespan
-from api.middlewares import UserConfigEnvUpdateMiddleware
+from api.middlewares import RequestLoggingMiddleware, UserConfigEnvUpdateMiddleware
 from api.v1.ppt.router import API_V1_PPT_ROUTER
 from api.v1.webhook.router import API_V1_WEBHOOK_ROUTER
 from api.v1.mock.router import API_V1_MOCK_ROUTER
@@ -38,13 +38,23 @@ if app_data_dir and os.path.exists(app_data_dir):
     app.mount("/app_data", StaticFiles(directory=app_data_dir), name="app_data")
 
 # Middlewares
-origins = ["*"]
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+
+# Register app-specific middleware first; CORS should be the outermost layer
+# so error responses also include Access-Control headers.
+app.add_middleware(UserConfigEnvUpdateMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
-
-app.add_middleware(UserConfigEnvUpdateMiddleware)

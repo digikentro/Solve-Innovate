@@ -9,6 +9,7 @@ interface UseProjectPresentationsReturn {
   refresh: () => Promise<void>;
   createPresentation: (title?: string) => Promise<ProjectPresentationSummary | null>;
   renamePresentation: (id: string, title: string) => Promise<ProjectPresentationSummary | null>;
+  deletePresentation: (id: string) => Promise<boolean>;
 }
 
 export const useProjectPresentations = (
@@ -88,6 +89,20 @@ export const useProjectPresentations = (
     []
   );
 
+  const deletePresentation = useCallback(async (id: string) => {
+    setError(null);
+    const previous = presentations;
+    setPresentations((prev) => prev.filter((item) => item.id !== id));
+    try {
+      await presentationApi.deleteProjectPresentation(id);
+      return true;
+    } catch (e: any) {
+      setPresentations(previous);
+      setError(e.message || 'Failed to delete presentation');
+      return false;
+    }
+  }, [presentations]);
+
   return {
     presentations,
     isLoading,
@@ -95,5 +110,6 @@ export const useProjectPresentations = (
     refresh,
     createPresentation,
     renamePresentation,
+    deletePresentation,
   };
 };

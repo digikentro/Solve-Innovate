@@ -46,6 +46,9 @@ class MarkdownPresentationModel(SQLModel, table=True):
     image_style: Optional[str] = Field(
         sa_column=Column(String), default="photo"
     )  # photo | abstract | 3d | line_art | watercolor
+    
+    # Visual generation controls (new)
+    visual_config: Optional[dict] = Field(sa_column=Column(JSON), default=None)
 
     # ── Output ────────────────────────────────────────────────────────────────
     # List of generated markdown strings, one per slide.  Populated after

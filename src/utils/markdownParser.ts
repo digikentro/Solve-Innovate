@@ -10,13 +10,10 @@
 
 import type { MarkdownBlock, ChartData } from '@/types/presentation';
 
-// ─── Inline markdown stripping ───────────────────────────────────────────────
+// ─── Inline markdown preservation ───────────────────────────────────────────
 
-const INLINE_RE = /\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`/g;
-
-function stripInline(text: string): string {
-  return text.replace(INLINE_RE, (_m, bold, italic, code) => bold || italic || code);
-}
+// Keep inline markdown (**bold**, *italic*) intact so formatting persists.
+// Don't strip it - renderers will handle conversion to HTML.
 
 // ─── Table parser helper ─────────────────────────────────────────────────────
 
@@ -71,17 +68,17 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
 
     // ── Headings ───────────────────────────────────────────────────────────
     if (line.startsWith('### ')) {
-      blocks.push({ type: 'heading', level: 3, text: stripInline(line.slice(4)) });
+      blocks.push({ type: 'heading', level: 3, text: line.slice(4).trim() });
       i++;
       continue;
     }
     if (line.startsWith('## ')) {
-      blocks.push({ type: 'heading', level: 2, text: stripInline(line.slice(3)) });
+      blocks.push({ type: 'heading', level: 2, text: line.slice(3).trim() });
       i++;
       continue;
     }
     if (line.startsWith('# ')) {
-      blocks.push({ type: 'heading', level: 1, text: stripInline(line.slice(2)) });
+      blocks.push({ type: 'heading', level: 1, text: line.slice(2).trim() });
       i++;
       continue;
     }
@@ -121,7 +118,7 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
         if (boldMatch) {
           title = boldMatch[1];
         } else if (l) {
-          bodyLines.push(stripInline(l));
+          bodyLines.push(l);
         }
         i++;
       }
@@ -201,7 +198,7 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
           attribution = attrMatch[1];
         } else {
           textParts.push(
-            stripInline(content.replace(/^"|"$/g, '').replace(/\u201c|\u201d/g, ''))
+            content.replace(/^"|"$/g, '').replace(/\u201c|\u201d/g, '')
           );
         }
         i++;
@@ -218,7 +215,7 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
     if (line.startsWith('- ')) {
       const items: string[] = [];
       while (i < lines.length && lines[i].startsWith('- ')) {
-        items.push(stripInline(lines[i].slice(2)));
+        items.push(lines[i].slice(2).trim());
         i++;
       }
       blocks.push({ type: 'bullet_list', items });
@@ -229,7 +226,7 @@ export function parseSlideMarkdown(markdown: string): MarkdownBlock[] {
     if (/^\d+\.\s/.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        items.push(stripInline(lines[i].replace(/^\d+\.\s*/, '')));
+        items.push(lines[i].replace(/^\d+\.\s*/, '').trim());
         i++;
       }
       blocks.push({ type: 'numbered_list', items });

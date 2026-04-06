@@ -22,18 +22,20 @@ import uuid
 from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from sqlalchemy import func, select
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.sql.markdown_presentation import MarkdownPresentationModel
 from models.sql.project_presentation import ProjectPresentationModel
 from models.sql.project_presentation_revision import ProjectPresentationRevisionModel
-from models.sse_response import SSECompleteResponse, SSEErrorResponse, SSEResponse
+from models.image_prompt import ImagePrompt
+from models.llm_message import LLMSystemMessage, LLMUserMessage
 from services.database import get_async_session
 from services.llm_client import LLMClient
-from utils.asset_directory_utils import get_exports_directory
+from services.image_generation_service import ImageGenerationService
+from utils.asset_directory_utils import get_exports_directory, get_images_directory
 from utils.llm_calls.generate_brief_from_project import generate_brief_from_project
 from utils.llm_calls.generate_markdown_slides import get_markdown_generation_messages
 from utils.llm_provider import get_model
@@ -95,19 +97,94 @@ class RenameProjectPresentationRequest(BaseModel):
     title: str
 
 
+class DeleteProjectPresentationResponse(BaseModel):
+    success: bool
+    presentation_id: str
+
+
 class GenerateProjectPresentationResponse(BaseModel):
     presentation_id: str
     markdown_presentation_id: str
     revision_id: str
+    editor_payload: Dict[str, Any]
 
 
 class OutlineSlideDraft(BaseModel):
     title: str
-    details: List[str]
+    bullets: List[str]
+    visual_intent: Literal[
+        "Data-Heavy",
+        "Visual-Hero",
+        "Narrative",
+        "Comparison",
+        "Process",
+    ] = "Narrative"
+    has_quantitative_data: bool = False
 
 
 class OutlineDraft(BaseModel):
     slides: List[OutlineSlideDraft]
+
+
+class SpatialPosition(BaseModel):
+    x: float = Field(ge=0, le=100)
+    y: float = Field(ge=0, le=100)
+    width: float = Field(gt=0, le=100)
+    height: float = Field(gt=0, le=100)
+
+
+class SpatialTextStyle(BaseModel):
+    variant: Literal["title", "subtitle", "heading", "body", "bullets", "caption"] = "body"
+    emphasis: Optional[Literal["normal", "strong"]] = "normal"
+    font_size: Optional[int] = None
+    align: Optional[Literal["left", "center", "right"]] = "left"
+
+
+class SpatialTextBlock(BaseModel):
+    id: str
+    type: Literal["text"]
+    position: SpatialPosition
+    content: str
+    style: SpatialTextStyle
+
+
+class SpatialImageBlock(BaseModel):
+    id: str
+    type: Literal["image"]
+    position: SpatialPosition
+    prompt: str
+    caption: Optional[str] = None
+
+
+class SpatialChartDataPoint(BaseModel):
+    label: str
+    value: float
+
+
+class SpatialChartBlock(BaseModel):
+    id: str
+    type: Literal["chart"]
+    position: SpatialPosition
+    chart_type: Literal["bar", "line", "pie", "donut", "area"]
+    data: List[SpatialChartDataPoint]
+    title: Optional[str] = None
+
+
+SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock
+
+
+class SpatialSlide(BaseModel):
+    id: str
+    title: str
+    visual_intent: str
+    chart_candidate: bool = False
+    blocks: List[SpatialBlock]
+
+
+class SpatialDeckPayload(BaseModel):
+    format: Literal["spatial-json-canvas"] = "spatial-json-canvas"
+    version: str = "1.0"
+    slides: List[SpatialSlide]
 
 
 class OutlineDraftResponse(BaseModel):
@@ -116,15 +193,9 @@ class OutlineDraftResponse(BaseModel):
     outline: OutlineDraft
 
 
-class EditorSlidePayload(BaseModel):
-    id: str
-    markdown: str
-    blocks: Optional[List[Dict[str, Any]]] = None
-
-
 class EditorStatePayload(BaseModel):
-    markdown_presentation_id: str
-    slides: List[EditorSlidePayload]
+    markdown_presentation_id: Optional[str] = None
+    editor_payload: Dict[str, Any]
     theme: Optional[str] = None
     logo_url: Optional[str] = None
     logo_position: Optional[str] = None
@@ -133,7 +204,7 @@ class EditorStatePayload(BaseModel):
 
 class EditorStateResponse(BaseModel):
     presentation_id: str
-    editor: EditorStatePayload
+    editor: Dict[str, Any]
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -705,17 +776,152 @@ def _outline_to_slide_seeds(outline_payload: Dict[str, Any]) -> List[str]:
         if not isinstance(raw_slide, dict):
             continue
         title = str(raw_slide.get("title") or f"Slide {idx}").strip()
-        raw_details = raw_slide.get("details") or []
-        details = (
-            [str(item).strip() for item in raw_details if str(item).strip()]
-            if isinstance(raw_details, list)
+        raw_bullets = raw_slide.get("bullets") or raw_slide.get("details") or []
+        bullets = (
+            [str(item).strip() for item in raw_bullets if str(item).strip()]
+            if isinstance(raw_bullets, list)
             else []
         )
         lines = [f"## {title}"]
-        if details:
-            lines.extend(f"- {item}" for item in details)
+        if bullets:
+            lines.extend(f"- {item}" for item in bullets)
         seeds.append("\n".join(lines))
     return seeds
+
+
+def _coerce_outline_payload(raw_outline: Dict[str, Any]) -> Dict[str, Any]:
+    slides = raw_outline.get("slides") if isinstance(raw_outline, dict) else None
+    if not isinstance(slides, list):
+        return {"slides": []}
+
+    normalized_slides: List[Dict[str, Any]] = []
+    for index, item in enumerate(slides):
+        if not isinstance(item, dict):
+            continue
+        bullets = item.get("bullets") or item.get("details") or []
+        if not isinstance(bullets, list):
+            bullets = []
+        normalized_slides.append(
+            {
+                "title": str(item.get("title") or f"Slide {index + 1}").strip(),
+                "bullets": [str(each).strip() for each in bullets if str(each).strip()],
+                "visual_intent": item.get("visual_intent") or "Narrative",
+                "has_quantitative_data": bool(item.get("has_quantitative_data") or item.get("chart_candidate")),
+            }
+        )
+
+    return {"slides": normalized_slides}
+
+
+def _collect_numeric_pairs(value: Any, path: str = "") -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    if isinstance(value, dict):
+        for key, inner in value.items():
+            next_path = f"{path}.{key}" if path else str(key)
+            rows.extend(_collect_numeric_pairs(inner, next_path))
+        return rows
+
+    if isinstance(value, list):
+        for index, inner in enumerate(value):
+            next_path = f"{path}[{index}]"
+            rows.extend(_collect_numeric_pairs(inner, next_path))
+        return rows
+
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        rows.append({"label": path or "value", "value": float(value)})
+    return rows
+
+
+def _extract_quantitative_datasets(project: Dict[str, Any]) -> List[Dict[str, Any]]:
+    datasets: List[Dict[str, Any]] = []
+    candidate_fields = ["research_data", "research_findings", "market_research", "metrics", "analysis"]
+
+    for field in candidate_fields:
+        normalized = _normalize_project_value(project.get(field))
+        if normalized is None:
+            continue
+        numeric_rows = _collect_numeric_pairs(normalized, field)
+        if not numeric_rows:
+            continue
+        datasets.append(
+            {
+                "source": field,
+                "data": numeric_rows[:20],
+            }
+        )
+    return datasets
+
+
+async def _resolve_image_prompts(deck: SpatialDeckPayload) -> SpatialDeckPayload:
+    images_directory = get_images_directory()
+    image_service = ImageGenerationService(output_directory=images_directory)
+
+    for slide in deck.slides:
+        for block in slide.blocks:
+            if isinstance(block, SpatialImageBlock):
+                try:
+                    generated = await image_service.generate_image(
+                        ImagePrompt(prompt=block.prompt)
+                    )
+                    if isinstance(generated, str):
+                        block.prompt = generated
+                    else:
+                        block.prompt = os.path.abspath(generated.path)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Image generation failed for block=%s: %s", block.id, exc)
+    return deck
+
+
+async def _build_spatial_deck(
+    *,
+    content: str,
+    n_slides: int,
+    language: str,
+    tone: str,
+    density: str,
+    visual_preference: str,
+    audience: Optional[str],
+    instructions: Optional[str],
+    slides_markdown: Optional[List[str]],
+    include_images: bool,
+    include_charts: bool,
+    quantitative_datasets: List[Dict[str, Any]],
+) -> SpatialDeckPayload:
+    messages = get_markdown_generation_messages(
+        content=content,
+        n_slides=n_slides,
+        language=language,
+        tone=tone,
+        density=density,
+        visual_preference=visual_preference,
+        audience=audience,
+        instructions=instructions,
+        slides_markdown=slides_markdown,
+        include_images=include_images,
+        include_charts=include_charts,
+        quantitative_datasets=quantitative_datasets,
+    )
+    llm_client = LLMClient()
+    structured = await llm_client.generate_structured(
+        model=get_model(),
+        messages=messages,
+        response_format=SpatialDeckPayload.model_json_schema(),
+        strict=True,
+        max_tokens=12000,
+    )
+    deck = SpatialDeckPayload(**structured)
+
+    # Guarantee chart blocks always contain numeric data from source datasets.
+    fallback_chart_data = []
+    if quantitative_datasets:
+        fallback_chart_data = quantitative_datasets[0].get("data", [])
+
+    for slide in deck.slides:
+        for block in slide.blocks:
+            if isinstance(block, SpatialChartBlock) and not block.data and fallback_chart_data:
+                block.data = [SpatialChartDataPoint(**item) for item in fallback_chart_data[:8]]
+
+    return await _resolve_image_prompts(deck)
 
 
 async def _build_generation_content(project: Dict[str, Any]) -> str:
@@ -806,6 +1012,67 @@ async def rename_project_presentation(
     return await _build_project_presentation_summary(presentation, sql_session)
 
 
+@MARKDOWN_ROUTER.delete(
+    "/project/presentations/{presentation_id}",
+    response_model=DeleteProjectPresentationResponse,
+)
+async def delete_project_presentation(
+    presentation_id: str,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    try:
+        pres_uuid = uuid.UUID(presentation_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid presentation ID format.")
+
+    presentation = await sql_session.get(ProjectPresentationModel, pres_uuid)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found.")
+
+    revisions_stmt = select(ProjectPresentationRevisionModel).where(
+        ProjectPresentationRevisionModel.presentation_id == pres_uuid
+    )
+    revisions_result = await sql_session.execute(revisions_stmt)
+    revisions = revisions_result.scalars().all()
+
+    markdown_ids = {
+        revision.markdown_presentation_id
+        for revision in revisions
+        if revision.markdown_presentation_id is not None
+    }
+
+    await sql_session.execute(
+        delete(ProjectPresentationRevisionModel).where(
+            ProjectPresentationRevisionModel.presentation_id == pres_uuid
+        )
+    )
+    await sql_session.execute(
+        delete(ProjectPresentationModel).where(ProjectPresentationModel.id == pres_uuid)
+    )
+
+    if markdown_ids:
+        references_stmt = select(ProjectPresentationRevisionModel.markdown_presentation_id).where(
+            ProjectPresentationRevisionModel.markdown_presentation_id.in_(list(markdown_ids))
+        )
+        references_result = await sql_session.execute(references_stmt)
+        still_referenced_ids = {
+            value
+            for value in references_result.scalars().all()
+            if value is not None
+        }
+
+        orphan_markdown_ids = markdown_ids - still_referenced_ids
+        if orphan_markdown_ids:
+            await sql_session.execute(
+                delete(MarkdownPresentationModel).where(
+                    MarkdownPresentationModel.id.in_(list(orphan_markdown_ids))
+                )
+            )
+
+    await sql_session.commit()
+    return DeleteProjectPresentationResponse(success=True, presentation_id=presentation_id)
+
+
 @MARKDOWN_ROUTER.post(
     "/project/presentations/{presentation_id}/generate",
     response_model=GenerateProjectPresentationResponse,
@@ -813,14 +1080,18 @@ async def rename_project_presentation(
 async def generate_project_presentation(
     presentation_id: str,
     n_slides: int = Body(10),
-    text_mode: str = Body("condense"),
-    verbosity: str = Body("concise"),
+    density: str = Body("Concise"),
     tone: str = Body("professional"),
     theme: str = Body("modern-dark"),
     language: str = Body("English"),
+    visual_preference: str = Body("balanced"),
     image_source: str = Body("ai"),
     logo_url: Optional[str] = Body(None),
     logo_position: Optional[str] = Body(None),
+    # Visual generation controls
+    image_model: str = Body("none"),
+    chart_enabled: bool = Body(False),
+    chart_types: List[str] = Body(default_factory=list),
     sql_session: AsyncSession = Depends(get_async_session),
 ):
     try:
@@ -834,6 +1105,7 @@ async def generate_project_presentation(
 
     project = _fetch_project_row(presentation.project_id)
     content = await _build_generation_content(project)
+    quantitative_datasets = _extract_quantitative_datasets(project)
 
     outline_stmt = (
         select(ProjectPresentationRevisionModel)
@@ -852,16 +1124,54 @@ async def generate_project_presentation(
         seeds = _outline_to_slide_seeds(outline_revision.outline)
         outline_slide_seeds = seeds if seeds else None
 
+    instructions = (
+        "Use the requested tone, density, and visual preference exactly. "
+        "If density is 'Concise', limit text blocks to a maximum of 4 bullets. "
+        "Do not overlap blocks. Calculate x and y coordinates so elements have clear whitespace."
+    )
+
+    spatial_deck = await _build_spatial_deck(
+        content=content,
+        n_slides=n_slides,
+        language=language,
+        tone=tone,
+        density=density,
+        visual_preference=visual_preference,
+        audience=None,
+        instructions=instructions,
+        slides_markdown=outline_slide_seeds,
+        include_images=(image_model != "none" and image_source != "none"),
+        include_charts=chart_enabled,
+        quantitative_datasets=quantitative_datasets,
+    )
+
+    generated_slides = []
+    for slide in spatial_deck.slides:
+        text_parts = [
+            block.content
+            for block in slide.blocks
+            if isinstance(block, SpatialTextBlock) and block.content.strip()
+        ]
+        generated_slides.append("\n".join(text_parts).strip() or slide.title)
+
     markdown_presentation = MarkdownPresentationModel(
         content=content,
         slides_markdown=outline_slide_seeds,
         n_slides=n_slides,
         language=language,
         tone=tone,
-        verbosity=verbosity,
-        text_mode=text_mode,
+        verbosity=density.lower(),
+        text_mode="generate",
         theme=theme,
         image_source=image_source,
+        generated_slides=generated_slides,
+        visual_config={
+            "density": density,
+            "visual_preference": visual_preference,
+            "image_model": image_model,
+            "chart_enabled": chart_enabled,
+            "chart_types": chart_types,
+        },
     )
     sql_session.add(markdown_presentation)
     await sql_session.commit()
@@ -875,14 +1185,18 @@ async def generate_project_presentation(
 
     settings_snapshot = {
         "n_slides": n_slides,
-        "text_mode": text_mode,
-        "verbosity": verbosity,
+        "density": density,
         "tone": tone,
         "theme": theme,
         "language": language,
+        "visual_preference": visual_preference,
         "image_source": image_source,
         "logo_url": logo_url,
         "logo_position": logo_position,
+        "image_model": image_model,
+        "chart_enabled": chart_enabled,
+        "chart_types": chart_types,
+        "editor_payload": spatial_deck.model_dump(),
     }
 
     revision = ProjectPresentationRevisionModel(
@@ -906,6 +1220,7 @@ async def generate_project_presentation(
         presentation_id=str(presentation.id),
         markdown_presentation_id=str(markdown_presentation.id),
         revision_id=str(revision.id),
+        editor_payload=spatial_deck.model_dump(),
     )
 
 
@@ -928,7 +1243,34 @@ async def generate_outline_draft(
 
     project = _fetch_project_row(presentation.project_id)
     content = await _build_generation_content(project)
-    outline = _build_outline_from_content(content)
+    quantitative_datasets = _extract_quantitative_datasets(project)
+    outline_messages = [
+        LLMSystemMessage(
+            content=(
+                "You produce a slide outline as strict JSON. "
+                "Each slide must include title, bullets, visual_intent, and has_quantitative_data."
+            )
+        ),
+        LLMUserMessage(
+            content=(
+                "Create a presentation outline from the source content. "
+                "Visual intent must be one of: Data-Heavy, Visual-Hero, Narrative, Comparison, Process. "
+                "Set has_quantitative_data=true when a chart should be used. "
+                "Keep bullets concise and specific.\n\n"
+                f"Quantitative datasets:\n{json.dumps(quantitative_datasets, ensure_ascii=False)}\n\n"
+                f"Source content:\n{content}"
+            )
+        ),
+    ]
+    llm_client = LLMClient()
+    llm_outline = await llm_client.generate_structured(
+        model=get_model(),
+        messages=outline_messages,
+        response_format=OutlineDraft.model_json_schema(),
+        strict=True,
+        max_tokens=4000,
+    )
+    outline = OutlineDraft(**llm_outline)
 
     stmt = select(func.max(ProjectPresentationRevisionModel.revision_number)).where(
         ProjectPresentationRevisionModel.presentation_id == pres_uuid
@@ -981,7 +1323,7 @@ async def get_outline_draft(
     if not outline_revision or not outline_revision.outline:
         raise HTTPException(status_code=404, detail="Outline draft not found.")
 
-    outline = OutlineDraft(**outline_revision.outline)
+    outline = OutlineDraft(**_coerce_outline_payload(outline_revision.outline or {}))
     return OutlineDraftResponse(
         presentation_id=str(pres_uuid),
         revision_id=str(outline_revision.id),
@@ -1059,40 +1401,14 @@ async def get_editor_state(
     revision = await sql_session.get(
         ProjectPresentationRevisionModel, presentation.current_revision_id
     )
-    if not revision or not revision.markdown_presentation_id:
-        raise HTTPException(status_code=404, detail="Generated presentation not found.")
-
-    markdown = await sql_session.get(
-        MarkdownPresentationModel, revision.markdown_presentation_id
-    )
-    if not markdown:
-        raise HTTPException(status_code=404, detail="Markdown presentation not found.")
-
     settings = revision.settings or {}
-    editor_payload = settings.get("editor_payload") or {}
-    editor_slides = editor_payload.get("slides") or []
-
-    slides: list[EditorSlidePayload] = []
-    generated = markdown.generated_slides or []
-    for idx, md in enumerate(generated):
-        existing = editor_slides[idx] if idx < len(editor_slides) and isinstance(editor_slides[idx], dict) else {}
-        slides.append(
-            EditorSlidePayload(
-                id=str(existing.get("id") or f"slide-{idx}"),
-                markdown=md,
-                blocks=existing.get("blocks"),
-            )
-        )
+    editor_payload = settings.get("editor_payload")
+    if not isinstance(editor_payload, dict):
+        raise HTTPException(status_code=404, detail="Editor payload not found.")
 
     return EditorStateResponse(
         presentation_id=str(pres_uuid),
-        editor=EditorStatePayload(
-            markdown_presentation_id=str(markdown.id),
-            slides=slides,
-            theme=markdown.theme,
-            logo_url=settings.get("logo_url"),
-            logo_position=settings.get("logo_position"),
-        ),
+        editor=editor_payload,
     )
 
 
@@ -1107,7 +1423,6 @@ async def update_editor_state(
 ):
     try:
         pres_uuid = uuid.UUID(presentation_id)
-        markdown_uuid = uuid.UUID(payload.markdown_presentation_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format.")
 
@@ -1115,20 +1430,25 @@ async def update_editor_state(
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found.")
 
-    markdown = await sql_session.get(MarkdownPresentationModel, markdown_uuid)
-    if not markdown:
-        raise HTTPException(status_code=404, detail="Markdown presentation not found.")
-
-    markdown.generated_slides = [slide.markdown for slide in payload.slides]
-    if payload.theme:
-        markdown.theme = payload.theme
-    sql_session.add(markdown)
-
     revision: Optional[ProjectPresentationRevisionModel] = None
     if presentation.current_revision_id:
         revision = await sql_session.get(
             ProjectPresentationRevisionModel, presentation.current_revision_id
         )
+    markdown_id: Optional[uuid.UUID] = None
+    if payload.markdown_presentation_id:
+        try:
+            markdown_id = uuid.UUID(payload.markdown_presentation_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid markdown_presentation_id format.")
+
+    if markdown_id:
+        markdown = await sql_session.get(MarkdownPresentationModel, markdown_id)
+        if not markdown:
+            raise HTTPException(status_code=404, detail="Markdown presentation not found.")
+        if payload.theme:
+            markdown.theme = payload.theme
+        sql_session.add(markdown)
     if not revision:
         stmt = select(func.max(ProjectPresentationRevisionModel.revision_number)).where(
             ProjectPresentationRevisionModel.presentation_id == pres_uuid
@@ -1139,14 +1459,12 @@ async def update_editor_state(
             presentation_id=pres_uuid,
             revision_number=current_max + 1,
             is_draft=False,
-            markdown_presentation_id=markdown.id,
+            markdown_presentation_id=markdown_id,
             settings={},
         )
 
     settings = dict(revision.settings or {})
-    settings["editor_payload"] = {
-        "slides": [slide.model_dump() for slide in payload.slides],
-    }
+    settings["editor_payload"] = payload.editor_payload
     if payload.logo_url is not None:
         settings["logo_url"] = payload.logo_url
     if payload.logo_position is not None:
@@ -1154,7 +1472,8 @@ async def update_editor_state(
     if payload.theme is not None:
         settings["theme"] = payload.theme
     revision.settings = settings
-    revision.markdown_presentation_id = markdown.id
+    if markdown_id:
+        revision.markdown_presentation_id = markdown_id
     revision.is_draft = False
     sql_session.add(revision)
 
@@ -1167,7 +1486,7 @@ async def update_editor_state(
 
     return EditorStateResponse(
         presentation_id=str(pres_uuid),
-        editor=payload,
+        editor=payload.editor_payload,
     )
 
 def _normalize_project_value(value: Any) -> Any:
@@ -1213,40 +1532,23 @@ def _render_project_field(project: Dict[str, Any], key: str, label: str) -> str:
 
 
 def _build_project_content(project: Dict[str, Any]) -> str:
-    """Build a dense but null-safe markdown block from the project row."""
+    """Build a null-safe markdown block from preferred and all additional project columns."""
     preferred_fields = [
-        ("description", "Project Description"),
         ("problem_statement", "Problem Statement"),
-        ("presentable_slide", "Presentable Slide"),
-        ("analysis", "Analysis"),
+        ("market_research", "Market Research"),
         ("research_data", "Research Data"),
-        ("chatbox", "Chat History"),
-        ("canvas", "Canvas"),
-        ("as_is_map", "As-Is Map"),
         ("research_findings", "Research Findings"),
         ("key_insights", "Key Insights"),
-        ("extreme_user_data", "Extreme User Data"),
+        ("analysis", "Analysis"),
         ("deep_empathy_data", "Deep Empathy Data"),
         ("psychological_analysis", "Psychological Analysis"),
         ("Behaviour_Framework", "Behaviour Framework"),
         ("HMW_Ideation_Framework", "HMW / Ideation Framework"),
         ("Idea_Clustering_and_Idea_Cards", "Idea Clustering and Idea Cards"),
         ("final_idea", "Final Idea"),
-        ("prototype_images", "Prototype Images"),
-        ("solution_description", "Solution Description"),
-        ("transformation_framework", "Transformation Framework"),
         ("implementation_plan", "Implementation Plan"),
-        ("testing", "Testing and Validation"),
-        ("market_research", "Market Research"),
-        ("metrics", "Metrics and KPIs"),
-        ("next_steps", "Next Steps"),
-        ("metadata", "Metadata"),
-        ("design_research", "Design Research"),
-        ("skills", "Skills"),
-        ("status", "Status"),
     ]
 
-    consumed_keys = {key for key, _ in preferred_fields}
     title = (
         project.get("title")
         or project.get("name")
@@ -1256,16 +1558,28 @@ def _build_project_content(project: Dict[str, Any]) -> str:
 
     content_parts = [f"# {title}"]
 
+    rendered_keys: set[str] = set()
     for key, label in preferred_fields:
         rendered = _render_project_field(project, key, label)
         if rendered:
             content_parts.append(rendered)
+            rendered_keys.add(key)
 
-    # Include any additional non-empty fields so new JSONB columns don't get lost.
+    # Include all remaining project columns so outline generation can use full project context.
+    skip_keys = {
+        "id",
+        "title",
+        "name",
+        "project_name",
+        "created_at",
+        "updated_at",
+        "user_id",
+    }
     for key in sorted(project.keys()):
-        if key in consumed_keys or key in {"id", "created_at", "updated_at", "user_id"}:
+        if key in rendered_keys or key in skip_keys:
             continue
-        rendered = _render_project_field(project, key, key.replace("_", " ").title())
+        label = key.replace("_", " ").strip().title()
+        rendered = _render_project_field(project, key, label)
         if rendered:
             content_parts.append(rendered)
 
@@ -1585,102 +1899,10 @@ async def stream_markdown_presentation(
     id: str,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
-    """
-    SSE endpoint that streams markdown slides as they are generated.
-
-    Event format (each event is a JSON payload on the 'response' event):
-      {"type": "slide",    "index": <int>, "markdown": "<slide markdown>"}
-      {"type": "progress", "message": "..."}
-      {"type": "done",     "total_slides": <int>}
-      {"type": "error",    "detail": "..."}
-    """
-    presentation = await _get_presentation_or_404(id, sql_session)
-
-    async def generate():
-        try:
-            yield SSEResponse(
-                event="response",
-                data=json.dumps({"type": "progress", "message": "Starting generation…"}),
-            ).to_string()
-
-            messages = get_markdown_generation_messages(
-                content=presentation.content,
-                n_slides=presentation.n_slides,
-                language=presentation.language,
-                tone=presentation.tone,
-                verbosity=presentation.verbosity,
-                text_mode=presentation.text_mode,
-                audience=presentation.audience,
-                instructions=presentation.instructions,
-                slides_markdown=presentation.slides_markdown,
-                per_slide_instructions=presentation.per_slide_instructions,
-                generation_scope="deck",
-            )
-
-            llm_client = LLMClient()
-            model = get_model()
-
-            accumulated = ""
-            slide_index = 0
-            generated_slides: List[str] = []
-
-            async for chunk in llm_client.stream(model=model, messages=messages):
-                accumulated += chunk
-
-                complete_slides, accumulated = _take_complete_slides_from_buffer(accumulated)
-                for complete_slide in complete_slides:
-                    normalized_slides = _normalize_generated_slides(
-                        [complete_slide],
-                        presentation.verbosity,
-                    )
-                    for normalized_slide in normalized_slides:
-                        generated_slides.append(normalized_slide)
-                        yield SSEResponse(
-                            event="response",
-                            data=json.dumps(
-                                {
-                                    "type": "slide",
-                                    "index": slide_index,
-                                    "markdown": normalized_slide,
-                                }
-                            ),
-                        ).to_string()
-                        slide_index += 1
-
-            # Emit any remaining content as final slide(s).
-            remaining_slides = _normalize_generated_slides(
-                _split_markdown_slides(accumulated),
-                presentation.verbosity,
-            )
-            for remaining_slide in remaining_slides:
-                generated_slides.append(remaining_slide)
-                yield SSEResponse(
-                    event="response",
-                    data=json.dumps(
-                        {
-                            "type": "slide",
-                            "index": slide_index,
-                            "markdown": remaining_slide,
-                        }
-                    ),
-                ).to_string()
-                slide_index += 1
-            # Persist generated slides back to DB
-            presentation.generated_slides = generated_slides
-            sql_session.add(presentation)
-            await sql_session.commit()
-
-            yield SSECompleteResponse(
-                key="total_slides",
-                value=len(generated_slides),
-            ).to_string()
-
-        except HTTPException as exc:
-            yield SSEErrorResponse(detail=exc.detail).to_string()
-        except Exception as exc:  # noqa: BLE001
-            yield SSEErrorResponse(detail=str(exc)).to_string()
-
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    raise HTTPException(
+        status_code=410,
+        detail="Streaming markdown generation is deprecated. Use /project/presentations/{presentation_id}/generate for spatial JSON generation.",
+    )
 
 
 # ─── POST /markdown/slide/regenerate ─────────────────────────────────────────
@@ -1693,83 +1915,10 @@ async def regenerate_slide(
     instructions: Optional[str] = Body(None),
     sql_session: AsyncSession = Depends(get_async_session),
 ):
-    """
-    Regenerate a single slide without affecting the others.
-
-    The updated markdown is saved back to the presentation record and returned.
-    """
-    presentation = await _get_presentation_or_404(presentation_id, sql_session)
-
-    if not presentation.generated_slides:
-        raise HTTPException(
-            status_code=400,
-            detail="No generated slides found. Run the stream endpoint first.",
-        )
-
-    total = len(presentation.generated_slides)
-    if slide_index < 0 or slide_index >= total:
-        raise HTTPException(
-            status_code=400,
-            detail=f"slide_index must be between 0 and {total - 1}.",
-        )
-
-    # Build context: neighbouring slides for coherence
-    prev_slide = (
-        presentation.generated_slides[slide_index - 1] if slide_index > 0 else None
+    raise HTTPException(
+        status_code=410,
+        detail="Single-slide markdown regeneration is deprecated after the spatial JSON migration.",
     )
-    next_slide = (
-        presentation.generated_slides[slide_index + 1]
-        if slide_index < total - 1
-        else None
-    )
-
-    regen_content = f"""
-Regenerate slide {slide_index + 1} of {total} in the presentation below.
-
-## Original Presentation Content
-{presentation.content}
-
-## Current Slide to Replace (slide {slide_index + 1})
-{presentation.generated_slides[slide_index]}
-
-{"## Previous Slide (for context)" if prev_slide else ""}
-{prev_slide or ""}
-
-{"## Next Slide (for context)" if next_slide else ""}
-{next_slide or ""}
-
-{"## User Regeneration Instructions" if instructions else ""}
-{instructions or ""}
-"""
-
-    messages = get_markdown_generation_messages(
-        content=regen_content,
-        n_slides=1,
-        language=presentation.language,
-        tone=presentation.tone,
-        verbosity=presentation.verbosity,
-        text_mode=presentation.text_mode,
-        audience=presentation.audience,
-        instructions=instructions,
-        generation_scope="single_slide",
-    )
-
-    llm_client = LLMClient()
-    model = get_model()
-    new_markdown = await llm_client.generate(model=model, messages=messages)
-
-    # Force single-slide response contract in case model emits separators.
-    normalized = _split_markdown_slides(new_markdown or "")
-    new_markdown = (normalized[0] if normalized else (new_markdown or "")).strip()
-
-    # Update in place and persist
-    slides_copy = list(presentation.generated_slides)
-    slides_copy[slide_index] = new_markdown
-    presentation.generated_slides = slides_copy
-    sql_session.add(presentation)
-    await sql_session.commit()
-
-    return RegenerateSlideResponse(slide_index=slide_index, markdown=new_markdown)
 
 
 # ─── POST /markdown/presentation/{id}/switch-theme ───────────────────────────
@@ -1799,15 +1948,79 @@ async def switch_theme(
 # ─── POST /markdown/presentation/{id}/export/pptx ────────────────────────────
 
 
-@MARKDOWN_ROUTER.post(
-    "/presentation/{id}/export/pptx", response_model=ExportPptxResponse
-)
+@MARKDOWN_ROUTER.post("/presentation/{id}/export/pptx")
 async def export_pptx(
     id: str,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
     """
-    Export the presentation to a .pptx file.
+    Export the presentation to a .pptx file and stream it directly to the browser.
+    """
+    presentation = await _get_presentation_or_404(id, sql_session)
+
+    revision_stmt = (
+        select(ProjectPresentationRevisionModel)
+        .where(ProjectPresentationRevisionModel.markdown_presentation_id == presentation.id)
+        .order_by(ProjectPresentationRevisionModel.updated_at.desc())
+        .limit(1)
+    )
+    revision_result = await sql_session.execute(revision_stmt)
+    revision = revision_result.scalar_one_or_none()
+
+    if not revision:
+        raise HTTPException(status_code=404, detail="Presentation revision not found.")
+
+    settings = revision.settings or {}
+    editor_payload = settings.get("editor_payload")
+    if not isinstance(editor_payload, dict):
+        raise HTTPException(
+            status_code=404,
+            detail="editor_payload not found. Generate presentation first.",
+        )
+
+    from services.spatial_pptx_export import export_spatial_to_pptx  # noqa: PLC0415
+
+    exports_dir = get_exports_directory()
+    output_path = os.path.join(exports_dir, f"spatial_presentation_{id}.pptx")
+    try:
+        await export_spatial_to_pptx(editor_payload=editor_payload, output_path=output_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Failed to export PPTX: {exc}") from exc
+
+    project_row = await sql_session.get(ProjectPresentationModel, revision.presentation_id)
+    download_base = (
+        project_row.title
+        if project_row and getattr(project_row, "title", None)
+        else f"presentation_{id[:8]}"
+    )
+    safe_title = re.sub(r'[^\w\-. ]', '_', download_base)
+    filename = f"{safe_title}.pptx"
+
+    return FileResponse(
+        path=output_path,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        filename=filename,
+    )
+
+
+# ─── POST /markdown/presentation/{id}/export/pdf ─────────────────────────────
+
+
+class ExportPdfResponse(BaseModel):
+    path: str
+
+
+@MARKDOWN_ROUTER.post(
+    "/presentation/{id}/export/pdf", response_model=ExportPdfResponse
+)
+async def export_pdf(
+    id: str,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    """
+    Export the presentation to a .pdf file.
 
     The file is saved in the exports directory and the path is returned.
     """
@@ -1819,19 +2032,10 @@ async def export_pptx(
             detail="No generated slides found. Run the stream endpoint first.",
         )
 
-    # Import here to keep the module loadable even if python-pptx is absent
-    from services.markdown_pptx_export import export_markdown_to_pptx  # noqa: PLC0415
-
-    exports_dir = get_exports_directory()
-    output_path = os.path.join(exports_dir, f"markdown_presentation_{id}.pptx")
-
-    await export_markdown_to_pptx(
-        slides_markdown=presentation.generated_slides,
-        theme_id=presentation.theme,
-        output_path=output_path,
+    raise HTTPException(
+        status_code=501,
+        detail="PDF export is not yet implemented. Please use PPTX export instead.",
     )
-
-    return ExportPptxResponse(path=output_path)
 
 
 # ─── GET /markdown/presentation/{id} ─────────────────────────────────────────

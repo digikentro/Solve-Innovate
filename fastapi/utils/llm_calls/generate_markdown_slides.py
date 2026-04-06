@@ -1,48 +1,32 @@
-"""
-Builds LLM messages for markdown-based presentation generation.
-
-This prompt contract is capacity-aware:
-- `n_slides` is a target, not a hard cap.
-- If content does not fit a 16:9 slide, the model must create continuation
-  slides using markdown separators (`---`).
-"""
+"""Builds LLM messages for spatial JSON canvas presentation generation."""
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Optional
 
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 
-GenerationScope = Literal["deck", "single_slide"]
+SPATIAL_SYSTEM_PROMPT = """
+You generate structured spatial JSON for a slide canvas editor.
 
+OUTPUT FORMAT
+1) Return valid JSON only. No markdown. No prose.
+2) Match the provided JSON schema exactly.
+3) Every slide must include blocks.
+4) Every block must include position: {x, y, width, height} using percentages in [0, 100].
 
-MARKDOWN_SYSTEM_PROMPT = """
-You generate presentation slides in markdown.
+LAYOUT RULES
+1) Do not overlap blocks.
+2) Ensure clear whitespace between blocks.
+3) Keep all block rectangles fully inside the 0-100 canvas bounds.
+4) Use a coherent visual hierarchy (title first, supporting content below).
 
-OUTPUT RULES
-1) Use markdown only.
-2) Separate slides with a line containing only `---`.
-3) Do not include prose outside slide content.
-4) Keep exact numbers, percentages, names, and quotes verbatim.
-5) Never use filler openings like "This slide covers...".
-
-STRUCTURE RULES
-- Prefer one clear idea per slide.
-- For dense content, split into continuation slides instead of cramming.
-- Continuation titles should end with "(cont.)".
-- Use compact bullets and tables that fit a 16:9 slide.
-
-ALLOWED MARKDOWN FEATURES
-- Headings: # ## ###
-- Bullets and numbered lists
-- Tables
-- Quotes
-- Bold / italic
-- Optional custom blocks:
-  :::metric
-  :::callout[icon=...]
-  :::chart[type=bar|line|pie|donut]
-- Images: ![alt](image:description of what the image should show)
+BLOCK RULES
+1) text blocks require content and style.
+2) image blocks require prompt; do not provide URLs.
+3) chart blocks require chart_type and data points with numeric values.
+4) Keep exact numbers, percentages, names, and quotes from source content.
+5) Never invent unsupported quantitative facts.
 """
 
 
@@ -105,80 +89,69 @@ def get_markdown_generation_messages(
     n_slides: int,
     language: str,
     tone: str,
-    verbosity: str,
-    text_mode: str,
+    density: str,
+    visual_preference: str,
     audience: Optional[str] = None,
     instructions: Optional[str] = None,
     slides_markdown: Optional[List[str]] = None,
     per_slide_instructions: Optional[List[str]] = None,
     include_images: bool = False,
     include_charts: bool = False,
-    generation_scope: GenerationScope = "deck",
+    quantitative_datasets: Optional[List[Dict[str, object]]] = None,
 ) -> List[LLMSystemMessage | LLMUserMessage]:
-    """
-    Build [system, user] messages for markdown slide generation.
-
-    `generation_scope` controls output shape:
-    - "deck": output multiple slides separated by `---`
-    - "single_slide": output exactly one slide and no separators
-    """
+    """Build [system, user] messages for spatial JSON deck generation."""
 
     target_slides = max(1, n_slides)
-    budget = _capacity_budget(verbosity)
+    budget = _capacity_budget(density.lower())
 
     cards_section = _build_cards_section(slides_markdown)
     per_slide_section = _build_per_slide_section(
         slides_markdown, per_slide_instructions
     )
 
-    if generation_scope == "single_slide":
-        output_contract = (
-            "Output exactly ONE slide body. Do not emit `---` separators."
-        )
-    else:
-        output_contract = (
-            "Output a full deck separated by `---`. "
-            f"Treat {target_slides} as the target count, but add continuation slides "
-            "when content would overflow a 16:9 slide."
-        )
+    dataset_section = "[]"
+    if quantitative_datasets:
+        import json
+
+        dataset_section = json.dumps(quantitative_datasets[:20], ensure_ascii=False, indent=2)
 
     user_prompt = f"""
-## Generation Scope
-- Scope: {generation_scope}
-- {output_contract}
-
 ## Generation Parameters
 - Target slide count: {target_slides}
 - Language: {language}
 - Tone: {tone}
-- Text mode: {text_mode}
+- Density: {density}
+- Visual preference: {visual_preference}
 - Audience: {audience or "General stakeholders"}
-- Verbosity: {verbosity}
 
-## Capacity Budget (per 16:9 slide)
-- Max bullets: {budget["max_bullets"]}
+## Content Density Rules
+- If density is 'Concise', text blocks may contain at most 4 bullets.
+- Otherwise, text blocks should stay within the following target budget:
+    - Max bullets: {budget["max_bullets"]}
 - Max words per bullet: {budget["max_words_per_bullet"]}
 - Max paragraph words: {budget["max_paragraph_words"]}
-- Max table rows: {budget["max_table_rows"]}
-- If limits are exceeded, create continuation slides with "(cont.)" titles.
+- Max chart rows: {budget["max_table_rows"]}
 
 ## Content Fidelity Rules
 - Preserve exact numbers/percentages and quoted text.
 - Preserve person and framework names exactly.
 - Do not invent unsupported data.
-- If the source follows a 12-stage innovation pipeline, preserve stage order as guidance only.
-- Do not force any fixed slide count template.
 
-## Visual Generation (Experimental)
+## Spatial Layout Rules (Mandatory)
+- Do not overlap blocks.
+- Calculate x and y so blocks keep clear whitespace.
+- Keep x, y, width, height in [0, 100].
+- Ensure x + width <= 100 and y + height <= 100.
+
+## Visual Generation
 - Include AI Images: {include_images}
 - Include Data Charts: {include_charts}
 
-{
-    "If 'Include AI Images' is True: You MUST insert exactly one relevant image per every 2-3 slides using: ![alt description](image:prompt for image generation)." if include_images else ""
-}
-{
-    "If 'Include Data Charts' is True: For slides with dense numeric tables, you MUST also add a :::chart[type=bar|line|pie|donut] block below the table summarizing the key trend." if include_charts else ""
-}
+If Include AI Images is true, add image blocks with prompt text only.
+If Include Data Charts is true, for quantitative slides add chart blocks using data points from the provided quantitative datasets.
+
+## Quantitative Datasets (from source research)
+{dataset_section}
 
 ## Additional Instructions
 {instructions or "None"}
@@ -190,6 +163,6 @@ def get_markdown_generation_messages(
 """.strip()
 
     return [
-        LLMSystemMessage(content=MARKDOWN_SYSTEM_PROMPT.strip()),
+        LLMSystemMessage(content=SPATIAL_SYSTEM_PROMPT.strip()),
         LLMUserMessage(content=user_prompt),
     ]

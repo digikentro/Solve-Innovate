@@ -1,11 +1,13 @@
 from collections.abc import AsyncGenerator
 import os
+import logging
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     create_async_engine,
     async_sessionmaker,
     AsyncSession,
 )
+from sqlalchemy import inspect, text
 from sqlmodel import SQLModel
 
 from models.sql.async_presentation_generation_status import (
@@ -29,11 +31,30 @@ database_url, connect_args = get_database_url_and_connect_args()
 
 sql_engine: AsyncEngine = create_async_engine(database_url, connect_args=connect_args)
 async_session_maker = async_sessionmaker(sql_engine, expire_on_commit=False)
+logger = logging.getLogger(__name__)
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
+
+
+def _ensure_markdown_presentation_visual_config_column(sync_conn) -> None:
+    """Backfill columns for existing databases where create_all won't alter tables."""
+    table_name = MarkdownPresentationModel.__tablename__
+    inspector = inspect(sync_conn)
+    existing_tables = set(inspector.get_table_names())
+    if table_name not in existing_tables:
+        return
+
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    if "visual_config" in columns:
+        return
+
+    sync_conn.execute(
+        text(f"ALTER TABLE {table_name} ADD COLUMN visual_config JSON")
+    )
+    logger.info("Added missing '%s.visual_config' column.", table_name)
 
 
 # Create Database and Tables
@@ -58,3 +79,4 @@ async def create_db_and_tables():
                 ],
             )
         )
+        await conn.run_sync(_ensure_markdown_presentation_visual_config_column)

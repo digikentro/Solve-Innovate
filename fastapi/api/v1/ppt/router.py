@@ -17,6 +17,7 @@ from api.v1.ppt.endpoints.slide import SLIDE_ROUTER
 from api.v1.ppt.endpoints.pptx_slides import PPTX_FONTS_ROUTER
 from api.v1.ppt.endpoints.project import PROJECT_ROUTER
 from api.v1.ppt.endpoints.markdown_presentation import MARKDOWN_ROUTER
+from api.v1.ppt.endpoints.spatial_presentation import SPATIAL_ROUTER
 
 
 API_V1_PPT_ROUTER = APIRouter(prefix="/api/v1/ppt")
@@ -41,3 +42,4 @@ API_V1_PPT_ROUTER.include_router(GOOGLE_ROUTER)
 API_V1_PPT_ROUTER.include_router(PPTX_FONTS_ROUTER)
 API_V1_PPT_ROUTER.include_router(PROJECT_ROUTER)
 API_V1_PPT_ROUTER.include_router(MARKDOWN_ROUTER)
+API_V1_PPT_ROUTER.include_router(SPATIAL_ROUTER)

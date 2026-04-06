@@ -10,10 +10,58 @@ import type {
   RegenerateSlideResponse,
   SwitchThemeResponse,
   ExportPptxResponse,
+  ExportPdfResponse,
   PresentationSettings,
 } from '@/types/presentation';
+import { logger } from '@/lib/logger';
 
 const API_BASE = import.meta.env.VITE_PPT_API_URL || 'http://localhost:8000';
+
+const apiFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  const method = init?.method || 'GET';
+  try {
+    const response = await fetch(url, init);
+
+    if (!response.ok) {
+      const clone = response.clone();
+      let detail: unknown = null;
+      try {
+        detail = await clone.json();
+      } catch {
+        detail = await clone.text().catch(() => null);
+      }
+
+      logger.error('API response returned non-OK status', undefined, {
+        method,
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        detail,
+      });
+    }
+
+    return response;
+  } catch (error) {
+    logger.error('Network request failed', error, { method, url });
+    throw error;
+  }
+};
+
+const toBackendDensity = (value?: PresentationSettings['verbosity']): string => {
+  switch (value) {
+    case 'detailed':
+      return 'standard';
+    case 'extensive':
+      return 'text_heavy';
+    case 'minimal':
+    case 'concise':
+    case 'standard':
+    case 'text_heavy':
+      return value;
+    default:
+      return 'concise';
+  }
+};
 
 // ─── API Service ─────────────────────────────────────────────────────────────
 
@@ -24,7 +72,7 @@ export const presentationApi = {
   listProjectPresentations: async (
     projectId: string
   ): Promise<ProjectPresentationSummary[]> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/${projectId}/presentations`
     );
     if (!res.ok) {
@@ -41,7 +89,7 @@ export const presentationApi = {
     projectId: string,
     title?: string
   ): Promise<CreateProjectPresentationResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/${projectId}/presentations`,
       {
         method: 'POST',
@@ -63,12 +111,31 @@ export const presentationApi = {
     presentationId: string,
     title: string
   ): Promise<ProjectPresentationSummary> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  /**
+   * Delete a project presentation and associated revisions.
+   */
+  deleteProjectPresentation: async (
+    presentationId: string
+  ): Promise<{ success: boolean; presentation_id: string }> => {
+    const res = await apiFetch(
+      `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}`,
+      {
+        method: 'DELETE',
       }
     );
     if (!res.ok) {
@@ -85,7 +152,7 @@ export const presentationApi = {
     presentationId: string,
     settings: Partial<PresentationSettings>
   ): Promise<GenerateProjectPresentationResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/generate`,
       {
         method: 'POST',
@@ -93,13 +160,20 @@ export const presentationApi = {
         body: JSON.stringify({
           n_slides: settings.nSlides ?? 10,
           tone: settings.tone || 'professional',
-          verbosity: settings.verbosity || 'concise',
+          density: toBackendDensity(settings.verbosity),
           text_mode: settings.textMode || 'condense',
           theme: settings.theme || 'modern-dark',
           language: settings.language || 'English',
+          visual_preference: settings.visualPreference || 'balanced',
           image_source: settings.imageSource || 'ai',
+          write_for: settings.writingGuidance || settings.audience || '',
           logo_url: settings.logoUrl || null,
           logo_position: settings.logoPosition || null,
+          image_model: settings.imageModel || 'none',
+          image_art_style: settings.imageArtStyle || 'photo',
+          image_keywords: settings.imageKeywords || [],
+          chart_enabled: settings.chartEnabled ?? false,
+          chart_types: settings.chartTypes || [],
         }),
       }
     );
@@ -116,7 +190,7 @@ export const presentationApi = {
   generateOutlineDraft: async (
     presentationId: string
   ): Promise<{ outline: OutlineDraft }> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/outline`,
       { method: 'POST' }
     );
@@ -133,7 +207,7 @@ export const presentationApi = {
   getOutlineDraft: async (
     presentationId: string
   ): Promise<{ outline: OutlineDraft }> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/outline`
     );
     if (!res.ok) {
@@ -150,7 +224,7 @@ export const presentationApi = {
     presentationId: string,
     outline: OutlineDraft
   ): Promise<{ outline: OutlineDraft }> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/outline`,
       {
         method: 'PATCH',
@@ -171,7 +245,7 @@ export const presentationApi = {
   getEditorState: async (
     presentationId: string
   ): Promise<EditorStateResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/editor-state`
     );
     if (!res.ok) {
@@ -188,7 +262,7 @@ export const presentationApi = {
     presentationId: string,
     editor: EditorStatePayload
   ): Promise<EditorStateResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/editor-state`,
       {
         method: 'PATCH',
@@ -211,7 +285,7 @@ export const presentationApi = {
     projectId: string,
     settings: Partial<PresentationSettings>
   ): Promise<CreatePresentationResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/${projectId}/generate`,
       {
         method: 'POST',
@@ -240,7 +314,7 @@ export const presentationApi = {
   createPresentation: async (
     params: Record<string, unknown>
   ): Promise<CreatePresentationResponse> => {
-    const res = await fetch(`${API_BASE}/api/v1/ppt/markdown/create`, {
+    const res = await apiFetch(`${API_BASE}/api/v1/ppt/markdown/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -258,7 +332,7 @@ export const presentationApi = {
   getPresentation: async (
     presentationId: string
   ): Promise<PresentationSummaryResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/presentation/${presentationId}`
     );
     if (!res.ok) {
@@ -275,7 +349,7 @@ export const presentationApi = {
     presentationId: string,
     newTheme: string
   ): Promise<SwitchThemeResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/presentation/${presentationId}/switch-theme`,
       {
         method: 'POST',
@@ -298,7 +372,7 @@ export const presentationApi = {
     slideIndex: number,
     instructions?: string
   ): Promise<RegenerateSlideResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/slide/regenerate`,
       {
         method: 'POST',
@@ -321,7 +395,7 @@ export const presentationApi = {
    * Export presentation to PPTX.
    */
   exportPptx: async (presentationId: string): Promise<ExportPptxResponse> => {
-    const res = await fetch(
+    const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/presentation/${presentationId}/export/pptx`,
       { method: 'POST' }
     );
@@ -331,10 +405,57 @@ export const presentationApi = {
     }
     return res.json();
   },
-};
 
-/**
- * Returns the full SSE stream URL for a presentation ID.
- */
-export const getStreamUrl = (presentationId: string): string =>
-  `${API_BASE}/api/v1/ppt/markdown/presentation/${presentationId}/stream`;
+  /**
+   * Export presentation to PDF.
+   */
+  exportPdf: async (presentationId: string): Promise<ExportPdfResponse> => {
+    const res = await apiFetch(
+      `${API_BASE}/api/v1/ppt/markdown/presentation/${presentationId}/export/pdf`,
+      { method: 'POST' }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Export failed' }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  /**
+   * Generate an image via AI from a text prompt.
+   * Returns a fully-qualified URL served from the backend's /app_data static mount.
+   */
+  generateImage: async (prompt: string): Promise<string> => {
+    const res = await apiFetch(
+      `${API_BASE}/api/v1/ppt/images/generate?prompt=${encodeURIComponent(prompt)}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Image generation failed' }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    // Backend returns the absolute filesystem path; extract the filename to build the URL
+    const absolutePath: string = await res.json();
+    const filename = absolutePath.replace(/\\/g, '/').split('/').pop() ?? '';
+    return `${API_BASE}/app_data/images/${filename}`;
+  },
+
+  /**
+   * Upload an image file from the user's device.
+   * Returns a fully-qualified URL served from the backend's /app_data static mount.
+   */
+  uploadImage: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiFetch(`${API_BASE}/api/v1/ppt/images/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const filename = String(data.path ?? '').replace(/\\/g, '/').split('/').pop() ?? '';
+    return `${API_BASE}/app_data/images/${filename}`;
+  },
+};

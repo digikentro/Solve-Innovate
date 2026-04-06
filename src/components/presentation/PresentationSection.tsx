@@ -1,26 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FiArrowLeft, FiBarChart2, FiFilePlus, FiLoader, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+
+import { usePresentation } from '@/hooks/usePresentation';
+import { useProjectPresentations } from '@/hooks/useProjectPresentations';
+import { presentationApi } from '@/services/presentationApi';
+import { getThemeById } from '@/themes';
 import type { Project } from '@/types/project';
 import type {
   OutlineDraft,
   OutlineSlideDraft,
+  PresentationSettings,
   ProjectPresentationSummary,
 } from '@/types/presentation';
-import { usePresentation } from '@/hooks/usePresentation';
-import { useProjectPresentations } from '@/hooks/useProjectPresentations';
-import { presentationApi } from '@/services/presentationApi';
-import { getThemeById, THEMES } from '@/themes';
-import { PresentationStreamView } from './PresentationStreamView';
+import { PresentationConfigForm } from './PresentationConfigForm';
 import { PresentationViewer } from './PresentationViewer';
-import { paginateSlidesByDomMeasurement } from '@/utils/domSlidePagination';
-import { parseSlideMarkdown } from '@/utils/markdownParser';
-import {
-  FiArrowLeft,
-  FiEdit3,
-  FiFilePlus,
-  FiLoader,
-  FiPlus,
-  FiX,
-} from 'react-icons/fi';
 
 interface PresentationSectionProps {
   project: Project;
@@ -29,24 +22,16 @@ interface PresentationSectionProps {
 
 type ViewMode = 'list' | 'editor';
 
-const detailLinesToText = (details: string[]): string => details.join('\n');
-
-const textToDetailLines = (value: string): string[] =>
-  value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-
 export const PresentationSection = ({ project }: PresentationSectionProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activePresentationId, setActivePresentationId] = useState<string | null>(null);
   const [activeMarkdownId, setActiveMarkdownId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState('');
   const [outline, setOutline] = useState<OutlineDraft | null>(null);
+  const [outlineError, setOutlineError] = useState<string | null>(null);
+  const [isOutlineGenerating, setIsOutlineGenerating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createTitle, setCreateTitle] = useState('Presentation Draft');
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [layoutVersion, setLayoutVersion] = useState(0);
 
   const {
     presentations,
@@ -54,6 +39,7 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     error: listError,
     createPresentation,
     renamePresentation,
+    deletePresentation,
     refresh,
   } = useProjectPresentations(project.id);
 
@@ -65,103 +51,66 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     slides,
     currentSlideIndex,
     setCurrentSlideIndex,
-    isStreaming,
-    streamProgress,
+    selectedBlockIds,
+    setSelectedBlockIds,
+    saveState,
     error,
     isLoading,
     generate,
     switchTheme,
     regenerateSlide,
     exportPptx,
+    exportPdf,
     resetToConfig,
     presentationId,
+    setPresentationId,
     isExporting,
     replaceSlides,
-  } = usePresentation(project, activeMarkdownId);
+    loadEditorPayload,
+    addSlide,
+    deleteSlide,
+    updateSlide,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    copySelection,
+    pasteSelection,
+    deleteSelection,
+  } = usePresentation(project, activePresentationId, activeMarkdownId);
+  useEffect(() => {
+    console.log("=== PresentationSection Debug ===");
+    console.log("Phase:", phase);
+    console.log("Slides length:", slides?.length);
+    console.log("Slides:", slides);
+  }, [phase, slides]);
 
   const theme = getThemeById(settings.theme);
+
   const activePresentation = useMemo(
-    () => presentations.find((p) => p.id === activePresentationId) || null,
+    () => presentations.find((item) => item.id === activePresentationId) || null,
     [presentations, activePresentationId]
   );
 
   useEffect(() => {
-    if (phase === 'viewer' && activePresentationId) {
-      refresh();
-    }
-  }, [phase, activePresentationId, refresh]);
-
-  useEffect(() => {
-    const onResize = () => setLayoutVersion((prev) => prev + 1);
-    window.addEventListener('resize', onResize);
-
-    const fonts = (document as any).fonts;
-    if (fonts?.ready && typeof fonts.ready.then === 'function') {
-      fonts.ready.then(() => setLayoutVersion((prev) => prev + 1)).catch(() => {});
+    if (!activePresentationId) {
+      return;
     }
 
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  useEffect(() => {
-    if (phase !== 'viewer' || slides.length === 0) return;
-    const repaged = paginateSlidesByDomMeasurement(slides, {
-      theme,
-      logoUrl: settings.logoUrl || undefined,
-      logoPosition: settings.logoPosition || 'top-right',
-    });
-    const changed =
-      repaged.length !== slides.length ||
-      repaged.some(
-        (slide, index) =>
-          slide.markdown !== slides[index]?.markdown || slide.id !== slides[index]?.id
-      );
-    if (changed) {
-      replaceSlides(repaged);
-    }
-  }, [phase, theme, settings.logoUrl, settings.logoPosition, slides, replaceSlides, layoutVersion]);
-
-  useEffect(() => {
-    if (phase !== 'viewer' || !activePresentationId) return;
-    const markdownId = activeMarkdownId || presentationId;
-    if (!markdownId || slides.length === 0) return;
-
-    setSaveState('saving');
-    const timer = setTimeout(async () => {
-      try {
-        await presentationApi.updateEditorState(activePresentationId, {
-          markdown_presentation_id: markdownId,
-          slides: slides.map((slide) => ({
-            id: slide.id,
-            markdown: slide.markdown,
-            blocks: slide.blocks,
-          })),
-          theme: settings.theme,
-          logo_url: settings.logoUrl || null,
-          logo_position: settings.logoPosition || null,
-          custom_colors: settings.customColors || null,
-        });
-        setSaveState('saved');
-      } catch {
-        setSaveState('error');
+    const timer = setTimeout(() => {
+      const current = activePresentation?.title || '';
+      if (titleDraft.trim() && titleDraft.trim() !== current) {
+        renamePresentation(activePresentationId, titleDraft.trim());
       }
-    }, 700);
+    }, 600);
 
     return () => clearTimeout(timer);
-  }, [
-    phase,
-    activePresentationId,
-    activeMarkdownId,
-    presentationId,
-    slides,
-    settings.theme,
-    settings.logoUrl,
-    settings.logoPosition,
-  ]);
+  }, [activePresentation?.title, activePresentationId, renamePresentation, titleDraft]);
 
-  const loadOutline = async (presentationId: string): Promise<boolean> => {
+  const loadOutline = async (currentPresentationId: string): Promise<boolean> => {
     try {
-      const result = await presentationApi.getOutlineDraft(presentationId);
+      setOutlineError(null);
+      const result = await presentationApi.getOutlineDraft(currentPresentationId);
       setOutline(result.outline);
       setPhase('outline');
       return true;
@@ -170,22 +119,42 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     }
   };
 
-  const createOutline = async (presentationId: string) => {
-    const result = await presentationApi.generateOutlineDraft(presentationId);
-    setOutline(result.outline);
-    setPhase('outline');
+  const createOutline = async (currentPresentationId: string) => {
+    try {
+      setIsOutlineGenerating(true);
+      setOutlineError(null);
+      const result = await presentationApi.generateOutlineDraft(currentPresentationId);
+      setOutline(result.outline);
+      setPhase('outline');
+    } catch (err: any) {
+      setOutlineError(err?.message || 'Failed to generate outline. Please try again.');
+    } finally {
+      setIsOutlineGenerating(false);
+    }
   };
 
   const saveOutline = async () => {
-    if (!activePresentationId || !outline) return;
-    await presentationApi.updateOutlineDraft(activePresentationId, outline);
+    if (!activePresentationId || !outline) {
+      return;
+    }
+    try {
+      setOutlineError(null);
+      await presentationApi.updateOutlineDraft(activePresentationId, outline);
+    } catch (err: any) {
+      setOutlineError(err?.message || 'Failed to save outline changes.');
+      throw err;
+    }
   };
 
   const openPresentationItem = async (item: ProjectPresentationSummary) => {
+    console.log("Opening presentation:", item);
+console.log("current_markdown_presentation_id:", item.current_markdown_presentation_id);
     resetToConfig();
+    setOutlineError(null);
     setActivePresentationId(item.id);
     setTitleDraft(item.title);
     setViewMode('editor');
+
     if (item.current_slide_count) {
       setSettings((prev) => ({
         ...prev,
@@ -203,36 +172,14 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
 
     if (item.current_markdown_presentation_id) {
       setActiveMarkdownId(item.current_markdown_presentation_id);
+      setPresentationId(item.current_markdown_presentation_id);
       setPhase('viewer');
+      console.log("Setting phase to viewer");
       try {
-        const editor = await presentationApi.getEditorState(item.id);
-        if (editor.editor) {
-          setSettings((prev) => ({
-            ...prev,
-            theme: editor.editor.theme || prev.theme,
-            logoUrl: editor.editor.logo_url || prev.logoUrl || null,
-            logoPosition: editor.editor.logo_position || prev.logoPosition || 'top-right',
-            customColors: editor.editor.custom_colors || prev.customColors || {},
-          }));
-        }
-
-        const hydrated = editor.editor.slides.map((slide, index) => ({
-          id: slide.id || `slide-${index}`,
-          index,
-          markdown: slide.markdown,
-          blocks: slide.blocks && slide.blocks.length ? slide.blocks : parseSlideMarkdown(slide.markdown),
-        }));
-        if (hydrated.length) {
-          replaceSlides(
-            paginateSlidesByDomMeasurement(hydrated, {
-              theme,
-              logoUrl: settings.logoUrl || undefined,
-              logoPosition: settings.logoPosition || 'top-right',
-            })
-          );
-        }
+        const editorState = await presentationApi.getEditorState(item.id);
+        loadEditorPayload(editorState.editor, { markDirty: false, recordHistory: true });
       } catch {
-        // Existing generated presentations might not have editor payload yet.
+        // Existing records may not have editor state yet.
       }
       return;
     }
@@ -244,34 +191,49 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     }
   };
 
-  const openPresentation = async (presentationId: string) => {
-    const item = presentations.find((p) => p.id === presentationId);
-    if (!item) return;
+  const openPresentation = async (presentationIdToOpen: string) => {
+    const item = presentations.find((entry) => entry.id === presentationIdToOpen);
+    if (!item) {
+      return;
+    }
     await openPresentationItem(item);
   };
 
   const handleCreate = async () => {
     const cleanTitle = createTitle.trim() || 'Presentation Draft';
     const created = await createPresentation(cleanTitle);
-    if (!created) return;
+    if (!created) {
+      return;
+    }
     setShowCreateModal(false);
     setCreateTitle('Presentation Draft');
     await openPresentationItem(created);
   };
 
-  const handleRename = async () => {
-    if (!activePresentationId) return;
-    const clean = titleDraft.trim();
-    if (!clean) return;
-    await renamePresentation(activePresentationId, clean);
-    await refresh();
+  const updateSlideOutline = (index: number, next: OutlineSlideDraft) => {
+    if (!outline) {
+      return;
+    }
+    const nextSlides = [...outline.slides];
+    nextSlides[index] = next;
+    setOutline({ slides: nextSlides });
   };
 
-  const updateSlideOutline = (index: number, next: OutlineSlideDraft) => {
-    if (!outline) return;
-    const slidesCopy = [...outline.slides];
-    slidesCopy[index] = next;
-    setOutline({ slides: slidesCopy });
+  const reorderSlides = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) {
+      return;
+    }
+    replaceSlides(
+      (() => {
+        const next = [...slides];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        return next;
+      })()
+    );
+    if (currentSlideIndex === fromIndex) {
+      setCurrentSlideIndex(toIndex);
+    }
   };
 
   if (isLoading || listLoading) {
@@ -293,13 +255,20 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
         </div>
       )}
 
-      {showCreateModal && (
+      {outlineError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900 text-sm">
+          <strong>Outline Error:</strong> {outlineError}
+        </div>
+      )}
+
+      {showCreateModal ? (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Name your presentation</h3>
             <input
               value={createTitle}
-              onChange={(e) => setCreateTitle(e.target.value)}
+              onChange={(event) => setCreateTitle(event.target.value)}
+              aria-label="New presentation title"
               className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="Presentation Draft"
               autoFocus
@@ -320,9 +289,9 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {viewMode === 'list' && (
+      {viewMode === 'list' ? (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
@@ -331,293 +300,286 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-600 text-white text-sm font-semibold"
             >
               <FiFilePlus className="w-4 h-4" />
               Create New
             </button>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="min-w-[170px] h-[180px] rounded-3xl border-2 border-dashed border-indigo-200 bg-white/80 p-4 flex flex-col items-center justify-center gap-2 text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50 transition-all"
+              className="w-full h-[200px] rounded-3xl border-2 border-dashed border-sky-200 bg-white p-4 flex flex-col items-center justify-center gap-2 text-sky-700"
             >
               <FiPlus className="w-7 h-7" />
               <div className="text-sm font-semibold">Create New</div>
             </button>
 
-            {presentations.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => openPresentation(p.id)}
-                className="min-w-[170px] h-[180px] rounded-3xl bg-white/90 border border-white/30 shadow-lg p-4 flex flex-col items-stretch text-left hover:shadow-xl transition-all"
+            {presentations.map((item) => (
+              <div
+                key={item.id}
+                className="relative w-full h-[200px] rounded-3xl bg-white border border-slate-200 p-4 text-left"
               >
-                <div className="text-sm font-semibold text-gray-900 truncate">{p.title}</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {new Date(p.created_at).toLocaleDateString()}
-                </div>
-                <div className="flex-1 mt-3 rounded-xl border border-gray-200 bg-gradient-to-br from-slate-50 to-indigo-50 p-2 text-[11px] text-gray-500 overflow-hidden">
-                  {p.preview_title || p.preview_snippet || 'No preview'}
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
-                  <span>{p.status}</span>
-                  <div className="text-indigo-600 inline-flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1">
-                      <FiEdit3 className="w-3 h-3" />
-                      {p.current_markdown_presentation_id ? 'Open' : 'Edit'}
-                    </span>
+                <button
+                  onClick={() => openPresentation(item.id)}
+                  className="w-full h-full text-left"
+                >
+                  <div className="pr-9 text-sm font-semibold text-gray-900 truncate">{item.title}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {new Date(item.created_at).toLocaleDateString()}
                   </div>
-                </div>
-              </button>
+                  <div className="flex-1 mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2 text-[11px] text-slate-600 overflow-hidden">
+                    {item.preview_title || item.preview_snippet || 'No preview'}
+                  </div>
+                  <div className="mt-2 text-[11px] text-slate-500">{item.status}</div>
+                </button>
+
+                <button
+                  onClick={async (event) => {
+                    event.stopPropagation();
+                    const confirmed = window.confirm(`Delete \"${item.title}\"? This cannot be undone.`);
+                    if (!confirmed) {
+                      return;
+                    }
+
+                    const deleted = await deletePresentation(item.id);
+                    if (!deleted) {
+                      return;
+                    }
+
+                    if (activePresentationId === item.id) {
+                      setActivePresentationId(null);
+                      setActiveMarkdownId(null);
+                      setViewMode('list');
+                      setOutline(null);
+                      resetToConfig();
+                    }
+                  }}
+                  aria-label={`Delete ${item.title}`}
+                  title={`Delete ${item.title}`}
+                  className="absolute right-3 top-3 inline-flex items-center justify-center h-8 w-8 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+                >
+                  <FiTrash2 className="h-4 w-4" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {viewMode === 'editor' && (
+      {viewMode === 'editor' ? (
         <div className="space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  resetToConfig();
-                  setOutline(null);
-                  setActivePresentationId(null);
-                  setActiveMarkdownId(null);
-                }}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
-              >
-                <FiArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-              <div>
-                <div className="text-xs uppercase tracking-wide text-gray-500">PPT Name</div>
-                <input
-                  value={titleDraft}
-                  onChange={(e) => setTitleDraft(e.target.value)}
-                  onBlur={handleRename}
-                  className="text-lg font-semibold text-gray-900 bg-transparent outline-none border-b border-transparent focus:border-indigo-500 transition-all"
-                />
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">
-              {activePresentation?.status ? `Status: ${activePresentation.status}` : ''}
-            </div>
-          </div>
-
-          {phase === 'outline' && outline && (
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-              <aside className="xl:col-span-3">
-                <div className="xl:sticky xl:top-20 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900">PPT Edits</h3>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Tone</label>
-                    <select
-                      value={settings.tone}
-                      onChange={(e) => setSettings((prev) => ({ ...prev, tone: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                    >
-                      <option value="professional">Professional</option>
-                      <option value="casual">Casual</option>
-                      <option value="academic">Academic</option>
-                      <option value="educational">Educational</option>
-                      <option value="sales_pitch">Sales Pitch</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Density</label>
-                    <select
-                      value={settings.verbosity}
-                      onChange={(e) => setSettings((prev) => ({ ...prev, verbosity: e.target.value as any }))}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                    >
-                      <option value="minimal">Minimal</option>
-                      <option value="concise">Concise</option>
-                      <option value="standard">Standard</option>
-                      <option value="text_heavy">Text Heavy</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Text Mode</label>
-                    <select
-                      value={settings.textMode}
-                      onChange={(e) => setSettings((prev) => ({ ...prev, textMode: e.target.value as any }))}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                    >
-                      <option value="generate">Generate</option>
-                      <option value="condense">Condense</option>
-                      <option value="preserve">Preserve</option>
-                    </select>
-                  </div>
+          {phase === 'outline' && outline ? (
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:h-[calc(100vh-220px)]">
+              <aside className="xl:col-span-3 xl:h-full xl:overflow-y-auto xl:pr-1">
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
+                  <button
+                    onClick={() => {
+                      setViewMode('list');
+                      resetToConfig();
+                      setOutline(null);
+                      setActivePresentationId(null);
+                      setActiveMarkdownId(null);
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-sm"
+                  >
+                    <FiArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Target Slides</label>
                     <input
                       type="number"
                       min={3}
                       max={40}
+                      aria-label="Target slide count"
                       value={settings.nSlides}
-                      onChange={(e) =>
+                      onChange={(event) =>
                         setSettings((prev) => ({
                           ...prev,
-                          nSlides: Math.max(3, Math.min(40, Number(e.target.value) || 10)),
+                          nSlides: Math.max(3, Math.min(40, Number(event.target.value) || 10)),
                         }))
                       }
                       className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                     />
                   </div>
-                  <div className="grid grid-cols-5 gap-1">
-                    {THEMES.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => switchTheme(t.id)}
-                        className={`h-8 rounded-lg border-2 ${
-                          theme.id === t.id ? 'border-indigo-500 shadow-md' : 'border-gray-200'
-                        }`}
-                        style={{ backgroundColor: t.colors.bg }}
-                        title={t.name}
-                      />
-                    ))}
-                  </div>
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () =>
-                          setSettings((prev) => ({ ...prev, logoUrl: reader.result as string }));
-                        reader.readAsDataURL(file);
-                      }}
-                      className="text-xs"
-                    />
-                    <select
-                      value={settings.logoPosition || 'top-right'}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, logoPosition: e.target.value as any }))
+                  <PresentationConfigForm
+                    settings={settings}
+                    setSettings={setSettings}
+                    isGenerating={isLoading || isOutlineGenerating}
+                    primaryLabel="Generate Slides"
+                    canGenerate={Boolean(project.id && activePresentationId && titleDraft.trim())}
+                    onGenerate={async () => {
+                      if (!project.id || !activePresentationId || !titleDraft.trim()) {
+                        return;
                       }
-                      className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-xs"
-                    >
-                      <option value="top-left">Top Left</option>
-                      <option value="top-right">Top Right</option>
-                      <option value="bottom-left">Bottom Left</option>
-                      <option value="bottom-right">Bottom Right</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      await saveOutline();
-                      if (!activePresentationId) return;
-                      generate(activePresentationId);
+                      try {
+                        await saveOutline();
+                        await generate(activePresentationId);
+                      } catch {
+                        // Error is surfaced in existing banners.
+                      }
                     }}
-                    className="w-full px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg transition-all"
-                  >
-                    Generate Slides
-                  </button>
+                  />
                 </div>
               </aside>
 
-              <div className="xl:col-span-9 space-y-4">
-                {outline.slides.map((slide, idx) => (
-                  <div key={`${slide.title}-${idx}`} className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <input
-                        value={slide.title}
-                        onChange={(e) => updateSlideOutline(idx, { ...slide, title: e.target.value })}
-                        className="flex-1 text-sm font-semibold text-gray-800 bg-transparent border-b border-gray-200 focus:border-indigo-500 outline-none"
-                      />
+              <div className="xl:col-span-9 space-y-4 xl:h-full xl:overflow-y-auto xl:pr-2">
+                {outline.slides.map((slideDraft, index) => (
+                  <div key={`${slideDraft.title}-${index}`} className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <input
+                          value={slideDraft.title}
+                          aria-label={`Outline title for slide ${index + 1}`}
+                          onChange={(event) =>
+                            updateSlideOutline(index, {
+                              ...slideDraft,
+                              title: event.target.value,
+                            })
+                          }
+                          className="w-full text-sm font-semibold text-gray-800 bg-transparent border-b border-gray-200 focus:border-indigo-500 outline-none"
+                        />
+                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-sky-50 text-sky-700">
+                            {slideDraft.visual_intent}
+                          </span>
+                          {slideDraft.has_quantitative_data ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                              <FiBarChart2 className="h-3 w-3" />
+                              Quantitative Data
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
                       <button
                         onClick={() => {
-                          const next = outline.slides.filter((_, i) => i !== idx);
+                          const next = outline.slides.filter((_, idx) => idx !== index);
                           setOutline({ slides: next });
                         }}
+                        aria-label={`Remove slide ${index + 1} from outline`}
+                        title={`Remove slide ${index + 1}`}
                         className="text-gray-400 hover:text-red-500"
                       >
                         <FiX className="w-4 h-4" />
                       </button>
                     </div>
-                    <textarea
-                      value={detailLinesToText(slide.details)}
-                      onChange={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                        updateSlideOutline(idx, { ...slide, details: textToDetailLines(e.target.value) });
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                      }}
-                      placeholder="Outline notes for this slide (one point per line)"
-                      style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
-                      className="w-full min-h-[110px] px-3 py-2 text-sm text-gray-700 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
-                    />
+                    <div className="space-y-2">
+                      {slideDraft.bullets.map((bullet, bulletIndex) => (
+                        <input
+                          key={`${slideDraft.title}-${bulletIndex}`}
+                          value={bullet}
+                          aria-label={`Bullet ${bulletIndex + 1} for slide ${index + 1}`}
+                          onChange={(event) => {
+                            const nextBullets = [...slideDraft.bullets];
+                            nextBullets[bulletIndex] = event.target.value;
+                            updateSlideOutline(index, {
+                              ...slideDraft,
+                              bullets: nextBullets,
+                            });
+                          }}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        />
+                      ))}
+                      <button
+                        onClick={() =>
+                          updateSlideOutline(index, {
+                            ...slideDraft,
+                            bullets: [...slideDraft.bullets, 'New bullet'],
+                          })
+                        }
+                        className="text-sm text-sky-700"
+                      >
+                        + Add bullet
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <button
-                  onClick={() => {
-                    if (!outline) return;
+                  onClick={() =>
                     setOutline({
-                      slides: [...outline.slides, { title: 'New Slide', details: ['Key points for this slide.'] }],
-                    });
-                  }}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      slides: [
+                        ...outline.slides,
+                        {
+                          title: 'New Slide',
+                          bullets: ['Key point'],
+                          visual_intent: 'Narrative',
+                          has_quantitative_data: false,
+                        },
+                      ],
+                    })
+                  }
+                  className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600"
                 >
                   <FiPlus className="w-4 h-4" />
                   Add Slide
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {phase === 'configure' && (
-            <div className="bg-white/85 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
-              <div className="text-sm text-gray-600 mb-4">Preparing outline editor...</div>
+          {phase === 'configure' ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <div className="text-sm text-slate-600 mb-4">Preparing outline editor...</div>
               <button
                 onClick={() => activePresentationId && createOutline(activePresentationId)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
+                disabled={isOutlineGenerating || !activePresentationId}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Generate Outline
+                {isOutlineGenerating ? 'Generating Outline...' : 'Generate Outline'}
               </button>
             </div>
-          )}
+          ) : null}
 
-          {phase === 'streaming' && (
-            <PresentationStreamView
-              slides={slides}
-              theme={theme}
-              progress={streamProgress}
-              isStreaming={isStreaming}
-            />
-          )}
-
-          {phase === 'viewer' && slides.length > 0 && (
+        {phase === 'viewer' ? (
+          slides.length > 0 ? (
             <PresentationViewer
+              title={titleDraft}
+              saveState={saveState}
               slides={slides}
               theme={theme}
               settings={settings}
               setSettings={setSettings}
               currentIndex={currentSlideIndex}
+              selectedBlockIds={selectedBlockIds}
+              onSelectBlocks={setSelectedBlockIds}
               onSelectSlide={setCurrentSlideIndex}
+              onUpdateSlide={updateSlide}
+              onReorderSlides={reorderSlides}
               onSwitchTheme={switchTheme}
               onRegenerateSlide={regenerateSlide}
               onExportPptx={exportPptx}
+              onExportPdf={exportPdf}
               isExporting={isExporting}
-              onSlidesUpdate={replaceSlides}
-              saveState={saveState}
-              onNewPresentation={() => {
+              onAddSlide={addSlide}
+              onDeleteSlide={deleteSlide}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onBack={() => {
                 setViewMode('list');
                 resetToConfig();
                 setOutline(null);
                 setActiveMarkdownId(null);
                 setActivePresentationId(null);
+                setPresentationId(null);
               }}
+              onTitleChange={setTitleDraft}
+              onCopySelection={copySelection}
+              onPasteSelection={pasteSelection}
+              onDeleteSelection={deleteSelection}
             />
-          )}
+          ) : (
+            <div className="flex justify-center items-center py-20">
+              <FiLoader className="w-6 h-6 animate-spin text-gray-500" />
+              <span className="ml-2 text-gray-500">Loading slides...</span>
+            </div>
+          )
+        ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

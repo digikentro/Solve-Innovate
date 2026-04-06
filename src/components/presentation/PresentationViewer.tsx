@@ -1,399 +1,927 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
-import type { MarkdownBlock, SlideData, Theme, PresentationSettings } from '@/types/presentation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FiArrowLeft,
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCopy,
+  FiCornerDownRight,
+  FiEdit2,
+  FiMoreVertical,
+  FiPlay,
+  FiSidebar,
+  FiTrash2,
+  FiUpload,
+} from 'react-icons/fi';
+
 import { THEMES } from '@/themes';
-import { SlideRenderer } from './renderer/SlideRenderer';
+import type {
+  PresentationSettings,
+  SlideData,
+  SpatialBlock,
+  SpatialChartBlock,
+  SpatialImageBlock,
+  SpatialTextBlock,
+  Theme,
+} from '@/types/presentation';
+import { presentationApi } from '@/services/presentationApi';
 import { SlideThumbnails } from './SlideThumbnails';
-import { LightweightWysiwyg } from './LightweightWysiwyg';
-import { FiDownload, FiRefreshCw, FiChevronLeft, FiChevronRight, FiPlus, FiPlay, FiMoreVertical, FiEdit2 } from 'react-icons/fi';
-import { blocksToMarkdown, editorHtmlToMarkdown } from '@/utils/slideEditor';
-import { parseSlideMarkdown } from '@/utils/markdownParser';
+import { SlideRenderer } from './renderer/SlideRenderer';
+
+type PanelTab = 'design' | 'insert' | 'format';
 
 interface PresentationViewerProps {
+  title: string;
+  saveState: 'idle' | 'saving' | 'saved' | 'error';
   slides: SlideData[];
   theme: Theme;
   settings: PresentationSettings;
   setSettings: React.Dispatch<React.SetStateAction<PresentationSettings>>;
   currentIndex: number;
+  selectedBlockIds: string[];
+  onSelectBlocks: (ids: string[]) => void;
   onSelectSlide: (index: number) => void;
+  onUpdateSlide: (slideIndex: number, updater: (slide: SlideData) => SlideData) => void;
+  onReorderSlides: (fromIndex: number, toIndex: number) => void;
   onSwitchTheme: (themeId: string) => void;
   onRegenerateSlide: (index: number, instructions?: string) => void;
   onExportPptx: () => void;
+  onExportPdf: () => void;
   isExporting?: boolean;
-  onNewPresentation: () => void;
-  onSlidesUpdate: (slides: SlideData[]) => void;
-  saveState: 'idle' | 'saving' | 'saved' | 'error';
+  onAddSlide: (afterIndex?: number) => void;
+  onDeleteSlide: (index: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onBack: () => void;
+  onTitleChange: (title: string) => void;
+  onCopySelection: () => void;
+  onPasteSelection: () => void;
+  onDeleteSelection: () => void;
 }
 
+const getSaveLabel = (saveState: 'idle' | 'saving' | 'saved' | 'error'): string => {
+  if (saveState === 'saving') {
+    return 'Saving...';
+  }
+  if (saveState === 'saved') {
+    return 'Saved';
+  }
+  if (saveState === 'error') {
+    return 'Save error';
+  }
+  return 'Saved';
+};
+
+const addBlockAtCenter = (slide: SlideData, block: SpatialBlock): SlideData => {
+  const nextZ = slide.blocks.reduce((acc, item) => Math.max(acc, item.z_index || 0), 0) + 1;
+  return {
+    ...slide,
+    blocks: [
+      ...slide.blocks,
+      {
+        ...block,
+        z_index: nextZ,
+      },
+    ],
+  };
+};
+
+const applySelectedBlockUpdate = (
+  slide: SlideData,
+  selectedIds: string[],
+  updater: (block: SpatialBlock) => SpatialBlock
+): SlideData => ({
+  ...slide,
+  blocks: slide.blocks.map((block) =>
+    selectedIds.includes(block.id)
+      ? updater(block)
+      : block
+  ),
+});
+
 export const PresentationViewer = ({
+  title,
+  saveState,
   slides,
   theme,
   settings,
   setSettings,
   currentIndex,
+  selectedBlockIds,
+  onSelectBlocks,
   onSelectSlide,
+  onUpdateSlide,
+  onReorderSlides,
   onSwitchTheme,
   onRegenerateSlide,
   onExportPptx,
+  onExportPdf,
   isExporting,
-  onNewPresentation,
-  onSlidesUpdate,
-  saveState,
+  onAddSlide,
+  onDeleteSlide,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+  onBack,
+  onTitleChange,
+  onCopySelection,
+  onPasteSelection,
+  onDeleteSelection,
 }: PresentationViewerProps) => {
+  const [activeTab, setActiveTab] = useState<PanelTab>('design');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [regenInstructions, setRegenInstructions] = useState('');
-  const [showRegenInput, setShowRegenInput] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const [isSlideEditing, setIsSlideEditing] = useState(false);
-  
-  const fullscreenRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
-  const currentSlide = slides[currentIndex];
-  if (!currentSlide) return null;
+  // Image insertion state
+  type ImageInsertMode = 'url' | 'upload' | 'ai';
+  const [imageInsertOpen, setImageInsertOpen] = useState(false);
+  const [imageInsertMode, setImageInsertMode] = useState<ImageInsertMode>('url');
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [imagePromptInput, setImagePromptInput] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState('');
 
-  const logoUrl = settings.logoUrl || '';
-  const logoPosition = settings.logoPosition || 'top-right';
-  const customColors = settings.customColors || {};
+  const stageRef = useRef<HTMLDivElement | null>(null);
 
-  // Compute active theme combined with custom overrides
-  const activeTheme: Theme = useMemo(() => ({
-    ...theme,
-    colors: {
-      ...theme.colors,
-      ...(customColors.primary ? { primary: customColors.primary } : {}),
-      ...(customColors.secondary ? { secondary: customColors.secondary } : {}),
-      ...(customColors.accent ? { accent: customColors.accent } : {}),
-      ...(customColors.bg ? { bg: customColors.bg } : {}),
-      ...(customColors.text ? { text: customColors.text } : {}),
-    } as any
-  }), [theme, customColors]);
+  const slide = slides[currentIndex];
+  if (!slide) {
+    return null;
+  }
 
-  const handleCustomColor = (key: keyof typeof customColors, val: string) => {
-    setSettings((prev: any) => ({
-      ...prev,
-      customColors: { ...(prev.customColors || {}), [key]: val }
-    }));
-  };
+  const canGoPrevious = currentIndex > 0;
+  const canGoNext = currentIndex < slides.length - 1;
 
-  const handleLogoFile = (file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSettings((prev: any) => ({ ...prev, logoUrl: reader.result as string }));
+  const activeBlock = slide.blocks.find((block) => selectedBlockIds.includes(block.id)) || null;
+  const brandColors = [
+    settings.customColors?.primary || theme.colors.primary,
+    settings.customColors?.accent || theme.colors.accent || '#22c55e',
+    settings.customColors?.background || theme.colors.bg,
+    settings.customColors?.text || theme.colors.text,
+  ];
+
+  const activeTheme = useMemo(() => {
+    return {
+      ...theme,
+      colors: {
+        ...theme.colors,
+        primary: settings.customColors?.primary || theme.colors.primary,
+        accent: settings.customColors?.accent || theme.colors.accent,
+        bg: settings.customColors?.background || theme.colors.bg,
+        text: settings.customColors?.text || theme.colors.text,
+      },
     };
-    reader.readAsDataURL(file);
+  }, [settings.customColors, theme]);
+
+  const insertImageBlock = (url: string) => {
+    if (!url.trim()) return;
+    onUpdateSlide(currentIndex, (targetSlide) =>
+      addBlockAtCenter(targetSlide, {
+        id: `block-${Date.now()}`,
+        type: 'image',
+        position: { x: 20, y: 20, width: 60, height: 45 },
+        prompt: url.trim(),
+        caption: 'Image',
+        object_fit: 'cover',
+      } as SpatialImageBlock)
+    );
+    setImageInsertOpen(false);
+    setImageUrlInput('');
+    setImagePromptInput('');
+    setImageError('');
   };
 
-  useEffect(() => {
-    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  const handleInsertImageFromUrl = () => {
+    insertImageBlock(imageUrlInput);
+  };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      fullscreenRef.current?.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-      });
-    } else {
-      document.exitFullscreen();
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageLoading(true);
+    setImageError('');
+    try {
+      const url = await presentationApi.uploadImage(file);
+      insertImageBlock(url);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setImageLoading(false);
+      e.target.value = '';
     }
   };
 
-  const updateBlocks = (nextBlocks: MarkdownBlock[]) => {
-    const markdown = blocksToMarkdown(nextBlocks);
-    const parsed = parseSlideMarkdown(markdown);
-    const updated = slides.map((slide, i) =>
-      i === currentIndex
-        ? { ...slide, markdown, blocks: parsed }
-        : slide
-    );
-    onSlidesUpdate(updated);
+  const handleGenerateAiImage = async () => {
+    if (!imagePromptInput.trim()) return;
+    setImageLoading(true);
+    setImageError('');
+    try {
+      const url = await presentationApi.generateImage(imagePromptInput.trim());
+      insertImageBlock(url);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setImageLoading(false);
+    }
   };
 
-  const handleBlockUpdate = (i: number, newBlock: MarkdownBlock) => {
-    const next = [...currentSlide.blocks];
-    next[i] = newBlock;
-    updateBlocks(next);
+  const enterPresentationMode = async () => {
+    if (!stageRef.current) {
+      return;
+    }
+    await stageRef.current.requestFullscreen();
   };
 
-  const handleBlockDelete = (i: number) => {
-    const next = currentSlide.blocks.filter((_, idx) => idx !== i);
-    updateBlocks(next);
-  };
+  useEffect(() => {
+    const handleArrowNavigation = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
 
-  const handleBlockReorder = (from: number, to: number) => {
-    if (from === to) return;
-    const next = [...currentSlide.blocks];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    updateBlocks(next);
-  };
+      if (event.key === 'ArrowLeft' && canGoPrevious) {
+        event.preventDefault();
+        onSelectSlide(currentIndex - 1);
+      }
 
-  const handleBlockAdd = (idx: number, type: 'text' | 'image' | 'chart') => {
-    const next = [...currentSlide.blocks];
-    let newBlock: MarkdownBlock;
-    if (type === 'image') newBlock = { type: 'image', src: 'image:A new image...', alt: '' };
-    else if (type === 'chart') newBlock = { type: 'chart', chartType: 'bar', data: { headers: ['Cat', 'Val'], rows: [['A', '10']] } };
-    else newBlock = { type: 'paragraph', text: 'New text block' };
-    
-    next.splice(idx + 1, 0, newBlock);
-    updateBlocks(next);
-  };
+      if (event.key === 'ArrowRight' && canGoNext) {
+        event.preventDefault();
+        onSelectSlide(currentIndex + 1);
+      }
+    };
 
-  const saveBadge = useMemo(() => {
-    if (saveState === 'saving') return 'Saving...';
-    if (saveState === 'saved') return 'Saved';
-    if (saveState === 'error') return 'Save error';
-    return 'Idle';
-  }, [saveState]);
-
-  // When navigating slides, exit edit mode
-  const handleNavigate = (newIndex: number) => {
-    setIsSlideEditing(false);
-    onSelectSlide(newIndex);
-  };
+    window.addEventListener('keydown', handleArrowNavigation);
+    return () => window.removeEventListener('keydown', handleArrowNavigation);
+  }, [canGoNext, canGoPrevious, currentIndex, onSelectSlide]);
 
   return (
-    <div className="space-y-4">
-      {/* ─── Top Toolbar ─── */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 flex gap-4 items-end justify-between flex-wrap">
-        <div className="flex items-center gap-6 flex-wrap">
-          {/* Theme Picker */}
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Theme</span>
-            <div className="flex items-center gap-2">
-              {THEMES.map((t) => (
+    <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative">
+      <div className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-100"
+          >
+            <FiArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          <input
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            aria-label="Presentation title"
+            className="w-72 max-w-[40vw] bg-transparent text-base font-semibold text-slate-900 border-b border-transparent focus:outline-none focus:border-sky-500"
+          />
+          <span className="text-xs text-slate-500">{getSaveLabel(saveState)}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
+          >
+            Undo
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
+          >
+            Redo
+          </button>
+          <button
+            onClick={() => setRightPanelOpen((prev) => !prev)}
+            aria-label="Toggle side panel"
+            title="Toggle side panel"
+            className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700"
+          >
+            <FiSidebar className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 relative">
+          <button
+            onClick={enterPresentationMode}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-sm"
+          >
+            <FiPlay className="h-4 w-4" />
+            Present
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"
+            >
+              Export
+              <FiChevronDown className="h-4 w-4" />
+            </button>
+            {showExportMenu ? (
+              <div className="absolute right-0 mt-2 w-44 rounded-lg border border-slate-200 bg-white shadow-lg p-1 z-20">
                 <button
-                  key={t.id}
-                  onClick={() => onSwitchTheme(t.id)}
-                  className={`w-7 h-7 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
-                    theme.id === t.id ? 'border-indigo-500 shadow-md scale-110' : 'border-gray-200'
-                  }`}
-                  style={{ backgroundColor: t.colors.bg }}
-                  title={t.name}
+                  disabled={isExporting}
+                  onClick={onExportPptx}
+                  className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
                 >
-                  <div className="w-2 h-2 rounded-full mx-auto mt-1" style={{ backgroundColor: t.colors.primary }} />
+                  Export PPTX
                 </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Custom Colors */}
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Custom Colors</span>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1 text-[11px] text-gray-600 font-medium">
-                P <input type="color" value={activeTheme.colors.primary || '#000000'} onChange={(e) => handleCustomColor('primary', e.target.value)} className="w-5 h-5 rounded cursor-pointer border-0 p-0 overflow-hidden bg-transparent" />
-              </label>
-              <label className="flex items-center gap-1 text-[11px] text-gray-600 font-medium">
-                Bg <input type="color" value={activeTheme.colors.bg || '#ffffff'} onChange={(e) => handleCustomColor('bg', e.target.value)} className="w-5 h-5 rounded cursor-pointer border-0 p-0 overflow-hidden bg-transparent" />
-              </label>
-              <label className="flex items-center gap-1 text-[11px] text-gray-600 font-medium">
-                Tx <input type="color" value={activeTheme.colors.text || '#000000'} onChange={(e) => handleCustomColor('text', e.target.value)} className="w-5 h-5 rounded cursor-pointer border-0 p-0 overflow-hidden bg-transparent" />
-              </label>
-            </div>
+                <button
+                  disabled={isExporting}
+                  onClick={onExportPdf}
+                  className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Export PDF
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          {/* Logo */}
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logo</span>
-            <div className="flex gap-2 items-center">
-              <input type="file" accept="image/*" onChange={(e) => handleLogoFile(e.target.files?.[0] || null)} className="text-[10px] w-48 text-gray-500" />
-              <select value={logoPosition} onChange={(e) => setSettings((prev: any) => ({ ...prev, logoPosition: e.target.value }))} className="text-xs px-2 py-1 rounded-lg border border-gray-200">
-                <option value="top-left">Top Left</option>
-                <option value="top-right">Top Right</option>
-                <option value="bottom-left">Bottom Left</option>
-                <option value="bottom-right">Bottom Right</option>
-              </select>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowSettingsMenu((prev) => !prev)}
+              aria-label="Open slide settings"
+              title="Slide settings"
+              className="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-slate-200"
+            >
+              <FiMoreVertical className="h-4 w-4" />
+            </button>
+            {showSettingsMenu ? (
+              <div className="absolute right-0 mt-2 w-72 rounded-lg border border-slate-200 bg-white shadow-lg p-2 z-20 space-y-2">
+                <label className="block text-xs text-slate-500">Single Slide AI Regeneration</label>
+                <textarea
+                  value={regenInstructions}
+                  onChange={(event) => setRegenInstructions(event.target.value)}
+                  aria-label="Single slide regeneration instructions"
+                  className="w-full min-h-[80px] rounded-md border border-slate-200 px-2 py-1 text-sm"
+                  placeholder="Add optional instructions"
+                />
+                <button
+                  onClick={() => onRegenerateSlide(currentIndex, regenInstructions || undefined)}
+                  className="w-full px-3 py-2 rounded-md bg-sky-600 text-white text-sm"
+                >
+                  Regenerate Current Slide
+                </button>
+              </div>
+            ) : null}
           </div>
-        </div>
-        
-        {/* Right Toolbar */}
-        <div className="flex items-center gap-3 relative">
-          <span className="text-xs font-medium text-gray-500">{saveBadge}</span>
-          <button onClick={toggleFullscreen} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 hover:scale-105 transition-all shadow border border-indigo-500">
-            <FiPlay className="w-4 h-4 fill-white" /> Present
-          </button>
-          
-          <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all">
-            <FiMoreVertical className="w-5 h-5" />
-          </button>
-          
-          {showMenu && (
-            <div className="absolute top-12 right-0 w-48 bg-white/95 backdrop-blur rounded-xl shadow-xl border border-gray-200 flex flex-col p-1 z-50 animate-fadeIn">
-              <button onClick={() => { setShowRegenInput(!showRegenInput); setShowMenu(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg text-left">
-                <FiRefreshCw className="w-4 h-4" /> Regenerate Slide
-              </button>
-              <button disabled={isExporting} onClick={() => { onExportPptx(); setShowMenu(false); }} className={`flex items-center gap-2 px-3 py-2 text-sm text-left font-medium rounded-lg ${isExporting ? 'text-indigo-400 bg-indigo-50 cursor-not-allowed' : 'text-indigo-700 hover:bg-indigo-50'}`}>
-                <FiDownload className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} /> {isExporting ? 'Exporting...' : 'Export PPTX'}
-              </button>
-              <div className="my-1 border-t border-gray-100" />
-              <button onClick={() => { onNewPresentation(); setShowMenu(false); }} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg text-left">
-                <FiPlus className="w-4 h-4" /> New Deck
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Regenerate input */}
-      {showRegenInput && (
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md border border-indigo-100 p-4 space-y-3 animate-fadeIn flex flex-col">
-          <textarea
-            value={regenInstructions}
-            onChange={(e) => {
-              e.target.style.height = 'auto';
-              e.target.style.height = `${e.target.scrollHeight}px`;
-              setRegenInstructions(e.target.value);
-            }}
-            onFocus={(e) => {
-              e.target.style.height = 'auto';
-              e.target.style.height = `${e.target.scrollHeight}px`;
-            }}
-            placeholder="Instructions (e.g., make this slide highly visual, add a comparison table...)"
-            className="w-full min-h-[60px] p-2 text-sm border rounded outline-none ring-1 ring-indigo-300 focus:ring-indigo-500 resize-none"
-            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflow: 'hidden' }}
+      <div className="grid grid-cols-[280px_minmax(0,1fr)] h-[calc(100%-64px)]">
+        <aside className="h-full border-r border-slate-200 bg-white p-3 overflow-hidden">
+          <SlideThumbnails
+            slides={slides}
+            theme={activeTheme}
+            logoUrl={settings.logoUrl || undefined}
+            logoPosition={settings.logoPosition}
+            currentIndex={currentIndex}
+            onSelect={onSelectSlide}
+            onReorder={onReorderSlides}
+            onAddSlide={() => onAddSlide(currentIndex)}
           />
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setShowRegenInput(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
-            <button
-              onClick={() => {
-                onRegenerateSlide(currentIndex, regenInstructions.trim() || undefined);
-                setShowRegenInput(false);
-                setRegenInstructions('');
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600"
-            >
-              Regenerate Slide {currentIndex + 1}
-            </button>
-          </div>
-        </div>
-      )}
+        </aside>
 
-      {/* ─── Main Two-column layout ─── */}
-      <div className="flex gap-4">
-        {/* Thumbnails sidebar */}
-        {!isFullscreen && (
-          <div className="hidden md:flex w-52 flex-col flex-shrink-0 overflow-y-auto max-h-[calc(100vh-260px)] pb-12 pr-1 custom-scrollbar">
-            <SlideThumbnails
-              slides={slides}
-              theme={activeTheme}
-              logoUrl={logoUrl || undefined}
-              logoPosition={logoPosition}
-              currentIndex={currentIndex}
-              onSelect={handleNavigate}
-            />
-          </div>
-        )}
-
-        {/* Current Slide */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3" ref={fullscreenRef}>
-
-          {/* ─── EDIT BUTTON (always visible, above slide) ─── */}
-          {!isFullscreen && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">
-                Slide {currentIndex + 1} of {slides.length}
-              </span>
-              <button
-                onClick={() => setIsSlideEditing((prev) => !prev)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow ${
-                  isSlideEditing
-                    ? 'bg-indigo-600 text-white shadow-indigo-200'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700'
-                }`}
-              >
-                <FiEdit2 className="w-4 h-4" />
-                {isSlideEditing ? 'Done Editing' : 'Edit Slide'}
-              </button>
-            </div>
-          )}
-
-          {/* ─── Slide Canvas ─── */}
-          <div
-            className={`relative overflow-hidden transition-all ${
-              isFullscreen
-                ? 'w-full h-full flex flex-col justify-center rounded-none bg-black'
-                : 'w-full rounded-2xl shadow-2xl border border-white/20'
-            }`}
-          >
-            <div className={isFullscreen ? 'w-full aspect-video max-h-screen mx-auto' : 'w-full'}>
+        <main className="h-full min-h-0 bg-slate-100 p-4 flex flex-col gap-3">
+        <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center py-6" ref={stageRef}>
+        <div className="w-full max-w-4xl px-4">
               <SlideRenderer
-                blocks={currentSlide.blocks}
+                key={currentIndex}
+                slide={slide}
                 theme={activeTheme}
-                logoUrl={logoUrl || undefined}
-                logoPosition={logoPosition}
-                role={isFullscreen ? 'measure' : 'viewer'}
-                className={isFullscreen ? '' : 'rounded-2xl'}
-                dragIndex={isSlideEditing ? dragIndex : undefined}
-                setDragIndex={isSlideEditing ? setDragIndex : undefined}
-                onBlockUpdate={isSlideEditing ? handleBlockUpdate : undefined}
-                onBlockDelete={isSlideEditing ? handleBlockDelete : undefined}
-                onBlockReorder={isSlideEditing ? handleBlockReorder : undefined}
-                onBlockAdd={isSlideEditing ? handleBlockAdd : undefined}
+                logoUrl={settings.logoUrl || undefined}
+                logoPosition={settings.logoPosition}
+                role="viewer"
+                selectedBlockIds={selectedBlockIds}
+                onSelectBlocks={onSelectBlocks}
+                onBlockSelect={(id) => {
+                  if (id) {
+                    setActiveTab('format');
+                  }
+                }}
+                onSlideChange={(nextSlide) => onUpdateSlide(currentIndex, () => nextSlide)}
               />
             </div>
+          </div>
 
-            {/* Fullscreen exit button */}
-            {isFullscreen && (
-              <div className="absolute top-4 right-4 z-50">
-                <button onClick={toggleFullscreen} className="bg-black/50 hover:bg-black/70 text-white rounded-xl px-3 py-2 text-sm backdrop-blur">
-                  Exit
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onSelectSlide(currentIndex - 1)}
+                disabled={!canGoPrevious}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+              >
+                <FiChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </button>
+
+              <input
+                type="range"
+                min={0}
+                max={Math.max(0, slides.length - 1)}
+                value={currentIndex}
+                onChange={(event) => onSelectSlide(Number(event.target.value))}
+                className="flex-1 accent-sky-600"
+                aria-label="Slide navigation slider"
+              />
+
+              <button
+                onClick={() => onSelectSlide(currentIndex + 1)}
+                disabled={!canGoNext}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+              >
+                Next
+                <FiChevronRight className="h-3.5 w-3.5" />
+              </button>
+
+              <span className="min-w-[86px] text-right text-xs font-semibold text-slate-500">
+                {currentIndex + 1} / {slides.length}
+              </span>
+            </div>
+          </div>
+        </main>
+
+        {rightPanelOpen ? (
+          <aside className="absolute right-0 top-16 h-[calc(100%-64px)] w-[320px] z-30 shadow-2xl border-l border-slate-200 bg-white">
+            <div className="h-12 border-b border-slate-200 grid grid-cols-3">
+              <button
+                onClick={() => setActiveTab('design')}
+                className={`text-sm ${activeTab === 'design' ? 'bg-slate-100 font-semibold' : ''}`}
+              >
+                Design
+              </button>
+              <button
+                onClick={() => setActiveTab('insert')}
+                className={`text-sm ${activeTab === 'insert' ? 'bg-slate-100 font-semibold' : ''}`}
+              >
+                Insert
+              </button>
+              {activeBlock ? (
+                <button
+                  onClick={() => setActiveTab('format')}
+                  className={`text-sm ${activeTab === 'format' ? 'bg-slate-100 font-semibold' : ''}`}
+                >
+                  Format
                 </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="text-sm text-slate-400 flex items-center justify-center">Format</div>
+              )}
+            </div>
 
-          {/* ─── Navigation ─── */}
-          <div className={`flex items-center justify-between transition-all ${
-            isFullscreen
-              ? 'absolute bottom-0 w-full px-8 py-4 bg-white/90 backdrop-blur'
-              : 'px-2'
-          }`}>
-            <button
-              onClick={() => handleNavigate(Math.max(0, currentIndex - 1))}
-              disabled={currentIndex === 0}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <FiChevronLeft className="w-4 h-4" /> Previous
-            </button>
-            <span className="text-sm font-medium tracking-widest text-gray-500">
-              {currentIndex + 1} / {slides.length}
-            </span>
-            <button
-              onClick={() => handleNavigate(Math.min(slides.length - 1, currentIndex + 1))}
-              disabled={currentIndex === slides.length - 1}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              Next <FiChevronRight className="w-4 h-4" />
-            </button>
+            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-48px)]">
+            {activeTab === 'design' ? (
+              <>
+                <section className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-500">Theme</h4>
+                  <div className="grid grid-cols-5 gap-2">
+                    {THEMES.map((candidate) => (
+                      <button
+                        key={candidate.id}
+                        onClick={() => onSwitchTheme(candidate.id)}
+                        aria-label={`Switch to ${candidate.name} theme`}
+                        title={`Switch to ${candidate.name} theme`}
+                        className={`h-9 rounded border-2 ${
+                          candidate.id === settings.theme ? 'border-sky-500' : 'border-slate-200'
+                        }`}
+                        style={{ background: candidate.colors.bg }}
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-500">Brand Colors</h4>
+                  {[
+                    { key: 'primary', label: 'Primary' },
+                    { key: 'accent', label: 'Accent' },
+                    { key: 'background', label: 'Background' },
+                  ].map((item) => (
+                    <label key={item.key} className="flex items-center justify-between text-sm">
+                      <span>{item.label}</span>
+                      <input
+                        type="color"
+                        value={
+                          (settings.customColors?.[item.key as keyof NonNullable<typeof settings.customColors>] as string) ||
+                          (item.key === 'background' ? theme.colors.bg : theme.colors.primary)
+                        }
+                        onChange={(event) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            customColors: {
+                              ...(prev.customColors || {}),
+                              [item.key]: event.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </label>
+                  ))}
+                </section>
+
+                <section className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-500">Logo</h4>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-2 px-2 py-1.5 rounded border border-slate-200 text-xs cursor-pointer">
+                      <FiUpload className="h-3.5 w-3.5" /> Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) {
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setSettings((prev) => ({
+                              ...prev,
+                              logoUrl: String(reader.result || ''),
+                            }));
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    <input
+                      value={settings.logoUrl || ''}
+                      onChange={(event) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          logoUrl: event.target.value,
+                        }))
+                      }
+                      aria-label="Logo URL"
+                      placeholder="Logo URL"
+                      className="flex-1 rounded border border-slate-200 px-2 py-1.5 text-xs"
+                    />
+                  </div>
+                  <select
+                    value={settings.logoPosition || 'top-right'}
+                    aria-label="Logo position"
+                    onChange={(event) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        logoPosition: event.target.value as PresentationSettings['logoPosition'],
+                      }))
+                    }
+                    className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm"
+                  >
+                    <option value="top-left">Top Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-right">Bottom Right</option>
+                  </select>
+                </section>
+              </>
+            ) : null}
+
+            {activeTab === 'insert' ? (
+              <>
+                <button
+                  onClick={() =>
+                    onUpdateSlide(currentIndex, (targetSlide) =>
+                      addBlockAtCenter(targetSlide, {
+                        id: `block-${Date.now()}`,
+                        type: 'text',
+                        position: { x: 12, y: 10, width: 76, height: 16 },
+                        content: 'Heading',
+                        style: { variant: 'title', emphasis: 'strong' },
+                      } as SpatialTextBlock)
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-left"
+                >
+                  Add Heading
+                </button>
+                <button
+                  onClick={() =>
+                    onUpdateSlide(currentIndex, (targetSlide) =>
+                      addBlockAtCenter(targetSlide, {
+                        id: `block-${Date.now()}`,
+                        type: 'text',
+                        position: { x: 12, y: 30, width: 76, height: 20 },
+                        content: 'Paragraph text',
+                        style: { variant: 'body' },
+                      } as SpatialTextBlock)
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-left"
+                >
+                  Add Paragraph
+                </button>
+                {/* ── Image Inserter ─────────────────────────────── */}
+                {!imageInsertOpen ? (
+                  <button
+                    onClick={() => {
+                      setImageInsertOpen(true);
+                      setImageInsertMode('url');
+                      setImageError('');
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-left"
+                  >
+                    Add Image
+                  </button>
+                ) : (
+                  <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 space-y-2">
+                    {/* Mode tabs */}
+                    <div className="flex items-center gap-1">
+                      {(['url', 'upload', 'ai'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => { setImageInsertMode(mode); setImageError(''); }}
+                          className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            imageInsertMode === mode
+                              ? 'bg-sky-600 text-white'
+                              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {mode === 'url' ? 'URL' : mode === 'upload' ? 'Upload' : 'AI Generate'}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { setImageInsertOpen(false); setImageError(''); }}
+                        className="ml-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-slate-600"
+                        aria-label="Close image panel"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* URL tab */}
+                    {imageInsertMode === 'url' && (
+                      <div className="space-y-2">
+                        <input
+                          type="url"
+                          value={imageUrlInput}
+                          onChange={(e) => setImageUrlInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleInsertImageFromUrl(); }}
+                          placeholder="https://example.com/image.png"
+                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+                        />
+                        <button
+                          onClick={handleInsertImageFromUrl}
+                          disabled={!imageUrlInput.trim()}
+                          className="w-full px-3 py-1.5 rounded bg-sky-600 text-white text-xs disabled:opacity-40"
+                        >
+                          Insert
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Upload tab */}
+                    {imageInsertMode === 'upload' && (
+                      <label className={`flex items-center justify-center gap-2 w-full px-3 py-2 rounded border-2 border-dashed border-sky-300 text-xs text-sky-700 cursor-pointer hover:bg-sky-100 transition-colors ${imageLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <FiUpload className="h-3.5 w-3.5" />
+                        {imageLoading ? 'Uploading...' : 'Choose image from device'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleUploadImage}
+                          disabled={imageLoading}
+                        />
+                      </label>
+                    )}
+
+                    {/* AI Generate tab */}
+                    {imageInsertMode === 'ai' && (
+                      <div className="space-y-2">
+                        <textarea
+                          value={imagePromptInput}
+                          onChange={(e) => setImagePromptInput(e.target.value)}
+                          placeholder="Describe the image you want to generate..."
+                          rows={3}
+                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none"
+                        />
+                        <button
+                          onClick={handleGenerateAiImage}
+                          disabled={!imagePromptInput.trim() || imageLoading}
+                          className="w-full px-3 py-1.5 rounded bg-sky-600 text-white text-xs disabled:opacity-40"
+                        >
+                          {imageLoading ? 'Generating...' : 'Generate Image'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Error message */}
+                    {imageError && (
+                      <p className="text-xs text-red-500">{imageError}</p>
+                    )}
+                  </div>
+                )}
+                <button
+                  onClick={() =>
+                    onUpdateSlide(currentIndex, (targetSlide) =>
+                      addBlockAtCenter(targetSlide, {
+                        id: `block-${Date.now()}`,
+                        type: 'chart',
+                        position: { x: 12, y: 18, width: 72, height: 50 },
+                        chart_type: 'bar',
+                        data: [
+                          { label: 'A', value: 24 },
+                          { label: 'B', value: 18 },
+                          { label: 'C', value: 30 },
+                        ],
+                        title: 'Chart',
+                      } as SpatialChartBlock)
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-left"
+                >
+                  Add Chart
+                </button>
+              </>
+            ) : null}
+
+            {activeTab === 'format' && activeBlock ? (
+              <>
+                <section className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-500">Brand Colors</h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {brandColors.map((color) => (
+                      <button
+                        key={color}
+                        aria-label={`Apply ${color} color`}
+                        title={`Apply ${color} color`}
+                        className="h-8 rounded border border-slate-200"
+                        style={{ background: color }}
+                        onClick={() => {
+                          onUpdateSlide(currentIndex, (targetSlide) =>
+                            applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) => {
+                              if (block.type === 'text') {
+                                return {
+                                  ...block,
+                                  style: {
+                                    ...(block.style || {}),
+                                    color,
+                                  },
+                                } as SpatialTextBlock;
+                              }
+
+                              if (block.type === 'chart') {
+                                return {
+                                  ...block,
+                                  color,
+                                } as SpatialChartBlock;
+                              }
+
+                              return block;
+                            })
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <input
+                    type="color"
+                    aria-label="Choose custom block color"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      onUpdateSlide(currentIndex, (targetSlide) =>
+                        applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) => {
+                          if (block.type === 'text') {
+                            return {
+                              ...block,
+                              style: {
+                                ...(block.style || {}),
+                                color: value,
+                              },
+                            } as SpatialTextBlock;
+                          }
+                          if (block.type === 'chart') {
+                            return {
+                              ...block,
+                              color: value,
+                            } as SpatialChartBlock;
+                          }
+                          return block;
+                        })
+                      );
+                    }}
+                  />
+                </section>
+
+                {activeBlock.type === 'image' ? (
+                  <section className="space-y-2">
+                    <h4 className="text-xs uppercase tracking-wide text-slate-500">Image</h4>
+                    <input
+                      className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm"
+                      value={activeBlock.prompt}
+                      aria-label="Image URL or AI prompt"
+                      onChange={(event) =>
+                        onUpdateSlide(currentIndex, (targetSlide) =>
+                          applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) =>
+                            block.type === 'image'
+                              ? ({ ...block, prompt: event.target.value } as SpatialImageBlock)
+                              : block
+                          )
+                        )
+                      }
+                      placeholder="Replace image URL or AI prompt"
+                    />
+                    <select
+                      value={activeBlock.object_fit || 'cover'}
+                      aria-label="Image fit mode"
+                      onChange={(event) =>
+                        onUpdateSlide(currentIndex, (targetSlide) =>
+                          applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) =>
+                            block.type === 'image'
+                              ? ({ ...block, object_fit: event.target.value as 'cover' | 'contain' } as SpatialImageBlock)
+                              : block
+                          )
+                        )
+                      }
+                      className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm"
+                    >
+                      <option value="cover">Crop (Cover)</option>
+                      <option value="contain">Contain</option>
+                    </select>
+                  </section>
+                ) : null}
+
+                <section className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-500">Layer</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      className="px-2 py-1.5 rounded border border-slate-200 text-sm"
+                      onClick={() =>
+                        onUpdateSlide(currentIndex, (targetSlide) =>
+                          applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) => ({
+                            ...block,
+                            z_index: (block.z_index || 0) + 1,
+                          }))
+                        )
+                      }
+                    >
+                      Bring Forward
+                    </button>
+                    <button
+                      className="px-2 py-1.5 rounded border border-slate-200 text-sm"
+                      onClick={() =>
+                        onUpdateSlide(currentIndex, (targetSlide) =>
+                          applySelectedBlockUpdate(targetSlide, selectedBlockIds, (block) => ({
+                            ...block,
+                            z_index: Math.max(0, (block.z_index || 0) - 1),
+                          }))
+                        )
+                      }
+                    >
+                      Send Backward
+                    </button>
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <button
+                    onClick={onCopySelection}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                  >
+                    <FiCopy className="h-4 w-4" /> Copy
+                  </button>
+                  <button
+                    onClick={onPasteSelection}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                  >
+                    <FiCornerDownRight className="h-4 w-4" /> Paste
+                  </button>
+                  <button
+                    onClick={onDeleteSelection}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm"
+                  >
+                    <FiTrash2 className="h-4 w-4" /> Delete
+                  </button>
+                </section>
+              </>
+            ) : null}
+
+            <section className="pt-4 border-t border-slate-200 space-y-2">
+              <button
+                onClick={() => onAddSlide(currentIndex)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+              >
+                Add New Slide
+              </button>
+              <button
+                onClick={() => onDeleteSlide(currentIndex)}
+                className="w-full px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm"
+              >
+                Delete Slide
+              </button>
+            </section>
           </div>
-        </div>
+        </aside>
+        ) : null}
       </div>
-
-      {/* Mobile thumbnails */}
-      {!isFullscreen && (
-        <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          {slides.map((slide, i) => (
-            <button
-              key={slide.id}
-              onClick={() => handleNavigate(i)}
-              className={`flex-shrink-0 w-20 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                i === currentIndex ? 'border-indigo-500' : 'border-gray-200'
-              }`}
-              style={{ backgroundColor: activeTheme.colors.bg }}
-            >
-              <div className="flex items-center justify-center h-full">
-                <span className="text-[8px] font-bold" style={{ color: activeTheme.colors.primary }}>
-                  {i + 1}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
