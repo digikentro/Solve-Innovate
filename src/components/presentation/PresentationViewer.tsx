@@ -1,4 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useReactToPrint } from 'react-to-print';
+import { FiLayout, FiSliders, FiPlus } from 'react-icons/fi';
+import { RteToolbar } from './RteToolbar';
+import { ActiveEditorProvider } from './ActiveEditorContext';
+import { PrintablePresentation } from './PrintablePresentation';
 import {
   FiArrowLeft,
   FiChevronDown,
@@ -82,7 +87,7 @@ const addBlockAtCenter = (slide: SlideData, block: SpatialBlock): SlideData => {
       ...slide.blocks,
       {
         ...block,
-        z_index: nextZ,
+        z_index: block.type === 'shape' ? -1 : nextZ,
       },
     ],
   };
@@ -131,7 +136,22 @@ export const PresentationViewer = ({
   onPasteSelection,
   onDeleteSelection,
 }: PresentationViewerProps) => {
-  const [activeTab, setActiveTab] = useState<PanelTab>('design');
+  const [activeTab, setActiveTab] = useState<PanelTab | null>(null);
+  const [isExportingPdfLocal, setIsExportingPdfLocal] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: title,
+    onAfterPrint: () => setIsExportingPdfLocal(false),
+  });
+
+  const triggerPdfExport = () => {
+    setIsExportingPdfLocal(true);
+    setTimeout(() => {
+      handlePrint();
+    }, 500); // Give React time to render all slides into the hidden ref
+  };
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [regenInstructions, setRegenInstructions] = useState('');
@@ -265,6 +285,7 @@ export const PresentationViewer = ({
   }, [canGoNext, canGoPrevious, currentIndex, onSelectSlide]);
 
   return (
+    <ActiveEditorProvider>
     <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative">
       <div className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -327,7 +348,7 @@ export const PresentationViewer = ({
               <FiChevronDown className="h-4 w-4" />
             </button>
             {showExportMenu ? (
-              <div className="absolute right-0 mt-2 w-44 rounded-lg border border-slate-200 bg-white shadow-lg p-1 z-20">
+              <div className="absolute right-0 mt-2 w-44 rounded-lg border border-slate-200 bg-white shadow-lg p-1 z-50">
                 <button
                   disabled={isExporting}
                   onClick={onExportPptx}
@@ -336,8 +357,8 @@ export const PresentationViewer = ({
                   Export PPTX
                 </button>
                 <button
-                  disabled={isExporting}
-                  onClick={onExportPdf}
+                  disabled={isExporting || isExportingPdfLocal}
+                  onClick={triggerPdfExport}
                   className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
                 >
                   Export PDF
@@ -356,7 +377,7 @@ export const PresentationViewer = ({
               <FiMoreVertical className="h-4 w-4" />
             </button>
             {showSettingsMenu ? (
-              <div className="absolute right-0 mt-2 w-72 rounded-lg border border-slate-200 bg-white shadow-lg p-2 z-20 space-y-2">
+              <div className="absolute right-0 mt-2 w-72 rounded-lg border border-slate-200 bg-white shadow-lg p-2 z-50 space-y-2">
                 <label className="block text-xs text-slate-500">Single Slide AI Regeneration</label>
                 <textarea
                   value={regenInstructions}
@@ -377,8 +398,8 @@ export const PresentationViewer = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-[280px_minmax(0,1fr)] h-[calc(100%-64px)]">
-        <aside className="h-full border-r border-slate-200 bg-white p-3 overflow-hidden">
+      <div className="flex h-[calc(100%-64px)] overflow-hidden relative">
+        <aside className="w-[280px] h-full border-r border-slate-200 bg-white p-3 overflow-hidden flex-shrink-0">
           <SlideThumbnails
             slides={slides}
             theme={activeTheme}
@@ -391,9 +412,22 @@ export const PresentationViewer = ({
           />
         </aside>
 
-        <main className="h-full min-h-0 bg-slate-100 p-4 flex flex-col gap-3">
+        <main className="flex-1 h-full min-h-0 bg-slate-100 p-4 flex flex-col gap-3 relative">
+          <style>{`
+            :fullscreen .slide-container {
+              max-width: none !important;
+              width: 100vw !important;
+              height: 100vh !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+          `}</style>
+          {selectedBlockIds.length > 0 && <div className="absolute top-2 left-0 right-0 z-20 flex justify-center"><RteToolbar /></div>}
         <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center py-6" ref={stageRef}>
-        <div className="w-full max-w-4xl px-4">
+        <div className="w-full max-w-4xl px-4 slide-container">
               <SlideRenderer
                 key={currentIndex}
                 slide={slide}
@@ -403,10 +437,8 @@ export const PresentationViewer = ({
                 role="viewer"
                 selectedBlockIds={selectedBlockIds}
                 onSelectBlocks={onSelectBlocks}
-                onBlockSelect={(id) => {
-                  if (id) {
-                    setActiveTab('format');
-                  }
+                onBlockSelect={() => {
+                  // Do not auto-open the format tab
                 }}
                 onSlideChange={(nextSlide) => onUpdateSlide(currentIndex, () => nextSlide)}
               />
@@ -450,34 +482,19 @@ export const PresentationViewer = ({
           </div>
         </main>
 
-        {rightPanelOpen ? (
-          <aside className="absolute right-0 top-16 h-[calc(100%-64px)] w-[320px] z-30 shadow-2xl border-l border-slate-200 bg-white">
-            <div className="h-12 border-b border-slate-200 grid grid-cols-3">
-              <button
-                onClick={() => setActiveTab('design')}
-                className={`text-sm ${activeTab === 'design' ? 'bg-slate-100 font-semibold' : ''}`}
+        {activeTab ? (
+          <aside className="absolute right-16 top-0 h-full w-[320px] z-30 shadow-2xl border-l border-slate-200 bg-white rounded-l-2xl overflow-hidden">
+            <div className="h-12 border-b border-slate-200 flex items-center px-4 font-semibold text-slate-700 capitalize">
+              {activeTab} Actions
+              <button 
+                onClick={() => setActiveTab(null)} 
+                className="ml-auto text-slate-400 hover:text-slate-600"
               >
-                Design
+                ✕
               </button>
-              <button
-                onClick={() => setActiveTab('insert')}
-                className={`text-sm ${activeTab === 'insert' ? 'bg-slate-100 font-semibold' : ''}`}
-              >
-                Insert
-              </button>
-              {activeBlock ? (
-                <button
-                  onClick={() => setActiveTab('format')}
-                  className={`text-sm ${activeTab === 'format' ? 'bg-slate-100 font-semibold' : ''}`}
-                >
-                  Format
-                </button>
-              ) : (
-                <div className="text-sm text-slate-400 flex items-center justify-center">Format</div>
-              )}
             </div>
 
-            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-48px)]">
+            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-48px)] pb-16">
             {activeTab === 'design' ? (
               <>
                 <section className="space-y-2">
@@ -740,7 +757,57 @@ export const PresentationViewer = ({
                 >
                   Add Chart
                 </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      onUpdateSlide(currentIndex, (targetSlide) =>
+                        addBlockAtCenter(targetSlide, {
+                          id: `block-${Date.now()}`,
+                          type: 'table',
+                          position: { x: 10, y: 20, width: 80, height: 60 },
+                          data: {
+                            headers: ['Column 1', 'Column 2', 'Column 3'],
+                            rows: [
+                              ['Data A1', 'Data B1', 'Data C1'],
+                              ['Data A2', 'Data B2', 'Data C2']
+                            ]
+                          }
+                        } as any)
+                      )
+                    }
+                    className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm text-center"
+                  >
+                    Add Table
+                  </button>
+                </div>
+                <details className="mt-2 text-sm border border-slate-200 rounded-lg group">
+                  <summary className="w-full px-3 py-2 font-medium cursor-pointer outline-none bg-slate-50 hover:bg-slate-100 rounded-lg">Add Shape</summary>
+                  <div className="grid grid-cols-2 gap-2 p-2 pt-2 border-t border-slate-100">
+                    {['square', 'circle', 'rectangle', 'triangle', 'line'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() =>
+                          onUpdateSlide(currentIndex, (targetSlide) =>
+                            addBlockAtCenter(targetSlide, {
+                              id: `block-${Date.now()}`,
+                              type: 'shape',
+                              position: { x: 40, y: 30, width: s === 'rectangle' || s === 'line' ? 30 : 15, height: s === 'line' ? 2 : 15 },
+                              shape_type: s,
+                            } as any)
+                          )
+                        }
+                        className="px-2 py-2 rounded-lg border border-slate-200 text-xs text-center capitalize hover:bg-sky-50 transition"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </details>
               </>
+            ) : null}
+
+            {activeTab === 'format' && !activeBlock ? (
+              <div className="text-sm text-slate-500 text-center py-8">Select a block on the slide to format it.</div>
             ) : null}
 
             {activeTab === 'format' && activeBlock ? (
@@ -768,11 +835,11 @@ export const PresentationViewer = ({
                                 } as SpatialTextBlock;
                               }
 
-                              if (block.type === 'chart') {
+                              if (block.type === 'chart' || block.type === 'shape' || block.type === 'table') {
                                 return {
                                   ...block,
                                   color,
-                                } as SpatialChartBlock;
+                                } as any;
                               }
 
                               return block;
@@ -798,11 +865,11 @@ export const PresentationViewer = ({
                               },
                             } as SpatialTextBlock;
                           }
-                          if (block.type === 'chart') {
+                          if (block.type === 'chart' || block.type === 'shape' || block.type === 'table') {
                             return {
                               ...block,
                               color: value,
-                            } as SpatialChartBlock;
+                            } as any;
                           }
                           return block;
                         })
@@ -843,8 +910,8 @@ export const PresentationViewer = ({
                       }
                       className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm"
                     >
-                      <option value="cover">Crop (Cover)</option>
-                      <option value="contain">Contain</option>
+                      <option value="contain">Show Entire Image (Contain)</option>
+                      <option value="cover">Fill Box Visually Crop (Cover)</option>
                     </select>
                   </section>
                 ) : null}
@@ -921,7 +988,39 @@ export const PresentationViewer = ({
           </div>
         </aside>
         ) : null}
+        
+        {/* Right Icon Strip */}
+        <aside className="w-16 h-full border-l border-slate-200 bg-white flex flex-col items-center py-4 gap-4 flex-shrink-0 z-40 bg-slate-50">
+          <button
+            onClick={() => setActiveTab(activeTab === 'design' ? null : 'design')}
+            className={`p-3 rounded-xl ${activeTab === 'design' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            title="Design"
+          >
+            <FiLayout className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab(activeTab === 'insert' ? null : 'insert')}
+            className={`p-3 rounded-xl ${activeTab === 'insert' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            title="Insert"
+          >
+            <FiPlus className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab(activeTab === 'format' ? null : 'format')}
+            className={`p-3 rounded-xl ${activeTab === 'format' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            title="Format"
+          >
+            <FiSliders className="w-5 h-5" />
+          </button>
+        </aside>
+
       </div>
+      {isExportingPdfLocal && (
+        <div className="fixed inset-0 z-50 bg-white items-center flex justify-center text-xl font-semibold opacity-0 pointer-events-none">
+          <PrintablePresentation ref={printRef} slides={slides} theme={activeTheme} settings={settings} />
+        </div>
+      )}
     </div>
+    </ActiveEditorProvider>
   );
 };

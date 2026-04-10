@@ -169,8 +169,34 @@ class SpatialChartBlock(BaseModel):
     data: List[SpatialChartDataPoint]
     title: Optional[str] = None
 
+class SpatialShapeBlock(BaseModel):
+    id: str
+    type: Literal["shape"]
+    position: SpatialPosition
+    shape_type: Literal["square", "circle", "rectangle", "triangle", "line"]
+    color: Optional[str] = None
 
-SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock
+
+class SpatialIconBlock(BaseModel):
+    id: str
+    type: Literal["icon"]
+    position: SpatialPosition
+    icon_query: str
+    color: Optional[str] = None
+
+
+class SpatialTableData(BaseModel):
+    headers: List[str]
+    rows: List[List[str]]
+
+class SpatialTableBlock(BaseModel):
+    id: str
+    position: SpatialPosition
+    type: Literal['table']
+    data: SpatialTableData
+    color: Optional[str] = None
+
+SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock | SpatialShapeBlock | SpatialIconBlock | SpatialTableBlock
 
 
 class SpatialSlide(BaseModel):
@@ -852,9 +878,10 @@ def _extract_quantitative_datasets(project: Dict[str, Any]) -> List[Dict[str, An
     return datasets
 
 
-async def _resolve_image_prompts(deck: SpatialDeckPayload) -> SpatialDeckPayload:
+async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload:
     images_directory = get_images_directory()
     image_service = ImageGenerationService(output_directory=images_directory)
+    from services.icon_finder_service import ICON_FINDER_SERVICE
 
     for slide in deck.slides:
         for block in slide.blocks:
@@ -869,6 +896,14 @@ async def _resolve_image_prompts(deck: SpatialDeckPayload) -> SpatialDeckPayload
                         block.prompt = os.path.abspath(generated.path)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Image generation failed for block=%s: %s", block.id, exc)
+            elif isinstance(block, SpatialIconBlock):
+                try:
+                    results = await ICON_FINDER_SERVICE.search_icons(query=block.icon_query, k=1)
+                    if results and len(results) > 0:
+                        # Re-use icon_query field as the resolved icon path (just like we do for image block's prompt)
+                        block.icon_query = results[0]
+                except Exception as exc:
+                    logger.warning("Icon search failed for block=%s: %s", block.id, exc)
     return deck
 
 
@@ -921,7 +956,8 @@ async def _build_spatial_deck(
             if isinstance(block, SpatialChartBlock) and not block.data and fallback_chart_data:
                 block.data = [SpatialChartDataPoint(**item) for item in fallback_chart_data[:8]]
 
-    return await _resolve_image_prompts(deck)
+    deck = await _resolve_visual_blocks(deck)
+    return deck
 
 
 async def _build_generation_content(project: Dict[str, Any]) -> str:

@@ -87,14 +87,14 @@ export const ResearchGeneratorSection = ({
   }
 
   // Check if data exists - either from local state or passed from parent (database)
-  const hasData = data !== null && data !== undefined && 
+  const hasData = data !== null && data !== undefined &&
     (typeof data === 'object' && Object.keys(data).length > 0);
-     
+
   // Additional debug for transformation framework
   if (title === 'Transformation Framework') {
     console.log('Transformation hasData result:', hasData);
   }
-  
+
   // DEBUG: Log data evaluation for transformation framework
   if (title === 'Transformation Framework') {
     console.log('ResearchGeneratorSection DEBUG:', {
@@ -123,7 +123,7 @@ export const ResearchGeneratorSection = ({
     if (onGenerate) {
       onGenerate();
     }
-    
+
     // Validate all fields - only if there are form fields
     if (formFields.length > 0) {
       const allFields: FormField[] = [];
@@ -142,20 +142,25 @@ export const ResearchGeneratorSection = ({
     }
 
     setIsLoading(true);
+    const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
+
     try {
       const requestBody = requestBodyMapper
         ? requestBodyMapper(formData, projectId)
         : { project_id: projectId, ...formData };
 
-      console.log(`Sending ${title} Request:`, requestBody);
+      console.log(`Sending ${title} Request via proxy:`, requestBody);
 
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          target_url: apiEndpoint,
+          payload: requestBody
+        })
       });
 
       if (!response.ok) {
@@ -179,18 +184,18 @@ export const ResearchGeneratorSection = ({
 
       setData(responseData);
       setShowReport(true);
-      
+
       // Refresh project data to get the latest from database
       if (onRefreshProject) {
         setTimeout(() => {
           onRefreshProject();
         }, 2000);
       }
-      
+
       toast.success(`${title} generated successfully!`, {
         duration: 3000,
       });
-      
+
       // Clear form - only if there are form fields
       if (formFields.length > 0) {
         const allFields: FormField[] = [];
@@ -223,11 +228,11 @@ export const ResearchGeneratorSection = ({
     // Clear data and show form
     setData(null);
     setShowReport(false);
-    
+
     // Don't clear form fields - keep existing data so users can regenerate with same inputs
     // This is especially useful for sections like Deep Empathy where users want to keep
     // the pain point and description when regenerating
-    
+
     // Note: Form data is preserved, users can modify if needed before clicking Generate
   };
 
@@ -261,7 +266,7 @@ export const ResearchGeneratorSection = ({
               )}
             </div>
           </div>
-          
+
           <div className="p-8">
             <div className="space-y-6">
               <div className={`bg-${gradientFrom}/80 p-6 rounded-2xl border border-${gradientFrom.replace('-50', '-200')}`}>
@@ -274,10 +279,10 @@ export const ResearchGeneratorSection = ({
                     return (
                       <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
                         {element.fields.map((field) => {
-                          const widthClass = field.width === '1/3' ? 'col-span-4' : 
-                                           field.width === '2/3' ? 'col-span-8' : 
-                                           field.width === '1/2' ? 'col-span-6' : 'col-span-12';
-                          
+                          const widthClass = field.width === '1/3' ? 'col-span-4' :
+                            field.width === '2/3' ? 'col-span-8' :
+                              field.width === '1/2' ? 'col-span-6' : 'col-span-12';
+
                           return (
                             <div key={field.id} className={widthClass}>
                               <div className="flex items-center justify-between mb-3">

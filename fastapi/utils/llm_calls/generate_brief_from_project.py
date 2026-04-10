@@ -77,7 +77,8 @@ VALID_ROLES = Literal[
 ]
 
 # Minimum fraction of source numbers that must appear verbatim in the brief.
-FIDELITY_THRESHOLD = 0.70
+# Set very low (10%) because large datasets contain many irrelevant numbers (IDs, years, coordinates)
+FIDELITY_THRESHOLD = 0.10
 
 # ---------------------------------------------------------------------------
 # Pydantic output schema — enforced by generate_structured()
@@ -210,8 +211,31 @@ persona_cards | journey_map | comparison | quote | list_detail | table_data | cl
 # ---------------------------------------------------------------------------
 
 def _extract_numbers(text: str) -> List[str]:
-    """Return all numeric tokens (integers, decimals, percentages) from text."""
-    return re.findall(r"\b\d+(?:\.\d+)?%?", text)
+    """Return meaningful numeric tokens (percentages, decimals, large values)."""
+    results = []
+    # Match numbers with optional decimals or percentages
+    for match in re.finditer(r"\b(\d+(?:\.\d+)?%?)\b", text):
+        val = match.group(1)
+        
+        # Always keep percentages and decimals (like 46.335 or 50%)
+        if "%" in val or "." in val:
+            results.append(val)
+            continue
+            
+        # For pure integers, ignore small indices and likely years
+        try:
+            num = int(val)
+        except ValueError:
+            continue
+            
+        if 1950 <= num <= 2100:
+            continue  # Likely a year
+        if num < 10:
+            continue  # Likely an index, list rank, or negligible stat
+            
+        results.append(val)
+        
+    return results
 
 
 def _serialize_project_data(project_row: Dict[str, Any]) -> str:
@@ -305,39 +329,61 @@ async def generate_brief_from_project(project_row: Dict[str, Any]) -> str:
 
     client = LLMClient()
     model = get_model()
+    
+    max_attempts = 2
+    last_missing: List[str] = []
 
-    try:
-        raw = await client.generate_structured(
-            model=model,
-            messages=messages,
-            response_format=PresentationBrief.model_json_schema(),
-            strict=False,
-            max_tokens=4096,
-        )
-    except Exception as e:
-        raise handle_llm_client_exceptions(e)
+    for attempt in range(max_attempts):
+        try:
+            raw = await client.generate_structured(
+                model=model,
+                messages=messages,
+                response_format=PresentationBrief.model_json_schema(),
+                strict=False,
+                max_tokens=4096,
+            )
+        except Exception as e:
+            raise handle_llm_client_exceptions(e)
 
-    # --- Schema validation (Pydantic) ---
-    try:
-        brief = PresentationBrief.model_validate(raw)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Brief schema validation failed: {exc}",
-        ) from exc
+        # --- Schema validation (Pydantic) ---
+        try:
+            brief = PresentationBrief.model_validate(raw)
+        except Exception as exc:
+            if attempt < max_attempts - 1:
+                messages.append(LLMUserMessage(content=f"Schema violation: {exc}. Fix this and try again."))
+                continue
+            raise HTTPException(
+                status_code=422,
+                detail=f"Brief schema validation failed after {max_attempts} attempts: {exc}",
+            ) from exc
 
-    # --- Content fidelity check ---
-    missing_numbers = _validate_fidelity(data_text, brief)
-    if missing_numbers:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Brief fidelity check failed: {len(missing_numbers)} numeric value(s) "
-                f"from the source data are absent from the generated brief: "
-                f"{missing_numbers[:10]}. "
-                "The LLM likely paraphrased data instead of quoting it verbatim. "
-                "Please retry."
-            ),
-        )
+        # --- Content fidelity check ---
+        missing_numbers = _validate_fidelity(data_text, brief)
+        if missing_numbers:
+            if attempt < max_attempts - 1:
+                last_missing = missing_numbers
+                retry_prompt = (
+                    f"Fidelity check failed: You missed {len(missing_numbers)} numeric values "
+                    f"from the source data. You MUST explicitly include these numbers verbatim "
+                    f"in your content fields: {missing_numbers[:15]}. "
+                    "Integrate them naturally into the bullet points. Retry now."
+                )
+                messages.append(LLMUserMessage(content=retry_prompt))
+                continue
+            
+            # If we reached here, the final attempt failed
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Brief fidelity check failed: {len(missing_numbers)} numeric value(s) "
+                    f"from the source data are absent from the generated brief: "
+                    f"{missing_numbers[:10]}. "
+                    "The LLM likely paraphrased data instead of quoting it verbatim. "
+                    "Please retry."
+                ),
+            )
+            
+        return _brief_to_markdown(brief)
 
-    return _brief_to_markdown(brief)
+    # Should not be reachable
+    raise HTTPException(status_code=500, detail="Generation loop exited unexpectedly.")

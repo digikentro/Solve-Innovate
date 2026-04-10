@@ -317,7 +317,7 @@ export function usePresentation(
         setSaveState('error');
         setError(err?.message || 'Failed to save editor changes');
       }
-    }, 800);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [projectPresentationId, phase, slides, settings, presentationId]);

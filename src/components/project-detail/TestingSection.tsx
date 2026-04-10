@@ -155,13 +155,19 @@ export const TestingSection = ({
 
             console.log('Testing Request Body:', requestBody);
 
-            const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/testing', {
+            const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
+            const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/testing';
+
+            const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    target_url: targetUrl,
+                    payload: requestBody
+                }),
             });
 
             if (!response.ok) {

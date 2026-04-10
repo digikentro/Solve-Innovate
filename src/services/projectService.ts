@@ -354,12 +354,13 @@ export class ProjectService {
 
   /**
    * Get chat history for a project (Select the User / Extreme User flow)
+   * Supports both the old flat-array format and the new keyed multi-user map.
    */
-  static async getProjectChatboxExtreUserHistory(projectId: string, userId: string): Promise<Array<{
-    user: string;
-    assistant: string;
-    generated_at: string;
-  }>> {
+  static async getProjectChatboxExtreUserHistory(
+    projectId: string,
+    userId: string,
+    userKey?: string
+  ): Promise<Array<{ user: string; assistant: string; generated_at: string }>> {
     const context: ErrorContext = {
       operation: 'get_project_chatbox_extre_user_history',
       userId,
@@ -376,14 +377,58 @@ export class ProjectService {
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
-            throw new Error('Project not found');
-          }
+          if (error.code === 'PGRST116') throw new Error('Project not found');
           throw new Error('Unable to load chat history. Please try again.');
         }
 
-        // Return the chatbox_extreuser data or empty array if null
-        return data?.chatbox_extreuser || [];
+        const raw = data?.chatbox_extreuser;
+        if (!raw) return [];
+
+        // New keyed map format: { user_abc123: { name, created_at, messages: [...] } }
+        if (userKey && typeof raw === 'object' && !Array.isArray(raw) && raw[userKey]) {
+          return raw[userKey].messages ?? [];
+        }
+
+        // Old flat-array format: [{ user, assistant, generated_at }]
+        if (Array.isArray(raw)) return raw;
+
+        return [];
+      },
+      context
+    );
+  }
+
+  /**
+   * Get the full multi-user extreme user map from chatbox_extreuser.
+   * Returns a Record<userKey, { name, created_at, messages }> or {}.
+   */
+  static async getExtremeUserMap(
+    projectId: string,
+    userId: string
+  ): Promise<Record<string, { name: string; created_at: string; messages: Array<{ user: string; assistant: string; generated_at: string }> }>> {
+    const context: ErrorContext = {
+      operation: 'get_extreme_user_map',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_extreuser')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') return {};
+          throw new Error('Unable to load user map. Please try again.');
+        }
+
+        const raw = data?.chatbox_extreuser;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+        return raw as Record<string, any>;
       },
       context
     );

@@ -469,6 +469,12 @@ export const SlideRenderer = ({
   const handleSelect = (blockId: string, shiftKey: boolean) => {
     if (!onSelectBlocks) return;
     const isSelected = selectedBlockIds.includes(blockId);
+    
+    // Unmount editor if we switch focus to a different block
+    if (editingTextBlockId && editingTextBlockId !== blockId) {
+      setEditingTextBlockId(null);
+    }
+    
     if (shiftKey) {
       const next = isSelected
         ? selectedBlockIds.filter((id) => id !== blockId)
@@ -539,7 +545,9 @@ export const SlideRenderer = ({
                   content: value,
                 }));
               }}
-              onTextBlur={() => setEditingTextBlockId(null)}
+              onTextBlur={() => {
+                // Do not unmount automatically on blur so that external toolbars can maintain the editor instance
+              }}
               onChartRef={(instance) => {
                 if (instance) {
                   chartRefs.current.set(block.id, instance);
@@ -608,7 +616,7 @@ const BlockBody = ({
 
     return (
       <div
-        className="h-full w-full px-3 py-2 whitespace-pre-wrap overflow-hidden"
+        className="h-full w-full px-3 py-2 whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
         style={textStyle}
         dangerouslySetInnerHTML={{ __html: block.content }}
       />
@@ -621,9 +629,10 @@ const BlockBody = ({
       <div className="h-full w-full bg-white/10 rounded-md overflow-hidden">
         {imageSrc ? (
           <img
+            draggable={false}
             src={imageSrc}
             alt={block.caption || 'Slide image'}
-            className="h-full w-full"
+            className="h-full w-full select-none"
             style={{ objectFit: (block.object_fit || 'cover') as 'cover' | 'contain' }}
           />
         ) : (
@@ -635,7 +644,79 @@ const BlockBody = ({
     );
   }
 
-  const chartOption = buildChartOption(block, theme.colors.primary);
+  if (block.type === 'icon') {
+    return (
+      <div className="h-full w-full flex items-center justify-center pointer-events-none">
+        <img 
+          src={block.icon_query} 
+          alt="icon" 
+          className="h-full w-full"
+          style={{ objectFit: 'contain', filter: block.color ? `drop-shadow(0 0 0 ${block.color})` : 'none' }} 
+        />
+      </div>
+    );
+  }
+
+  if (block.type === 'shape') {
+    const shapeStyle: React.CSSProperties = {
+      backgroundColor: block.color || theme.colors.primary,
+      width: '100%',
+      height: '100%',
+    };
+    
+    if (block.shape_type === 'circle') {
+      shapeStyle.borderRadius = '50%';
+    } else if (block.shape_type === 'triangle') {
+      shapeStyle.backgroundColor = 'transparent';
+      shapeStyle.borderLeft = '50px solid transparent';
+      shapeStyle.borderRight = '50px solid transparent';
+      shapeStyle.borderBottom = `100px solid ${block.color || theme.colors.primary}`; // CSS trick
+    } else if (block.shape_type === 'line') {
+      shapeStyle.height = '4px';
+      shapeStyle.marginTop = 'auto';
+      shapeStyle.marginBottom = 'auto';
+    }
+
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div style={shapeStyle}></div>
+      </div>
+    );
+  }
+
+  if (block.type === 'table') {
+    const defaultColor = block.color || theme.colors.primary;
+    return (
+      <div className="h-full w-full bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+        <table className="w-full text-left border-collapse text-[10px] md:text-xs">
+          <thead>
+            <tr style={{ backgroundColor: `${defaultColor}15` }}>
+              {block.data.headers.map((h: string, i: number) => (
+                <th key={i} className="p-2 font-semibold border-b border-slate-200" style={{ color: defaultColor }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.data.rows.map((row: string[], rIdx: number) => (
+              <tr key={rIdx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                {row.map((cell: string, cIdx: number) => (
+                  <td key={cIdx} className="p-2 text-slate-700">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const chartBlock = block as SpatialChartBlock;
+  if (!chartBlock.chart_type) return null;
+  const chartOption = buildChartOption(chartBlock, theme.colors.primary);
   return (
     <div className="h-full w-full rounded-md bg-white/80">
       <ReactECharts

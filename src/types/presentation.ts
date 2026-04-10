@@ -48,7 +48,21 @@ export interface SpatialChartBlock extends SpatialBlockBase {
   color?: string;
 }
 
-export type SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock;
+export interface SpatialIconBlock extends SpatialBlockBase {
+  type: 'icon';
+  icon_query: string;
+  color?: string;
+}
+
+export interface SpatialShapeBlock extends SpatialBlockBase {
+  type: 'shape';
+  shape_type: 'square' | 'circle' | 'rectangle' | 'triangle' | 'line';
+  color?: string;
+}
+
+export interface SpatialTableData { headers: string[]; rows: string[][]; }
+export interface SpatialTableBlock extends SpatialBlockBase { type: 'table'; data: SpatialTableData; color?: string; }
+export type SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock | SpatialIconBlock | SpatialShapeBlock | SpatialTableBlock;
 
 // ─── Legacy Markdown Types (compatibility) ──────────────────────────────────
 

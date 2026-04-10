@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from enums.webhook_event import WebhookEvent
 from models.sql.webhook_subscription import WebhookSubscription
 from services.database import get_async_session
+import aiohttp
+import json
 
 API_V1_WEBHOOK_ROUTER = APIRouter(prefix="/api/v1/webhook", tags=["Webhook"])
 
@@ -51,3 +53,24 @@ async def unsubscribe_to_webhook(
 
     await sql_session.delete(webhook_subscription)
     await sql_session.commit()
+
+@API_V1_WEBHOOK_ROUTER.post("/proxy")
+async def proxy_webhook(
+    target_url: str = Body(..., embed=True),
+    payload: dict = Body(..., embed=True)
+):
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(target_url, json=payload, timeout=30) as response:
+                if response.status >= 400:
+                    text = await response.text()
+                    raise HTTPException(response.status, f"n8n error: {text}")
+                
+                try:
+                    return await response.json()
+                except Exception:
+                    return {"status": "success", "message": "Webhook delivered"}
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
+            raise HTTPException(500, f"Failed to forward webhook: {str(e)}")

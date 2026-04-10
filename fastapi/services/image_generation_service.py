@@ -90,14 +90,42 @@ class ImageGenerationService:
                 if image_path.startswith("http"):
                     return image_path
                 elif os.path.exists(image_path):
-                    return ImageAsset(
-                        path=image_path,
-                        is_uploaded=False,
-                        extras={
-                            "prompt": prompt.prompt,
-                            "theme_prompt": prompt.theme_prompt,
-                        },
-                    )
+                    # Upload to Supabase Storage
+                    try:
+                        from services.supabase_client import get_supabase_client
+                        supabase = get_supabase_client()
+                        bucket_name = "presentation_images"
+                        
+                        file_name = os.path.basename(image_path)
+                        with open(image_path, "rb") as f:
+                            # Use sync client storage API (run in thread if needed, but storage operations are usually quick or sync here is acceptable)
+                            supabase.storage.from_(bucket_name).upload(
+                                path=file_name,
+                                file=f,
+                                file_options={"content-type": "image/png"}
+                            )
+                        
+                        public_url = supabase.storage.from_(bucket_name).get_public_url(file_name)
+                        
+                        # Cleanup local file to save space
+                        try:
+                            os.remove(image_path)
+                        except Exception as rm_exc:
+                            print(f"Warning: Failed to remove local image {image_path}: {rm_exc}")
+                            
+                        return public_url
+                        
+                    except Exception as upload_exc:
+                        print(f"Error uploading image to Supabase: {upload_exc}")
+                        # Fallback to local image asset if upload fails
+                        return ImageAsset(
+                            path=image_path,
+                            is_uploaded=False,
+                            extras={
+                                "prompt": prompt.prompt,
+                                "theme_prompt": prompt.theme_prompt,
+                            },
+                        )
             raise Exception(f"Image not found at {image_path}")
 
         except Exception as e:

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
-import { ProjectInfo } from '@/components/project-detail/ProjectInfo';
+import { ProjectInfo, SecondaryResearchSection } from '@/components/project-detail/ProjectInfo';
 import { PresentableSlideSection } from '@/components/project-detail/PresentableSlideSection';
 
 import { ProjectAnalysisSection } from '@/components/project-detail/ProjectAnalysisSection';
@@ -57,7 +57,20 @@ export const ProjectDetailPage = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Track sections with no generate button (chat, prototyping-tools) — visiting completes them
-  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set<string>());
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`visitedSections_${id}`);
+      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`visitedSections_${id}`, JSON.stringify(Array.from(visitedSections)));
+    }
+  }, [visitedSections, id]);
 
   // State for presentable slide
   const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
@@ -265,13 +278,13 @@ export const ProjectDetailPage = () => {
       case 'as-is-map':                return hasData(asIsMapData);
       case 'extreme-user':             return hasData(extremeUserData);
       case 'deep-empathy':             return hasData(deepEmpathyData);
-      case 'chat':                     return visitedSections.has('chat'); // no generate btn
+      case 'chat':                     return true; // always complete to prevent hiding psychological analysis
       case 'psychological':            return hasData(psychologicalAnalysisData);
       case 'transformation-framework': return hasData(transformationFrameworkData);
       case 'hmw-framework':            return hasData(hmwFrameworkData);
       case 'hmw-ideation':             return hasData(hmwIdeationData);
       case 'idea-clustering':          return hasData(ideaClusteringData);
-      case 'prototyping-tools':        return visitedSections.has('prototyping-tools'); // no generate btn
+      case 'prototyping-tools':        return true; // always complete to prevent hiding testing/market search
       case 'testing':                  return hasData(testingData);
       case 'market-search':            return hasData(marketSearchData);
       case 'presentation':             return true; // last section
@@ -412,6 +425,12 @@ export const ProjectDetailPage = () => {
             {activeSection === 'project-info' && (
               <div className="space-y-6 animate-fadeIn">
                 <ProjectInfo project={project} />
+                <SecondaryResearchSection
+                  projectId={project.id}
+                  userId={user.id}
+                  secondaryresearch={project.secondaryresearch}
+                  onRefreshProject={refetchProject}
+                />
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
                   <div className="p-8">
                     <dl className="space-y-8">

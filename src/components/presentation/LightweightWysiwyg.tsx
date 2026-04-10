@@ -2,7 +2,14 @@ import { useEffect } from 'react';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import StarterKit from '@tiptap/starter-kit';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import FontFamily from '@tiptap/extension-font-family';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { useActiveEditor } from './ActiveEditorContext';
+import { FontSize } from './FontSize';
 
 interface LightweightWysiwygProps {
   value: string;
@@ -14,6 +21,7 @@ interface LightweightWysiwygProps {
   transparent?: boolean;
   readOnly?: boolean;
   onBlur?: () => void;
+  onFocus?: () => void;
 }
 
 export const LightweightWysiwyg = ({
@@ -25,10 +33,19 @@ export const LightweightWysiwyg = ({
   transparent = false,
   readOnly = false,
   onBlur,
+  onFocus,
 }: LightweightWysiwygProps) => {
+  const { setEditor } = useActiveEditor();
+
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder }),
     ],
@@ -36,6 +53,16 @@ export const LightweightWysiwyg = ({
     autofocus: transparent ? 'end' : false,
     onUpdate: ({ editor: instance }) => {
       onChange(instance.getHTML());
+    },
+    onFocus: ({ editor: instance }) => {
+      setEditor(instance);
+      if (onFocus) onFocus();
+    },
+    onBlur: () => {
+      // We don't unset the editor here immediately because clicking a format button 
+      // blurs the editor. The global toolbar needs the active editor reference.
+      // We rely on another block focusing to overwrite it, or explicitly clearing it elsewhere.
+      if (onBlur) onBlur();
     },
     editorProps: {
       attributes: {
@@ -51,8 +78,13 @@ export const LightweightWysiwyg = ({
   useEffect(() => {
     if (!editor) return;
     const current = editor.getHTML();
-    if ((value || '') !== current) {
-      editor.commands.setContent(value || '', { emitUpdate: false });
+    let preparedValue = value || '';
+    if (!/<[a-z][\s\S]*>/i.test(preparedValue)) {
+      preparedValue = preparedValue.replace(/\n/g, '<br>');
+    }
+    
+    if (preparedValue !== current) {
+      editor.commands.setContent(preparedValue, { emitUpdate: false });
     }
   }, [value, editor]);
 
@@ -86,7 +118,7 @@ export const LightweightWysiwyg = ({
   // Transparent / inline mode — no white card, fills parent container
   if (transparent) {
     return (
-      <div className="h-full w-full" onBlur={onBlur}>
+      <div className="h-full w-full">
         <EditorContent editor={editor} className="h-full w-full" />
       </div>
     );
@@ -140,7 +172,7 @@ export const LightweightWysiwyg = ({
         </div>
       )}
       <div style={{ minHeight }}>
-        <div onBlur={onBlur}>
+        <div>
           <EditorContent editor={editor} />
         </div>
       </div>

@@ -1,15 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX, FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
+import {
+  FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX,
+  FiArrowLeft, FiRefreshCw, FiChevronDown, FiClock, FiPlus,
+} from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
 import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
 
-interface Message {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
 }
+
+interface ExtremeUserEntry {
+  name: string;
+  created_at: string;
+  messages: Array<{ user: string; assistant: string; generated_at: string }>;
+}
+
+// Map of userKey → ExtremeUserEntry
+type ExtremeUserMap = Record<string, ExtremeUserEntry>;
 
 interface CustomExtremeUser {
   name: string;
@@ -25,313 +39,291 @@ interface EmbeddedChatSectionProps {
   userId?: string;
 }
 
-export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userId }: EmbeddedChatSectionProps) => {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseExtremeUserMap(raw: any): ExtremeUserMap {
+  if (!raw) return {};
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as ExtremeUserMap;
+  } catch {
+    return {};
+  }
+}
+
+function messagesFromEntry(entry: ExtremeUserEntry): ChatMessage[] {
+  return (entry.messages ?? []).flatMap((m, idx) => [
+    {
+      id: `u-${idx}`,
+      text: m.user,
+      isUser: true,
+      timestamp: new Date(m.generated_at),
+    },
+    {
+      id: `a-${idx}`,
+      text: m.assistant,
+      isUser: false,
+      timestamp: new Date(m.generated_at),
+    },
+  ]);
+}
+
+const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export const EmbeddedChatSection = ({
+  projectId,
+  extremeUserData,
+  project,
+  userId,
+}: EmbeddedChatSectionProps) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const effectiveUserId = userId || user?.id || '';
+
+  // ── Parsed extreme users from Supabase ──
+  const extremeUserMap = useMemo<ExtremeUserMap>(
+    () => parseExtremeUserMap(project?.chatbox_extreuser),
+    [project?.chatbox_extreuser]
+  );
+  const userKeys = useMemo(() => Object.keys(extremeUserMap), [extremeUserMap]);
+
+  // ── Provided-user (custom) saved state ──
+  const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
+
+  // ── Chat mode ──
+  // 'none'      → selection screen
+  // 'selected'  → chatting with an extreme user (multi-user)
+  // 'provided'  → chatting with the custom provided user
+  const [chatMode, setChatMode] = useState<'none' | 'selected' | 'provided'>('none');
+
+  // ── Active extreme user key ──
+  const [activeUserKey, setActiveUserKey] = useState<string | null>(null);
+
+  // ── Messages in current view ──
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // User interaction states
+  // ── Modals ──
   const [isCustomUserModalOpen, setIsCustomUserModalOpen] = useState(false);
   const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
+  const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState<'provided' | null>(null);
+
   const [customUser, setCustomUser] = useState<CustomExtremeUser>({
-    name: '',
-    age: '',
-    location: '',
-    description: ''
+    name: '', age: '', location: '', description: '',
   });
 
-  // Chat mode state - only show chat after user selection
-  const [isChatMode, setIsChatMode] = useState(false);
-  const [selectedUserData, setSelectedUserData] = useState<string | null>(null);
-  const [userContextData, setUserContextData] = useState<string | null>(null);
-  const [userType, setUserType] = useState<'provided' | 'selected' | null>(null);
-  const [isFirstMessage, setIsFirstMessage] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const switcherRef = useRef<HTMLDivElement>(null);
 
-  // Saved state from Supabase (to show saved card instead of form button)
-  const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
-  const [savedExtremeUser, setSavedExtremeUser] = useState<string | null>(null);
-
-  // Confirmation dialog for clearing a saved selection
-  const [confirmClear, setConfirmClear] = useState<'provided' | 'selected' | null>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // ── Scroll to bottom ──
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // On mount: restore saved selections from research_data column
+  // ── Close switcher on outside click ──
   useEffect(() => {
-    if (!project) return;
-
-    let researchData: Record<string, any> = {};
-    try {
-      researchData = typeof project.research_data === 'string'
-        ? JSON.parse(project.research_data)
-        : (project.research_data || {});
-    } catch { researchData = {}; }
-
-    if (researchData.chatProvidedUser) {
-      setSavedProvidedUser(researchData.chatProvidedUser);
-    }
-    if (researchData.chatExtremeUser) {
-      setSavedExtremeUser(researchData.chatExtremeUser);
-    }
-  }, [project]);
-
-  // Fetch chat history when entering chat mode
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      if (!projectId || !user?.id || !isChatMode) return;
-
-      try {
-        setIsLoadingHistory(true);
-
-        // Use the correct column based on which flow opened the chat
-        const chatHistory = userType === 'selected'
-          ? await ProjectService.getProjectChatboxExtreUserHistory(projectId, user.id)
-          : await ProjectService.getProjectChatHistory(projectId, user.id);
-
-        // Convert chat history to Message format
-        const historyMessages: Message[] = chatHistory.flatMap((chat, index) => [
-          {
-            id: `user-${index}-${Date.now()}`,
-            text: chat.user,
-            isUser: true,
-            timestamp: new Date(chat.generated_at),
-          },
-          {
-            id: `assistant-${index}-${Date.now()}`,
-            text: chat.assistant,
-            isUser: false,
-            timestamp: new Date(chat.generated_at),
-          }
-        ]);
-
-        setMessages(historyMessages);
-      } catch (error) {
-        console.error('Error fetching chat history:', error);
-      } finally {
-        setIsLoadingHistory(false);
+    if (!isUserSwitcherOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+        setIsUserSwitcherOpen(false);
       }
     };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isUserSwitcherOpen]);
 
-    fetchChatHistory();
-  }, [projectId, user?.id, isChatMode, userType]);
+  // ── Restore provided user from research_data ──
+  useEffect(() => {
+    if (!project) return;
+    let rd: Record<string, any> = {};
+    try {
+      rd = typeof project.research_data === 'string'
+        ? JSON.parse(project.research_data)
+        : (project.research_data || {});
+    } catch { rd = {}; }
+    if (rd.chatProvidedUser) setSavedProvidedUser(rd.chatProvidedUser);
+  }, [project]);
 
+  // ── Load messages when switching active extreme user ──
+  useEffect(() => {
+    if (chatMode !== 'selected' || !activeUserKey) return;
+    const entry = extremeUserMap[activeUserKey];
+    setMessages(entry ? messagesFromEntry(entry) : []);
+  }, [activeUserKey, chatMode, extremeUserMap]);
+
+  // ── Load provided-user history ──
+  useEffect(() => {
+    if (chatMode !== 'provided') return;
+    (async () => {
+      try {
+        const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
+        setMessages(
+          history.flatMap((chat, idx) => [
+            { id: `u-${idx}`, text: chat.user, isUser: true, timestamp: new Date(chat.generated_at) },
+            { id: `a-${idx}`, text: chat.assistant, isUser: false, timestamp: new Date(chat.generated_at) },
+          ])
+        );
+      } catch { setMessages([]); }
+    })();
+  }, [chatMode, projectId, effectiveUserId]);
+
+  // ── Enter chat with a specific extreme user ──
+  const enterExtremeUserChat = (key: string) => {
+    setActiveUserKey(key);
+    setChatMode('selected');
+    setIsUserSwitcherOpen(false);
+  };
+
+  // ── Switch user inside chat ──
+  const switchUser = (key: string) => {
+    if (key === activeUserKey) { setIsUserSwitcherOpen(false); return; }
+    setActiveUserKey(key);
+    setIsUserSwitcherOpen(false);
+  };
+
+  // ── Exit chat ──
+  const exitChat = () => {
+    setChatMode('none');
+    setActiveUserKey(null);
+    setMessages([]);
+    setInputMessage('');
+    setIsUserSwitcherOpen(false);
+  };
+
+  // ── Send message ──
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isTyping) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputMessage;
+    const text = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      text,
+      isUser: true,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
     try {
-      // Choose webhook URL and body based on user type
       let webhookUrl: string;
-      const requestBody: Record<string, any> = {
+      let requestBody: Record<string, any> = {
         project_id: projectId,
-        user: currentInput,
+        user: text,
       };
 
-      if (userType === 'selected' && userContextData) {
-        // "Select the User" flow → chatbox_extreuser webhook
+      if (chatMode === 'selected' && activeUserKey) {
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_extreuser';
-        requestBody.extreme_user_data = userContextData;
+        requestBody.extreme_user_key = activeUserKey;
+        // Also pass user context for the AI
+        const entry = extremeUserMap[activeUserKey];
+        if (entry) requestBody.extreme_user_name = entry.name;
       } else {
-        // "Provide Your Extreme User" flow → chatbox_userprovideinfo webhook
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo';
-        if (userContextData) {
-          requestBody.provided_user_data = userContextData;
+        if (savedProvidedUser) {
+          requestBody.provided_user_data = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
         }
       }
 
-      console.log('Sending chat request to:', webhookUrl, requestBody);
-
-      const response = await fetch(webhookUrl, {
+      const res = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_url: webhookUrl, payload: requestBody }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      const data = await response.json();
-      console.log('Chat response:', data);
+      let reply = "I'm sorry, I couldn't process your message right now.";
+      if (Array.isArray(data) && data[0]?.Assistant) reply = data[0].Assistant;
+      else if (data.output) reply = data.output;
 
-      let assistantMessage = "I'm sorry, I couldn't process your message right now.";
-
-      if (Array.isArray(data) && data.length > 0 && data[0].Assistant) {
-        assistantMessage = data[0].Assistant;
-      } else if (data.output) {
-        assistantMessage = data.output;
-      }
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: assistantMessage,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Error sending chat message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I'm sorry, there was an error processing your message. Please try again.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date() },
+      ]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), text: "Sorry, there was an error. Please try again.", isUser: false, timestamp: new Date() },
+      ]);
     } finally {
       setIsTyping(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
-  // Handle custom user form submission - POST to chatbox_userprovideinfo webhook, save to Supabase, then open chat
+  // ── Provided-user submit ──
   const handleCustomUserSubmit = async () => {
     if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
 
-    const userContext = `Custom User - Name: ${customUser.name}, Age: ${customUser.age}, Location: ${customUser.location}, Description: ${customUser.description}`;
-    const effectiveUserId = userId || user?.id;
-
     try {
-      // Send the provided user info to the dedicated webhook
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
+      await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_id: projectId,
-          name: customUser.name,
-          age: customUser.age,
-          location: customUser.location,
-          description: customUser.description,
-        })
+          target_url: 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo',
+          payload: { project_id: projectId, ...customUser },
+        }),
       });
-      if (!response.ok) console.warn('chatbox_userprovideinfo webhook responded with:', response.status);
-    } catch (error) {
-      console.error('Error sending user info to webhook:', error);
-    }
+    } catch { /* non-critical */ }
 
-    // Persist to Supabase so it survives page reload
     if (effectiveUserId) {
       await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, customUser);
       setSavedProvidedUser(customUser);
     }
 
-    // Open chat mode
-    setUserContextData(userContext);
-    setUserType('provided');
-    setSelectedUserData(`Custom User: ${customUser.name}`);
-    setIsCustomUserModalOpen(false);
     setCustomUser({ name: '', age: '', location: '', description: '' });
-    setIsFirstMessage(true);
-    setIsChatMode(true);
+    setIsCustomUserModalOpen(false);
+    setChatMode('provided');
   };
 
-  // Resume chat with the already-saved provided user
-  const handleResumeSavedProvidedUser = () => {
-    if (!savedProvidedUser) return;
-    const userContext = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
-    setUserContextData(userContext);
-    setUserType('provided');
-    setSelectedUserData(`Custom User: ${savedProvidedUser.name}`);
-    setIsFirstMessage(false);
-    setIsChatMode(true);
-  };
-
-  // Clear saved provided user — show confirmation first
-  const handleClearSavedProvidedUser = () => {
-    setConfirmClear('provided');
-  };
-
-  // Resume chat with the already-saved extreme user
-  const handleResumeSavedExtremeUser = () => {
-    if (!savedExtremeUser) return;
-    const userLabel = savedExtremeUser.split('\n')[0] || 'Selected Extreme User';
-    setUserContextData(savedExtremeUser);
-    setUserType('selected');
-    setSelectedUserData(userLabel);
-    setIsFirstMessage(false);
-    setIsChatMode(true);
-  };
-
-  // Clear saved extreme user — show confirmation first
-  const handleClearSavedExtremeUser = () => {
-    setConfirmClear('selected');
-  };
-
-  // Confirmed: actually clear the saved selection from Supabase
-  const handleConfirmClear = async () => {
-    const effectiveUserId = userId || user?.id;
-    if (confirmClear === 'provided') {
-      if (effectiveUserId) await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
-      setSavedProvidedUser(null);
-    } else if (confirmClear === 'selected') {
-      if (effectiveUserId) await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, null);
-      setSavedExtremeUser(null);
-    }
-    setConfirmClear(null);
-  };
-
-  // Handle extreme user selection from modal - save to Supabase, then open chat
+  // ── Handle new extreme user selection from modal ──
   const handleExtremeUserSelect = async (userSummary: string) => {
     setIsSelectUserModalOpen(false);
-    const effectiveUserId = userId || user?.id;
-
-    // Persist to Supabase
+    // The n8n modal flow creates the user entry; after saving we enter the chat.
+    // For now, trigger n8n to create the user slot and then enter chat.
+    // The new user key will be assigned by n8n; we need to trigger a project refresh
+    // and then find the new key. For immediate UX, treat this as "selected" mode temporarily.
     if (effectiveUserId) {
       await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary);
-      setSavedExtremeUser(userSummary);
     }
-
-    setUserContextData(userSummary);
-    setUserType('selected');
-    const userLabel = userSummary.split('\n')[0] || 'Selected Extreme User';
-    setSelectedUserData(userLabel);
-    setIsFirstMessage(true);
-    setIsChatMode(true);
+    // Find if n8n already assigned a key for this user by name
+    const matchKey = Object.keys(extremeUserMap).find(k =>
+      extremeUserMap[k].name?.toLowerCase().includes(userSummary.split('\n')[0]?.toLowerCase().slice(0, 20))
+    );
+    if (matchKey) {
+      enterExtremeUserChat(matchKey);
+    } else {
+      // Fall back: open chat with a temporary key; n8n will create it
+      const tempKey = `temp_${Date.now()}`;
+      setActiveUserKey(tempKey);
+      setChatMode('selected');
+    }
   };
 
-  // Exit chat mode and return to button selection
-  const handleExitChat = () => {
-    setIsChatMode(false);
-    setSelectedUserData(null);
-    setUserContextData(null);
-    setUserType(null);
-    setMessages([]);
-    setIsFirstMessage(true);
-  };
+  // ── Active user label ──
+  const activeEntry = activeUserKey ? extremeUserMap[activeUserKey] : null;
+  const activeUserLabel = chatMode === 'selected'
+    ? (activeEntry?.name || activeUserKey || 'Unknown User')
+    : chatMode === 'provided'
+    ? (savedProvidedUser ? `Custom: ${savedProvidedUser.name}` : 'Provided User')
+    : '';
 
-  // Button selection view (before chat mode)
-  if (!isChatMode) {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SELECTION SCREEN
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (chatMode === 'none') {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 p-6">
           <div className="flex items-center gap-4 mb-6">
@@ -342,148 +334,146 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
               <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
                 Interact with User
               </h3>
-              <p className="text-gray-600">Select or provide an extreme user to start chatting</p>
+              <p className="text-gray-500 text-sm">Select an AI user to chat with, or provide your own</p>
             </div>
           </div>
 
-          {/* Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            {/* Card 1: Provide Your Extreme User */}
-            {savedProvidedUser ? (
-              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FiUserPlus className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-bold text-base text-purple-800 block truncate">Provide Your Extreme User</span>
-                    <span className="text-xs text-purple-600 font-medium">Saved ✓</span>
-                  </div>
-                </div>
-                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700 space-y-1">
-                  <p><span className="font-semibold text-gray-800">Name:</span> {savedProvidedUser.name}</p>
-                  <p><span className="font-semibold text-gray-800">Age:</span> {savedProvidedUser.age} &nbsp;|&nbsp; <span className="font-semibold text-gray-800">Location:</span> {savedProvidedUser.location}</p>
-                  <p className="line-clamp-2 text-gray-600">{savedProvidedUser.description}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResumeSavedProvidedUser}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  >
-                    Continue Chat
-                  </button>
-                  <button
-                    onClick={handleClearSavedProvidedUser}
-                    title="Enter new user details"
-                    className="px-3 py-2.5 bg-white border-2 border-purple-200 text-purple-600 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
+          {/* ── Extreme Users Grid ── */}
+          {userKeys.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Users</p>
+                <button
+                  onClick={() => setIsSelectUserModalOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 hover:text-cyan-700 bg-cyan-50 hover:bg-cyan-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <FiPlus className="w-3.5 h-3.5" /> Add User
+                </button>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsCustomUserModalOpen(true)}
-                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <FiUserPlus className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                  <span className="font-bold text-lg block">Provide Your Extreme User</span>
-                  <span className="text-sm text-white/80">Add custom user details</span>
-                </div>
-              </button>
-            )}
-
-            {/* Card 2: Select the User */}
-            {savedExtremeUser ? (
-              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FiUsers className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-bold text-base text-cyan-800 block truncate">Select the User</span>
-                    <span className="text-xs text-cyan-600 font-medium">Saved ✓</span>
-                  </div>
-                </div>
-                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700">
-                  <p className="font-semibold text-gray-800 truncate">{savedExtremeUser.split('\n')[0]}</p>
-                  <p className="text-gray-500 text-xs mt-1 line-clamp-2">{savedExtremeUser.split('\n').slice(1).join(' ').trim()}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResumeSavedExtremeUser}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  >
-                    Continue Chat
-                  </button>
-                  <button
-                    onClick={handleClearSavedExtremeUser}
-                    title="Select a different user"
-                    className="px-3 py-2.5 bg-white border-2 border-cyan-200 text-cyan-600 rounded-xl hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {userKeys.map(key => {
+                  const entry = extremeUserMap[key];
+                  const msgCount = entry.messages?.length ?? 0;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => enterExtremeUserChat(key)}
+                      className="flex items-center gap-3 px-4 py-4 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-100 hover:border-cyan-300 rounded-2xl text-left transition-all duration-200 hover:shadow-md group"
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
+                        <FiUser className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-sm text-gray-900 truncate">{entry.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <FiClock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {msgCount === 0 ? 'No messages yet' : `${msgCount} message${msgCount > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-xs font-semibold text-cyan-600 bg-cyan-100 px-2.5 py-1 rounded-full">
+                        Chat →
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
+            </div>
+          )}
+
+          {/* ── Divider / empty state ── */}
+          {userKeys.length === 0 && (
+            <div className="mb-4">
               <button
                 onClick={() => setIsSelectUserModalOpen(true)}
-                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
+                className="w-full flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-200 group"
               >
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
                   <FiUsers className="w-6 h-6" />
                 </div>
                 <div className="text-left">
-                  <span className="font-bold text-lg block">Select the User</span>
-                  <span className="text-sm text-white/80">Choose from generated users</span>
+                  <span className="font-bold text-lg block">Select an AI User</span>
+                  <span className="text-sm text-white/80">Choose from generated extreme users</span>
                 </div>
               </button>
-            )}
+            </div>
+          )}
+
+          {/* ── Divider ── */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
+            <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-400 font-medium">or</span></div>
           </div>
 
+          {/* ── Provided User Card ── */}
+          {savedProvidedUser ? (
+            <div className="flex flex-col gap-3 px-5 py-4 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FiUserPlus className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-sm text-purple-800 block">{savedProvidedUser.name}</span>
+                    <span className="text-xs text-purple-500">{savedProvidedUser.age} · {savedProvidedUser.location}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConfirmClear('provided')}
+                  title="Change user"
+                  className="p-1.5 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors flex-shrink-0"
+                >
+                  <FiRefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={() => setChatMode('provided')}
+                className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all duration-200"
+              >
+                Continue Chat
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsCustomUserModalOpen(true)}
+              className="w-full flex items-center gap-3 px-5 py-4 bg-white border-2 border-purple-100 hover:border-purple-300 rounded-2xl text-left transition-all duration-200 hover:shadow-md group"
+            >
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <FiUserPlus className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="font-bold text-sm text-gray-800 block">Provide Your Own User</span>
+                <span className="text-xs text-gray-500">Enter custom user details to chat</span>
+              </div>
+            </button>
+          )}
         </div>
 
-        {/* Confirmation Dialog — shown when user clicks Change */}
+        {/* ── Confirmation Dialog ── */}
         {confirmClear && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden">
-              {/* Header */}
-              <div className={`px-6 py-5 border-b border-gray-100 ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-gradient-to-r from-cyan-50 to-blue-50'}`}>
+              <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
                     <FiRefreshCw className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Change User?</h3>
-                    <p className="text-sm text-gray-500">
-                      {confirmClear === 'provided' ? 'Provided Extreme User' : 'Selected Extreme User'}
-                    </p>
+                    <h3 className="text-lg font-bold text-gray-900">Change user?</h3>
+                    <p className="text-sm text-gray-500">This will clear the saved user.</p>
                   </div>
                 </div>
               </div>
-              {/* Body */}
-              <div className="px-6 py-5">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  This will remove your currently saved user and let you{' '}
-                  {confirmClear === 'provided' ? 'enter new details.' : 'select a different user.'}
-                  {' '}Are you sure?
-                </p>
-              </div>
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <div className="px-6 py-4 flex justify-end gap-3">
+                <button onClick={() => setConfirmClear(null)} className="px-5 py-2.5 text-gray-600 font-medium">Cancel</button>
                 <button
-                  onClick={() => setConfirmClear(null)}
-                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmClear}
-                  className={`px-6 py-2.5 text-white font-semibold rounded-xl hover:shadow-lg transition-all ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}
+                  onClick={async () => {
+                    if (effectiveUserId) await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
+                    setSavedProvidedUser(null);
+                    setConfirmClear(null);
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                 >
                   Yes, Change
                 </button>
@@ -492,12 +482,10 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
           </div>
         )}
 
-        {/* Custom Extreme User Modal */}
+        {/* ── Custom User Modal ── */}
         {isCustomUserModalOpen && (
-
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
-              {/* Modal Header */}
               <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -509,69 +497,37 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
                       <p className="text-sm text-gray-600">Enter user details below</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setIsCustomUserModalOpen(false)}
-                    className="p-2 hover:bg-white/50 rounded-xl transition-colors"
-                  >
+                  <button onClick={() => setIsCustomUserModalOpen(false)} className="p-2 hover:bg-white/50 rounded-xl transition-colors">
                     <FiX className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
               </div>
-
-              {/* Modal Content */}
               <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={customUser.name}
-                    onChange={(e) => setCustomUser(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter user name"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Age *</label>
+                {['name', 'age', 'location'].map(field => (
+                  <div key={field}>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 capitalize">{field} *</label>
                     <input
                       type="text"
-                      value={customUser.age}
-                      onChange={(e) => setCustomUser(prev => ({ ...prev, age: e.target.value }))}
-                      placeholder="e.g., 25"
+                      value={customUser[field as keyof CustomExtremeUser]}
+                      onChange={e => setCustomUser(prev => ({ ...prev, [field]: e.target.value }))}
+                      placeholder={field === 'age' ? 'e.g. 25' : field === 'location' ? 'e.g. Mumbai' : `Enter user ${field}`}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
-                    <input
-                      type="text"
-                      value={customUser.location}
-                      onChange={(e) => setCustomUser(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="e.g., Mumbai"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
-                    />
-                  </div>
-                </div>
+                ))}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
                   <textarea
                     value={customUser.description}
-                    onChange={(e) => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the user's characteristics, behaviors, needs..."
+                    onChange={e => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe characteristics, behaviors, needs..."
                     rows={4}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors resize-none"
                   />
                 </div>
               </div>
-
-              {/* Modal Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => setIsCustomUserModalOpen(false)}
-                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
+                <button onClick={() => setIsCustomUserModalOpen(false)} className="px-5 py-2.5 text-gray-600 font-medium">Cancel</button>
                 <button
                   onClick={handleCustomUserSubmit}
                   disabled={!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()}
@@ -584,7 +540,7 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
           </div>
         )}
 
-        {/* Extreme User Selection Modal */}
+        {/* ── Extreme User Selection Modal ── */}
         <ExtremeUserSelectionModal
           isOpen={isSelectUserModalOpen}
           onClose={() => setIsSelectUserModalOpen(false)}
@@ -595,110 +551,135 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
     );
   }
 
-  // Chat Mode View
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CHAT MODE
+  // ─────────────────────────────────────────────────────────────────────────────
+  const isExtreme = chatMode === 'selected';
+  const gradFrom = isExtreme ? 'from-cyan-500' : 'from-purple-500';
+  const gradTo = isExtreme ? 'to-blue-600' : 'to-pink-600';
+
   return (
     <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 overflow-hidden h-[75vh] flex flex-col relative">
-      {/* Decorative gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/30 via-blue-50/20 to-indigo-50/30 pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-cyan-200/20 to-transparent rounded-full blur-2xl"></div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-200/20 to-transparent rounded-full blur-xl"></div>
+      {/* декоративный фон */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/30 via-blue-50/20 to-indigo-50/30 pointer-events-none" />
 
-      {/* Header */}
-      <div className="relative px-4 py-4 bg-gradient-to-r from-cyan-50/80 to-blue-50/80 backdrop-blur-sm border-b border-cyan-100/50 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      {/* ── HEADER ── */}
+      <div className="relative px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100/80 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3">
+
+          {/* Back + avatar */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
-              onClick={handleExitChat}
-              className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center shadow-md hover:shadow-lg transition-all text-gray-600 hover:text-gray-800"
+              onClick={exitChat}
+              className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
             >
-              <FiArrowLeft className="w-5 h-5" />
+              <FiArrowLeft className="w-4 h-4 text-gray-600" />
             </button>
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <FiMessageCircle className="w-7 h-7 text-white" />
+            <div className={`relative w-10 h-10 bg-gradient-to-r ${gradFrom} ${gradTo} rounded-2xl flex items-center justify-center shadow-md flex-shrink-0`}>
+              <FiMessageCircle className="w-5 h-5 text-white" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+            </div>
+
+            {/* User switcher (only for extreme users) */}
+            {isExtreme && userKeys.length > 1 ? (
+              <div className="relative min-w-0" ref={switcherRef}>
+                <button
+                  onClick={() => setIsUserSwitcherOpen(v => !v)}
+                  className="flex items-center gap-1.5 min-w-0 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors"
+                >
+                  <span className="truncate max-w-[140px] text-sm font-bold text-gray-900">{activeUserLabel}</span>
+                  <FiChevronDown className={`w-3.5 h-3.5 text-gray-500 flex-shrink-0 transition-transform ${isUserSwitcherOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown */}
+                {isUserSwitcherOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    <div className="px-3 py-2 border-b border-gray-50">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Switch User</p>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto py-1">
+                      {userKeys.map(key => {
+                        const entry = extremeUserMap[key];
+                        const isActive = key === activeUserKey;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => switchUser(key)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isActive ? 'bg-cyan-50' : 'hover:bg-gray-50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-gradient-to-r from-cyan-500 to-blue-600' : 'bg-gray-100'}`}>
+                              <FiUser className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-sm font-semibold truncate ${isActive ? 'text-cyan-700' : 'text-gray-800'}`}>{entry.name}</p>
+                              <p className="text-xs text-gray-400">{entry.messages?.length ?? 0} msg{(entry.messages?.length ?? 0) !== 1 ? 's' : ''}</p>
+                            </div>
+                            {isActive && <div className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="px-3 py-2 border-t border-gray-50">
+                      <button
+                        onClick={() => { setIsUserSwitcherOpen(false); setIsSelectUserModalOpen(true); }}
+                        className="w-full flex items-center gap-2 text-xs font-semibold text-cyan-600 hover:text-cyan-700 py-1"
+                      >
+                        <FiPlus className="w-3.5 h-3.5" /> Add another user
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
-                Chat with Your Project
-              </h3>
-              <p className="text-sm text-gray-600 font-medium">{selectedUserData}</p>
-            </div>
+            ) : (
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate max-w-[180px]">{activeUserLabel}</p>
+                <p className="text-xs text-gray-400">AI User</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs font-semibold text-green-700">AI Online</span>
+
+          {/* Online badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full border border-green-200 flex-shrink-0">
+            <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-xs font-semibold text-green-700">Online</span>
           </div>
         </div>
       </div>
 
-      {/* Messages Area */}
+      {/* ── MESSAGES ── */}
       <div className="relative flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4 pb-20">
-          {isLoadingHistory ? (
-            <div className="text-center py-8">
-              <div className="relative mx-auto w-16 h-16 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
-                  <FiMessageCircle className="w-8 h-8 text-white" />
-                </div>
+        <div className="p-4 space-y-4 pb-4">
+          {messages.length === 0 ? (
+            <div className="text-center py-12">
+              <div className={`mx-auto w-16 h-16 bg-gradient-to-r ${gradFrom} ${gradTo} rounded-3xl flex items-center justify-center shadow-xl mb-4`}>
+                <FiMessageCircle className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-xl font-bold text-gray-800 mb-3">Loading conversation...</h4>
-              <div className="flex justify-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="w-20 h-20 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                  <FiMessageCircle className="w-10 h-10 text-white" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-                Start Your Conversation
-              </h4>
-              <p className="text-gray-600 mb-6 leading-relaxed max-w-md mx-auto">
-                Ask questions about your project from the selected user's perspective.
+              <h4 className="text-xl font-bold text-gray-800 mb-2">Start Your Conversation</h4>
+              <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                Chat with <span className="font-semibold">{activeUserLabel}</span> from their perspective.
               </p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-              >
-                <div
-                  className={`flex max-w-[85%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'
-                    }`}
-                >
-                  <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${message.isUser
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white ml-3'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 border border-gray-200'
-                      }`}
-                  >
-                    {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
+            messages.map(msg => (
+              <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex max-w-[85%] ${msg.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center shadow-md ${
+                    msg.isUser
+                      ? `bg-gradient-to-r ${gradFrom} ${gradTo} text-white ml-2.5`
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-2.5 border border-gray-200'
+                  }`}>
+                    {msg.isUser ? <FiUser className="w-4 h-4" /> : <FiMessageCircle className="w-4 h-4" />}
                   </div>
                   <div className="space-y-1">
-                    <div
-                      className={`px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${message.isUser
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-300/30'
-                        : 'bg-white/80 text-gray-800 border-gray-200/50'
-                        }`}
-                    >
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{message.text}</div>
+                    <div className={`px-4 py-3 rounded-2xl shadow-md border text-sm leading-relaxed font-medium whitespace-pre-wrap ${
+                      msg.isUser
+                        ? `bg-gradient-to-r ${gradFrom} ${gradTo} text-white border-transparent`
+                        : 'bg-white/90 text-gray-800 border-gray-200/50'
+                    }`}>
+                      {msg.text}
                     </div>
-                    <p
-                      className={`text-xs px-2 ${message.isUser ? 'text-right text-cyan-600' : 'text-left text-gray-500'
-                        }`}
-                    >
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                    <p className={`text-xs px-1 ${msg.isUser ? 'text-right text-gray-400' : 'text-gray-400'}`}>
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
@@ -707,19 +688,17 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
           )}
 
           {isTyping && (
-            <div className="flex justify-start animate-fadeIn">
+            <div className="flex justify-start">
               <div className="flex max-w-[85%]">
-                <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 flex items-center justify-center shadow-lg border border-gray-200">
-                  <FiMessageCircle className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-gray-100 text-gray-500 mr-2.5 flex items-center justify-center border border-gray-200 shadow-sm">
+                  <FiMessageCircle className="w-4 h-4" />
                 </div>
-                <div className="bg-white/80 text-gray-800 px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border border-gray-200/50">
-                  <div className="flex space-x-2 items-center">
-                    <div className="flex space-x-1">
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">AI is thinking...</span>
+                <div className="bg-white/90 px-4 py-3 rounded-2xl shadow-md border border-gray-200/50">
+                  <div className="flex space-x-1 items-center">
+                    {[0, 0.2, 0.4].map((delay, i) => (
+                      <div key={i} className={`w-2 h-2 bg-gradient-to-r ${gradFrom} ${gradTo} rounded-full animate-bounce`} style={{ animationDelay: `${delay}s`}} />
+                    ))}
+                    <span className="text-xs text-gray-400 ml-2">typing…</span>
                   </div>
                 </div>
               </div>
@@ -729,61 +708,45 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="relative border-t border-cyan-100/50 bg-white/60 backdrop-blur-sm p-4 flex-shrink-0">
-        <div className="flex items-end space-x-4">
+      {/* ── INPUT ── */}
+      <div className="relative border-t border-gray-100 bg-white/80 backdrop-blur-sm p-3 flex-shrink-0">
+        <div className="flex items-end gap-3">
           <div className="flex-1 relative">
-            <div className="relative">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask anything about your project..."
-                className="w-full px-6 py-4 bg-white/80 border-2 border-gray-200/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all duration-300 text-gray-800 placeholder-gray-500 font-medium shadow-lg backdrop-blur-sm hover:shadow-xl disabled:opacity-60"
-                disabled={isTyping}
-              />
-              {inputMessage && (
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-gray-500 font-medium">Ready to send</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Character count */}
-            {inputMessage && (
-              <div className="mt-2 flex justify-end">
-                <span className="text-xs text-gray-400">{inputMessage.length}/1000</span>
-              </div>
-            )}
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={e => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={`Message ${activeUserLabel}…`}
+              disabled={isTyping}
+              className="w-full px-5 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/15 focus:border-cyan-400 transition-all text-gray-800 placeholder-gray-400 font-medium shadow-sm disabled:opacity-60"
+            />
           </div>
-
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isTyping}
-            className="relative px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 group"
+            className={`relative px-5 py-3.5 bg-gradient-to-r ${gradFrom} ${gradTo} text-white rounded-2xl hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 shadow-md`}
           >
-            <div className="flex items-center space-x-2">
-              <FiSend className={`w-5 h-5 transition-transform duration-200 ${isTyping ? 'animate-pulse' : 'group-hover:translate-x-0.5'}`} />
-              <span className="font-semibold">{isTyping ? 'Sending...' : 'Send'}</span>
-            </div>
-
-            {/* Loading indicator for sending state */}
-            {isTyping && (
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 rounded-2xl flex items-center justify-center">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
+            {isTyping ? (
+              <div className="flex space-x-1">
+                {[0, 0.1, 0.2].map((d, i) => (
+                  <div key={i} className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: `${d}s` }} />
+                ))}
               </div>
+            ) : (
+              <FiSend className="w-5 h-5" />
             )}
           </button>
         </div>
       </div>
+
+      {/* ── Select User Modal (from inside chat) ── */}
+      <ExtremeUserSelectionModal
+        isOpen={isSelectUserModalOpen}
+        onClose={() => setIsSelectUserModalOpen(false)}
+        onSelectUser={handleExtremeUserSelect}
+        extremeUserData={extremeUserData}
+      />
     </div>
   );
 };

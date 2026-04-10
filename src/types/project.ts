@@ -11,6 +11,7 @@ export interface Project {
   as_is_map?: any;
   extreme_user_data?: any;
   deep_empathy_data?: any;
+  secondaryresearch?: any;
   psychological_analysis?: any;
   Behaviour_Framework?: any;
   HMW_Ideation_Framework?: any;

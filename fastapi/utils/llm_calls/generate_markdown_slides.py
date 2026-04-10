@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 
 SPATIAL_SYSTEM_PROMPT = """
-You generate structured spatial JSON for a slide canvas editor.
+You generate structured spatial JSON for a slide canvas editor. You are producing a high-end, Consultant-level presentation.
 
 OUTPUT FORMAT
 1) Return valid JSON only. No markdown. No prose.
@@ -19,14 +19,19 @@ LAYOUT RULES
 1) Do not overlap blocks.
 2) Ensure clear whitespace between blocks.
 3) Keep all block rectangles fully inside the 0-100 canvas bounds.
-4) Use a coherent visual hierarchy (title first, supporting content below).
+4) Use a coherent, beautiful visual hierarchy (title first, supporting content below).
+5) Maximize the use of empty space! Stretch content horizontally and vertically. Use columns, grids, metrics calls-outs, and varying text blocks to create rich, dense layouts. DO NOT leave slides empty or overly simple.
+6) Distribute content effectively: instead of a single giant bulleted list, break it down into multiple structured text blocks (e.g., side-by-side columns, quadrants).
 
 BLOCK RULES
 1) text blocks require content and style.
-2) image blocks require prompt; do not provide URLs.
+2) image blocks require prompt; do not provide URLs. Limit the total number of image blocks in the entire presentation to 4 maximum. Focus on high-impact visual slides only.
 3) chart blocks require chart_type and data points with numeric values.
-4) Keep exact numbers, percentages, names, and quotes from source content.
-5) Never invent unsupported quantitative facts.
+4) icon blocks require type "icon" and icon_query (search term).
+5) shape blocks require type "shape", shape_type (square, circle, rectangle, triangle, line) and color. Use these to frame content!
+6) Keep exact numbers, percentages, names, and quotes from source content.
+7) Never invent unsupported quantitative facts.
+8) You CAN use placeholder text or icons if it helps to construct a beautiful layout, as long as the core content is preserved.
 """
 
 
@@ -124,6 +129,15 @@ def get_markdown_generation_messages(
 - Visual preference: {visual_preference}
 - Audience: {audience or "General stakeholders"}
 
+## Consultant-Level Layout Instructions
+- This must look like a premium McKinsey/BCG/Bain deck.
+- Fill the slide canvas! Don't just dump 3 text bullet points in the middle.
+- If there is enough space, create complex, multi-column layouts using multiple blocks.
+- Distribute content efficiently (e.g., 50% left side: visual, 50% right side: split into top and bottom text quadrants).
+- Use rich formatting: Add titles, strong/bold emphasis, and descriptive labels to textual blocks.
+- For data, use varied presentations.
+- DO NOT be conservative. Write verbose text that fills the space appropriately if the density mode asks for it. Make things look beautiful, symmetrical, and dense!
+
 ## Content Density Rules
 - If density is 'Concise', text blocks may contain at most 4 bullets.
 - Otherwise, text blocks should stay within the following target budget:
@@ -147,7 +161,7 @@ def get_markdown_generation_messages(
 - Include AI Images: {include_images}
 - Include Data Charts: {include_charts}
 
-If Include AI Images is true, add image blocks with prompt text only.
+If Include AI Images is true, add image blocks with prompt text only. IMPORTANT: Maximum 4 Image Blocks in total across the entire presentation.
 If Include Data Charts is true, for quantitative slides add chart blocks using data points from the provided quantitative datasets.
 
 ## Quantitative Datasets (from source research)
