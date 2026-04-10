@@ -15,7 +15,7 @@ import type {
 } from '@/types/presentation';
 import { logger } from '@/lib/logger';
 
-const API_BASE = import.meta.env.VITE_PPT_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_PPT_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 const apiFetch = async (url: string, init?: RequestInit): Promise<Response> => {
   const method = init?.method || 'GET';

@@ -177,7 +177,7 @@ export async function saveSecondaryResearchToSupabase(params: {
 }
 
 // ── Optional: forward to n8n for AI processing ────────────────────────────────
-const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
+const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || ((import.meta as any).env?.PROD ? '' : 'http://localhost:8000');
 
 export async function postSecondaryResearchToN8n(params: {
   webhookUrl: string;
