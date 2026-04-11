@@ -2,7 +2,6 @@ services:
   - type: web
     name: solve-innovate-backend
     env: docker
-    repo: https://github.com/224Abhay/Solve-Innovate
     rootDir: fastapi
     plan: free # or starter
     healthCheckPath: /docs
