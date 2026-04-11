@@ -19,6 +19,11 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
 
     # Keep SQLite as the default write-store source of truth.
     # DATABASE_URL is used for SQL writes only when explicitly opted in.
+    if use_database_url_for_writes and not configured_database_url:
+        raise RuntimeError(
+            "USE_DATABASE_URL_FOR_SQL_WRITES is true but DATABASE_URL is not set."
+        )
+
     if use_database_url_for_writes and configured_database_url:
         database_url = configured_database_url
     else:
