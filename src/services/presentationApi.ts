@@ -15,7 +15,19 @@ import type {
 } from '@/types/presentation';
 import { logger } from '@/lib/logger';
 
-const API_BASE = import.meta.env.VITE_PPT_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000');
+const resolveApiBase = (): string => {
+  const raw = String(import.meta.env.VITE_PPT_API_URL || '').trim();
+
+  if (!raw) {
+    return import.meta.env.PROD ? '' : 'http://localhost:8000';
+  }
+
+  // Guard against common dashboard input mistakes like "=https://...".
+  const withoutLeadingEquals = raw.replace(/^=+/, '');
+  return withoutLeadingEquals.replace(/\/+$/, '');
+};
+
+const API_BASE = resolveApiBase();
 
 const apiFetch = async (url: string, init?: RequestInit): Promise<Response> => {
   const method = init?.method || 'GET';

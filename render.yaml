@@ -14,6 +14,8 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      - key: USE_DATABASE_URL_FOR_SQL_WRITES
+        value: "true"
       - key: OPENAI_API_KEY
         sync: false
       - key: LLM
