@@ -14,6 +14,29 @@ from api.v1.webhook.router import API_V1_WEBHOOK_ROUTER
 from api.v1.mock.router import API_V1_MOCK_ROUTER
 
 
+def _cors_allow_origins() -> list[str]:
+    extra = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if extra:
+        return [o.strip() for o in extra.split(",") if o.strip()]
+    origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+    for key in ("VERCEL_URL", "VERCEL_BRANCH_URL"):
+        host = os.getenv(key)
+        if not host:
+            continue
+        host = host.strip()
+        if not host.startswith("http"):
+            host = f"https://{host}"
+        origins.append(host)
+    return origins
+
+
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
     format="%(levelname)s %(name)s - %(message)s",
@@ -38,12 +61,7 @@ if app_data_dir and os.path.exists(app_data_dir):
     app.mount("/app_data", StaticFiles(directory=app_data_dir), name="app_data")
 
 # Middlewares
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
+origins = _cors_allow_origins()
 
 # Register app-specific middleware first; CORS should be the outermost layer
 # so error responses also include Access-Control headers.

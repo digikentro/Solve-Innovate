@@ -1,10 +1,9 @@
 import asyncio
 import os
-from typing import List, Tuple
+from typing import List
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
 from models.sql.slide import SlideModel
-from services.icon_finder_service import ICON_FINDER_SERVICE
 from services.image_generation_service import ImageGenerationService
 from utils.asset_directory_utils import get_images_directory
 from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict_at_path
@@ -40,19 +39,14 @@ async def process_slide_and_fetch_assets(
             )
         )
 
-    for icon_path in icon_paths:
-        __icon_query__parent = get_dict_at_path(slide.content, icon_path)
-        async_tasks.append(
-            ICON_FINDER_SERVICE.search_icons(__icon_query__parent["__icon_query__"])
-        )
+    # Icon RAG/search disabled — do not schedule ICON_FINDER_SERVICE.search_icons (see icon_finder_service.py)
 
-    results = await asyncio.gather(*async_tasks)
-    results.reverse()
+    results = await asyncio.gather(*async_tasks) if async_tasks else []
 
     return_assets = []
-    for image_path in image_paths:
+    for idx, image_path in enumerate(image_paths):
         image_dict = get_dict_at_path(slide.content, image_path)
-        result = results.pop()
+        result = results[idx]
         if isinstance(result, ImageAsset):
             return_assets.append(result)
             image_dict["__image_url__"] = absolute_path_to_app_data_url(result.path)
@@ -62,12 +56,7 @@ async def process_slide_and_fetch_assets(
 
     for icon_path in icon_paths:
         icon_dict = get_dict_at_path(slide.content, icon_path)
-        icon_result = results.pop()
-        if icon_result and len(icon_result) > 0:
-            icon_dict["__icon_url__"] = icon_result[0]
-        else:
-            # Fallback to placeholder if no icon found
-            icon_dict["__icon_url__"] = "/static/icons/placeholder.svg"
+        icon_dict["__icon_url__"] = "/static/icons/placeholder.svg"
         set_dict_at_path(slide.content, icon_path, icon_dict)
 
     return return_assets
@@ -116,10 +105,6 @@ async def process_old_and_new_slides_and_fetch_assets(
     async_image_fetch_tasks = []
     new_images_fetch_status = []
 
-    # Creates async tasks for fetching new icons
-    async_icon_fetch_tasks = []
-    new_icons_fetch_status = []
-
     # Creates async tasks for fetching new images
     # Use old image url if prompt is same
     for new_image in new_image_dicts:
@@ -140,47 +125,34 @@ async def process_old_and_new_slides_and_fetch_assets(
         )
         new_images_fetch_status.append(True)
 
-    # Creates async tasks for fetching new icons
-    # Use old icon url if query is same
+    # Icon RAG/search disabled — reuse prior URL only when query unchanged; else placeholder
     for new_icon in new_icon_dicts:
         if new_icon["__icon_query__"] in old_icon_queries:
             old_icon_url = old_icon_dicts[
                 old_icon_queries.index(new_icon["__icon_query__"])
             ]["__icon_url__"]
             new_icon["__icon_url__"] = old_icon_url
-            new_icons_fetch_status.append(False)
-            continue
-
-        async_icon_fetch_tasks.append(
-            ICON_FINDER_SERVICE.search_icons(new_icon["__icon_query__"])
-        )
-        new_icons_fetch_status.append(True)
+        else:
+            new_icon["__icon_url__"] = "/static/icons/placeholder.svg"
 
     new_images = await asyncio.gather(*async_image_fetch_tasks)
-    new_icons = await asyncio.gather(*async_icon_fetch_tasks)
 
     # list of new assets
     new_assets = []
 
-    # Sets new image and icon urls for assets that were fetched
-    for i, new_image in enumerate(new_images):
-        if new_images_fetch_status[i]:
-            fetched_image = new_images[i]
-            if isinstance(fetched_image, ImageAsset):
-                new_assets.append(fetched_image)
-                image_url = absolute_path_to_app_data_url(fetched_image.path)
-            else:
-                image_url = fetched_image
-            new_image_dicts[i]["__image_url__"] = image_url
-
-    for i, new_icon in enumerate(new_icons):
-        if new_icons_fetch_status[i]:
-            icon_result = new_icons[i]
-            if icon_result and len(icon_result) > 0:
-                new_icon_dicts[i]["__icon_url__"] = icon_result[0]
-            else:
-                # Fallback to placeholder if no icon found
-                new_icon_dicts[i]["__icon_url__"] = "/static/icons/placeholder.svg"
+    # Align gather results with dict rows that actually scheduled a fetch (status True)
+    fetch_idx = 0
+    for i in range(len(new_image_dicts)):
+        if not new_images_fetch_status[i]:
+            continue
+        fetched_image = new_images[fetch_idx]
+        fetch_idx += 1
+        if isinstance(fetched_image, ImageAsset):
+            new_assets.append(fetched_image)
+            image_url = absolute_path_to_app_data_url(fetched_image.path)
+        else:
+            image_url = fetched_image
+        new_image_dicts[i]["__image_url__"] = image_url
 
     for i, new_image_dict in enumerate(new_image_dicts):
         set_dict_at_path(new_slide_content, new_image_dict_paths[i], new_image_dict)

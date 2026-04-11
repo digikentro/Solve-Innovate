@@ -881,7 +881,8 @@ def _extract_quantitative_datasets(project: Dict[str, Any]) -> List[Dict[str, An
 async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload:
     images_directory = get_images_directory()
     image_service = ImageGenerationService(output_directory=images_directory)
-    from services.icon_finder_service import ICON_FINDER_SERVICE
+    # Icon RAG/search disabled — see icon_finder_service.py
+    # from services.icon_finder_service import ICON_FINDER_SERVICE
 
     for slide in deck.slides:
         for block in slide.blocks:
@@ -897,13 +898,13 @@ async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Image generation failed for block=%s: %s", block.id, exc)
             elif isinstance(block, SpatialIconBlock):
-                try:
-                    results = await ICON_FINDER_SERVICE.search_icons(query=block.icon_query, k=1)
-                    if results and len(results) > 0:
-                        # Re-use icon_query field as the resolved icon path (just like we do for image block's prompt)
-                        block.icon_query = results[0]
-                except Exception as exc:
-                    logger.warning("Icon search failed for block=%s: %s", block.id, exc)
+                block.icon_query = "/static/icons/placeholder.svg"
+                # try:
+                #     results = await ICON_FINDER_SERVICE.search_icons(query=block.icon_query, k=1)
+                #     if results and len(results) > 0:
+                #         block.icon_query = results[0]
+                # except Exception as exc:
+                #     logger.warning("Icon search failed for block=%s: %s", block.id, exc)
     return deck
 
 

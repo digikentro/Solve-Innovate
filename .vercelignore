@@ -1,0 +1,9 @@
+# Shrink serverless upload (Python still bundles reachable imports)
+fastapi/tests
+**/__pycache__
+**/*.pyc
+**/*.pyo
+fastapi/tmp_output.txt
+fastapi/_export_*.json
+.git
+.cursor
