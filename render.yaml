@@ -28,7 +28,6 @@ services:
   - type: web
     name: solve-innovate-frontend
     env: static
-    plan: free
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
