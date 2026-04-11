@@ -22,7 +22,3 @@ services:
         value: dall-e-3
       - key: APP_DATA_DIRECTORY
         value: /app/app_data
-    disk:
-      name: app-data
-      mountPath: /app/app_data
-      sizeGB: 1
