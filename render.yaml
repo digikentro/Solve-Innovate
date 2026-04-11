@@ -2,10 +2,10 @@ services:
   - type: web
     name: solve-innovate-backend
     env: docker
-    repo: https://github.com/your-username/Solve-Innovate # Placeholder
+    repo: https://github.com/224Abhay/Solve-Innovate
     rootDir: fastapi
     plan: free # or starter
-    healthCheckPath: /api/v1/health # Ensure you have a health endpoint
+    healthCheckPath: /docs
     envVars:
       - key: SUPABASE_URL
         sync: false
