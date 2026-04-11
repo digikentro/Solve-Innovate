@@ -26,15 +26,22 @@ def _cors_allow_origins() -> list[str]:
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
-    for key in ("VERCEL_URL", "VERCEL_BRANCH_URL"):
+    for key in (
+        "FRONTEND_URL",
+        "RENDER_EXTERNAL_URL",
+        "RENDER_FRONTEND_URL",
+        "VITE_FRONTEND_URL",
+        "VERCEL_URL",
+        "VERCEL_BRANCH_URL",
+    ):
         host = os.getenv(key)
         if not host:
             continue
         host = host.strip()
         if not host.startswith("http"):
             host = f"https://{host}"
-        origins.append(host)
-    return origins
+        origins.append(host.rstrip("/"))
+    return list(dict.fromkeys(origins))
 
 
 logging.basicConfig(
