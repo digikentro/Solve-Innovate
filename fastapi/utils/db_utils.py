@@ -4,7 +4,7 @@ from utils.get_env import (
     get_database_url_env,
     get_use_database_url_for_sql_writes_env,
 )
-from urllib.parse import urlsplit, urlunsplit, parse_qsl
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 import ssl
 
 
@@ -44,31 +44,47 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
 
     try:
         split_result = urlsplit(database_url)
-        if split_result.query:
-            query_params = parse_qsl(split_result.query, keep_blank_values=True)
-            driver_scheme = split_result.scheme
-            for k, v in query_params:
-                key_lower = k.lower()
-                if key_lower == "sslmode" and "postgresql+asyncpg" in driver_scheme:
-                    if v.lower() != "disable" and "sqlite" not in database_url:
-                        # For asyncpg, 'ssl' can be a boolean or an SSLContext
-                        if v.lower() == "require":
-                            connect_args["ssl"] = True
-                        else:
-                            connect_args["ssl"] = ssl.create_default_context()
-                            # Often required for Supabase/Render to avoid certificate verification errors if not using custom CAs
-                            connect_args["ssl"].check_hostname = False
-                            connect_args["ssl"].verify_mode = ssl.CERT_NONE
+        query_params = parse_qsl(split_result.query, keep_blank_values=True)
+        rewritten_query_params = []
+        driver_scheme = split_result.scheme
 
-            database_url = urlunsplit(
-                (
-                    split_result.scheme,
-                    split_result.netloc,
-                    split_result.path,
-                    "",
-                    split_result.fragment,
-                )
+        if "postgresql+asyncpg" in driver_scheme:
+            has_prepared_statement_cache_setting = any(
+                k.lower() == "prepared_statement_cache_size"
+                for k, _ in query_params
             )
+            if not has_prepared_statement_cache_setting:
+                # PgBouncer transaction/statement pooling does not work reliably
+                # with asyncpg prepared statements. Disabling the asyncpg/SQLAlchemy
+                # prepared-statement cache avoids DuplicatePreparedStatementError
+                # during startup and normal request handling on pooled Postgres URLs.
+                rewritten_query_params.append(("prepared_statement_cache_size", "0"))
+
+        for k, v in query_params:
+            key_lower = k.lower()
+            if key_lower == "sslmode" and "postgresql+asyncpg" in driver_scheme:
+                if v.lower() != "disable" and "sqlite" not in database_url:
+                    # For asyncpg, 'ssl' can be a boolean or an SSLContext
+                    if v.lower() == "require":
+                        connect_args["ssl"] = True
+                    else:
+                        connect_args["ssl"] = ssl.create_default_context()
+                        # Often required for Supabase/Render to avoid certificate verification errors if not using custom CAs
+                        connect_args["ssl"].check_hostname = False
+                        connect_args["ssl"].verify_mode = ssl.CERT_NONE
+                continue
+
+            rewritten_query_params.append((k, v))
+
+        database_url = urlunsplit(
+            (
+                split_result.scheme,
+                split_result.netloc,
+                split_result.path,
+                urlencode(rewritten_query_params),
+                split_result.fragment,
+            )
+        )
     except Exception:
         pass
 
