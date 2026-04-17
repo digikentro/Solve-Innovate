@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --nav-height: 64px;
+  --home-hero-clearance: 12px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --home-hero-clearance: 18px;
+  }
+}
+
 /* Hide scrollbars but keep scrolling functional */
 .no-scrollbar::-webkit-scrollbar {
 	display: none;
@@ -16,6 +27,8 @@
 body {
   font-family: "Outfit", sans-serif;
   @apply bg-gray-50 text-gray-900;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
 }
 
 /* Custom button styles */
@@ -58,6 +71,8 @@ body {
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
 }
 
 /* Custom gradient text */
