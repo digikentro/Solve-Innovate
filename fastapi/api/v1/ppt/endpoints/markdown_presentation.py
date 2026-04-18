@@ -20,6 +20,7 @@ import os
 import re
 import uuid
 from typing import Any, Dict, List, Literal, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -215,8 +216,8 @@ class SpatialDeckPayload(BaseModel):
 
 class OutlineDraftResponse(BaseModel):
     presentation_id: str
-    revision_id: str
-    outline: OutlineDraft
+    revision_id: Optional[str] = None
+    outline: Optional[OutlineDraft] = None
 
 
 class EditorStatePayload(BaseModel):
@@ -860,7 +861,25 @@ def _collect_numeric_pairs(value: Any, path: str = "") -> List[Dict[str, Any]]:
 
 def _extract_quantitative_datasets(project: Dict[str, Any]) -> List[Dict[str, Any]]:
     datasets: List[Dict[str, Any]] = []
-    candidate_fields = ["research_data", "research_findings", "market_research", "metrics", "analysis"]
+    candidate_fields = [
+        "research_data",
+        "research_findings",
+        "market_research",
+        "metrics",
+        "analysis",
+        "as_is_map",
+        "extreme_user_data",
+        "deep_empathy_data",
+        "psychological_analysis",
+        "Behaviour_Framework",
+        "HMW_Ideation_Framework",
+        "Idea_Clustering_and_Idea_Cards",
+        "transformation_framework",
+        "final_idea",
+        "prototype_images",
+        "testing",
+        "design_research",
+    ]
 
     for field in candidate_fields:
         normalized = _normalize_project_value(project.get(field))
@@ -878,7 +897,280 @@ def _extract_quantitative_datasets(project: Dict[str, Any]) -> List[Dict[str, An
     return datasets
 
 
-async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload:
+_PROJECT_PIPELINE_SECTIONS: List[tuple[str, str]] = [
+    ("problem_statement", "Problem Statement"),
+    ("as_is_map", "As-Is Map"),
+    ("extreme_user_data", "Extreme User Data"),
+    ("deep_empathy_data", "Deep Empathy Data"),
+    ("psychological_analysis", "Psychological Analysis"),
+    ("Behaviour_Framework", "Behaviour Framework"),
+    ("HMW_Ideation_Framework", "HMW / Ideation Framework"),
+    ("Idea_Clustering_and_Idea_Cards", "Idea Clustering and Idea Cards"),
+    ("transformation_framework", "Transformation Framework"),
+    ("market_research", "Market Research"),
+    ("research_data", "Research Data"),
+    ("research_findings", "Research Findings"),
+    ("key_insights", "Key Insights"),
+    ("analysis", "Analysis"),
+    ("final_idea", "Final Idea"),
+    ("implementation_plan", "Implementation Plan"),
+    ("prototype_images", "Prototype Images"),
+    ("testing", "Testing"),
+    ("design_research", "Design Research"),
+]
+
+
+def _count_meaningful_nodes(value: Any) -> int:
+    normalized = _normalize_project_value(value)
+    if normalized is None:
+        return 0
+    if isinstance(normalized, dict):
+        total = sum(_count_meaningful_nodes(inner) for inner in normalized.values())
+        if total:
+            return total
+        return 1 if any(_has_meaningful_content(inner) for inner in normalized.values()) else 0
+    if isinstance(normalized, list):
+        total = sum(_count_meaningful_nodes(inner) for inner in normalized)
+        if total:
+            return total
+        return sum(1 for inner in normalized if _has_meaningful_content(inner))
+    if isinstance(normalized, str):
+        return 1 if normalized.strip() else 0
+    if isinstance(normalized, (int, float)) and not isinstance(normalized, bool):
+        return 1
+    if isinstance(normalized, bool):
+        return 1
+    return 0
+
+
+def _build_section_evidence_pack(project: Dict[str, Any]) -> Dict[str, Any]:
+    section_depth_points: List[Dict[str, Any]] = []
+    numeric_signal_points: List[Dict[str, Any]] = []
+    summary = {
+        "populated_sections": 0,
+        "total_evidence_nodes": 0,
+        "total_numeric_points": 0,
+        "prototype_sections": 0,
+        "list_sections": 0,
+    }
+
+    for field, label in _PROJECT_PIPELINE_SECTIONS:
+        normalized = _normalize_project_value(project.get(field))
+        if not _has_meaningful_content(normalized):
+            continue
+
+        summary["populated_sections"] += 1
+        evidence_depth = max(1, _count_meaningful_nodes(normalized))
+        numeric_rows = _collect_numeric_pairs(normalized, field)
+        summary["total_evidence_nodes"] += evidence_depth
+        summary["total_numeric_points"] += len(numeric_rows)
+        if field == "prototype_images":
+            summary["prototype_sections"] += 1
+        if isinstance(normalized, list):
+            summary["list_sections"] += 1
+
+        section_depth_points.append({"label": label, "value": float(evidence_depth)})
+        numeric_signal_points.append({"label": label, "value": float(len(numeric_rows))})
+
+    datasets: List[Dict[str, Any]] = []
+    if section_depth_points:
+        datasets.append({"source": "section_evidence_depth", "data": section_depth_points})
+    if numeric_signal_points:
+        datasets.append({"source": "section_numeric_signals", "data": numeric_signal_points})
+
+    return {"summary": summary, "datasets": datasets}
+
+
+def _fallback_icon_data_uri(color: Optional[str]) -> str:
+    fill = f"#{color.lstrip('#')}" if isinstance(color, str) and color.strip() else "#D97706"
+    svg = (
+        "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'>"
+        f"<rect width='160' height='160' rx='40' fill='{fill}' fill-opacity='0.14'/>"
+        f"<circle cx='80' cy='80' r='30' fill='{fill}' fill-opacity='0.9'/>"
+        f"<circle cx='80' cy='80' r='12' fill='white' fill-opacity='0.95'/>"
+        f"<path d='M80 24v18M80 118v18M24 80h18M118 80h18M40 40l13 13M107 107l13 13M40 120l13-13M107 53l13-13' stroke='{fill}' stroke-width='10' stroke-linecap='round' opacity='0.8'/>"
+        "</svg>"
+    )
+    return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
+
+
+_CHART_TYPE_CYCLE = ["bar", "line", "donut", "area", "pie"]
+
+
+def _normalize_chart_type_cycle(chart_types: Optional[List[str]]) -> List[str]:
+    selected: List[str] = []
+    for chart_type in chart_types or []:
+        normalized = chart_type.strip().lower()
+        if normalized in _CHART_TYPE_CYCLE and normalized not in selected:
+            selected.append(normalized)
+    for fallback in _CHART_TYPE_CYCLE:
+        if fallback not in selected:
+            selected.append(fallback)
+    return selected
+
+
+def _choose_chart_type(
+    slide: SpatialSlide,
+    slide_index: int,
+    chart_index: int,
+    chart_cycle: List[str],
+) -> str:
+    intent = (slide.visual_intent or "").lower()
+    if "comparison" in intent and "bar" in chart_cycle:
+        return "bar"
+    if "process" in intent and "area" in chart_cycle:
+        return "area"
+    if "visual-hero" in intent and "donut" in chart_cycle:
+        return "donut"
+    if "narrative" in intent and "line" in chart_cycle:
+        return "line"
+    if "data-heavy" in intent and "bar" in chart_cycle:
+        return "bar"
+    return chart_cycle[(slide_index + chart_index) % len(chart_cycle)]
+
+
+def _collect_fallback_slide_seeds(content: str, limit: int) -> List[str]:
+    seeds: List[str] = []
+    current_title = "Presentation"
+    current_body: List[str] = []
+
+    for line in content.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("## "):
+            if current_body:
+                seeds.append("\n".join([f"## {current_title}", *current_body]).strip())
+                current_body = []
+            current_title = stripped.replace("## ", "", 1).strip() or current_title
+            continue
+        if stripped.startswith("# "):
+            continue
+        current_body.append(stripped)
+
+    if current_body:
+        seeds.append("\n".join([f"## {current_title}", *current_body]).strip())
+
+    if not seeds:
+        seeds = [f"## {current_title}\n- Key evidence and recommendation."]
+
+    return seeds[: max(1, limit)]
+
+
+def _parse_seed_title_and_bullets(seed: str) -> tuple[str, List[str]]:
+    lines = [line.strip() for line in seed.splitlines() if line.strip()]
+    title = "Presentation"
+    bullets: List[str] = []
+    for line in lines:
+        if line.startswith("## "):
+            title = line.replace("## ", "", 1).strip() or title
+            continue
+        if line.startswith("- "):
+            bullets.append(line[2:].strip())
+        elif line.startswith("* "):
+            bullets.append(line[2:].strip())
+        elif re.match(r"^\d+\.\s+", line):
+            bullets.append(re.sub(r"^\d+\.\s+", "", line).strip())
+        elif not bullets:
+            bullets.append(line)
+    return title, [bullet for bullet in bullets if bullet]
+
+
+def _build_fallback_spatial_deck(
+    *,
+    content: str,
+    n_slides: int,
+    slides_markdown: Optional[List[str]],
+    quantitative_datasets: List[Dict[str, Any]],
+    chart_types: Optional[List[str]],
+) -> SpatialDeckPayload:
+    seeds = slides_markdown or _collect_fallback_slide_seeds(content, n_slides)
+    chart_cycle = _normalize_chart_type_cycle(chart_types)
+    fallback_chart_data = quantitative_datasets[0].get("data", []) if quantitative_datasets else []
+
+    slides: List[SpatialSlide] = []
+    for index, seed in enumerate(seeds[: max(1, n_slides)]):
+        title, bullets = _parse_seed_title_and_bullets(seed)
+        visual_intent = "Data-Heavy" if fallback_chart_data and index % 3 == 1 else ("Visual-Hero" if len(bullets) <= 1 else "Narrative")
+        blocks: List[SpatialBlock] = []
+
+        blocks.append(
+            SpatialTextBlock(
+                id=f"slide-{index + 1}-title",
+                type="text",
+                position=SpatialPosition(x=6, y=6, width=56, height=12),
+                content=title,
+                style=SpatialTextStyle(variant="title", emphasis="strong", align="left"),
+            )
+        )
+
+        if bullets:
+            body_content = "<ul>" + "".join(f"<li>{bullet}</li>" for bullet in bullets[:5]) + "</ul>"
+        else:
+            body_content = "<p>Strategic summary unavailable from source; using a resilient fallback narrative.</p>"
+
+        if fallback_chart_data and visual_intent == "Data-Heavy":
+            blocks.append(
+                SpatialTextBlock(
+                    id=f"slide-{index + 1}-body",
+                    type="text",
+                    position=SpatialPosition(x=6, y=21, width=40, height=58),
+                    content=body_content,
+                    style=SpatialTextStyle(variant="bullets", align="left"),
+                )
+            )
+            blocks.append(
+                SpatialChartBlock(
+                    id=f"slide-{index + 1}-chart",
+                    type="chart",
+                    position=SpatialPosition(x=49, y=20, width=45, height=50),
+                    chart_type=_choose_chart_type(
+                        SpatialSlide(
+                            id=f"slide-{index + 1}",
+                            title=title,
+                            visual_intent=visual_intent,
+                            chart_candidate=True,
+                            blocks=[],
+                        ),
+                        index,
+                        0,
+                        chart_cycle,
+                    ),
+                    data=[SpatialChartDataPoint(**item) for item in fallback_chart_data[:8]],
+                    title=title,
+                )
+            )
+        else:
+            blocks.append(
+                SpatialTextBlock(
+                    id=f"slide-{index + 1}-body",
+                    type="text",
+                    position=SpatialPosition(x=6, y=21, width=86, height=58),
+                    content=body_content,
+                    style=SpatialTextStyle(variant="bullets", align="left"),
+                )
+            )
+
+        slides.append(
+            SpatialSlide(
+                id=f"slide-{index + 1}",
+                title=title,
+                visual_intent=visual_intent,
+                chart_candidate=bool(fallback_chart_data and visual_intent == "Data-Heavy"),
+                blocks=blocks,
+            )
+        )
+
+    return SpatialDeckPayload(slides=slides)
+
+
+async def _resolve_visual_blocks(
+    deck: SpatialDeckPayload,
+    *,
+    image_source: str,
+    image_model: str,
+    chart_types: Optional[List[str]] = None,
+) -> SpatialDeckPayload:
     images_directory = get_images_directory()
     image_service = ImageGenerationService(output_directory=images_directory)
     # Icon RAG/search disabled — see icon_finder_service.py
@@ -889,7 +1181,11 @@ async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload
             if isinstance(block, SpatialImageBlock):
                 try:
                     generated = await image_service.generate_image(
-                        ImagePrompt(prompt=block.prompt)
+                        ImagePrompt(
+                            prompt=block.prompt,
+                            image_source=image_source,
+                            image_model=image_model,
+                        )
                     )
                     if isinstance(generated, str):
                         block.prompt = generated
@@ -898,13 +1194,20 @@ async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Image generation failed for block=%s: %s", block.id, exc)
             elif isinstance(block, SpatialIconBlock):
-                block.icon_query = "/static/icons/placeholder.svg"
+                block.icon_query = _fallback_icon_data_uri(block.color)
                 # try:
                 #     results = await ICON_FINDER_SERVICE.search_icons(query=block.icon_query, k=1)
                 #     if results and len(results) > 0:
                 #         block.icon_query = results[0]
                 # except Exception as exc:
                 #     logger.warning("Icon search failed for block=%s: %s", block.id, exc)
+    chart_cycle = _normalize_chart_type_cycle(chart_types)
+    for slide_index, slide in enumerate(deck.slides):
+        chart_index = 0
+        for block in slide.blocks:
+            if isinstance(block, SpatialChartBlock):
+                block.chart_type = _choose_chart_type(slide, slide_index, chart_index, chart_cycle)
+                chart_index += 1
     return deck
 
 
@@ -922,6 +1225,9 @@ async def _build_spatial_deck(
     include_images: bool,
     include_charts: bool,
     quantitative_datasets: List[Dict[str, Any]],
+    image_source: str,
+    image_model: str,
+    chart_types: Optional[List[str]] = None,
 ) -> SpatialDeckPayload:
     messages = get_markdown_generation_messages(
         content=content,
@@ -938,14 +1244,27 @@ async def _build_spatial_deck(
         quantitative_datasets=quantitative_datasets,
     )
     llm_client = LLMClient()
-    structured = await llm_client.generate_structured(
-        model=get_model(),
-        messages=messages,
-        response_format=SpatialDeckPayload.model_json_schema(),
-        strict=True,
-        max_tokens=12000,
-    )
-    deck = SpatialDeckPayload(**structured)
+    try:
+        structured = await llm_client.generate_structured(
+            model=get_model(),
+            messages=messages,
+            response_format=SpatialDeckPayload.model_json_schema(),
+            strict=True,
+            max_tokens=12000,
+        )
+        deck = SpatialDeckPayload(**structured)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Spatial deck generation failed; falling back to deterministic deck. %s",
+            exc,
+        )
+        deck = _build_fallback_spatial_deck(
+            content=content,
+            n_slides=n_slides,
+            slides_markdown=slides_markdown,
+            quantitative_datasets=quantitative_datasets,
+            chart_types=chart_types,
+        )
 
     # Guarantee chart blocks always contain numeric data from source datasets.
     fallback_chart_data = []
@@ -957,7 +1276,12 @@ async def _build_spatial_deck(
             if isinstance(block, SpatialChartBlock) and not block.data and fallback_chart_data:
                 block.data = [SpatialChartDataPoint(**item) for item in fallback_chart_data[:8]]
 
-    deck = await _resolve_visual_blocks(deck)
+    deck = await _resolve_visual_blocks(
+        deck,
+        image_source=image_source,
+        image_model=image_model,
+        chart_types=chart_types,
+    )
     return deck
 
 
@@ -1142,7 +1466,9 @@ async def generate_project_presentation(
 
     project = _fetch_project_row(presentation.project_id)
     content = await _build_generation_content(project)
-    quantitative_datasets = _extract_quantitative_datasets(project)
+    evidence_pack = _build_section_evidence_pack(project)
+    quantitative_datasets = _extract_quantitative_datasets(project) + evidence_pack["datasets"]
+    charts_needed = chart_enabled or bool(quantitative_datasets)
 
     outline_stmt = (
         select(ProjectPresentationRevisionModel)
@@ -1177,9 +1503,12 @@ async def generate_project_presentation(
         audience=None,
         instructions=instructions,
         slides_markdown=outline_slide_seeds,
-        include_images=(image_model != "none" and image_source != "none"),
-        include_charts=chart_enabled,
+        include_images=image_source != "none",
+        include_charts=charts_needed,
         quantitative_datasets=quantitative_datasets,
+        image_source=image_source,
+        image_model=image_model,
+        chart_types=chart_types,
     )
 
     generated_slides = []
@@ -1280,34 +1609,53 @@ async def generate_outline_draft(
 
     project = _fetch_project_row(presentation.project_id)
     content = await _build_generation_content(project)
-    quantitative_datasets = _extract_quantitative_datasets(project)
+    evidence_pack = _build_section_evidence_pack(project)
+    quantitative_datasets = _extract_quantitative_datasets(project) + evidence_pack["datasets"]
     outline_messages = [
         LLMSystemMessage(
             content=(
-                "You produce a slide outline as strict JSON. "
-                "Each slide must include title, bullets, visual_intent, and has_quantitative_data."
+                "You are an expert presentation consultant specializing in startup pitch decks, founder narratives, and investor-ready business strategy. "
+                "You produce a slide outline as strict JSON.\n\n"
+                "STORYLINE ARCHITECTURE (Follow this structure for 8-14 slides):\n"
+                "1. COVER: Engaging company or project name and crisp pitch thesis.\n"
+                "2. PROBLEM: The urgent pain point founders or users feel today.\n"
+                "3. WHY NOW: Timing, market shift, or operational change that makes this compelling.\n"
+                "4. INSIGHT / EVIDENCE: Research evidence, data, or customer behavior that proves the case.\n"
+                "5. SOLUTION: The product or service and the mechanism that makes it work.\n"
+                "6. MARKET: Opportunity size, target segment, and positioning.\n"
+                "7. TRACTION / VALIDATION: Evidence, pilots, prototypes, or confidence-building signals.\n"
+                "8. BUSINESS MODEL / GO-TO-MARKET: How the solution scales and converts to value.\n"
+                "9. TEAM / EXECUTION: Why this team or approach can win.\n"
+                "10. ASK / CLOSING: What decision or next step the audience should take.\n\n"
+                "RULES:\n"
+                "- Each slide must include title, bullets, visual_intent, and has_quantitative_data.\n"
+                "- visual_intent must be: Data-Heavy, Visual-Hero, Narrative, Comparison, or Process.\n"
+                "- Match the source content exactly for names, quotes, and numbers.\n"
+                "- If the evidence pack contains section_evidence_depth or section_numeric_signals, use those to mark Data-Heavy slides and place charts on them."
             )
         ),
         LLMUserMessage(
             content=(
-                "Create a presentation outline from the source content. "
-                "Visual intent must be one of: Data-Heavy, Visual-Hero, Narrative, Comparison, Process. "
-                "Set has_quantitative_data=true when a chart should be used. "
-                "Keep bullets concise and specific.\n\n"
-                f"Quantitative datasets:\n{json.dumps(quantitative_datasets, ensure_ascii=False)}\n\n"
-                f"Source content:\n{content}"
+                "Create a high-impact presentation outline from the research content provided below. "
+                "Identify specific data points from the quantitative datasets to flag for 'Data-Heavy' slides.\n\n"
+                f"QUANTITATIVE DATASETS:\n{json.dumps(quantitative_datasets, ensure_ascii=False, indent=2)}\n\n"
+                f"SOURCE RESEARCH CONTENT:\n{content}"
             )
         ),
     ]
     llm_client = LLMClient()
-    llm_outline = await llm_client.generate_structured(
-        model=get_model(),
-        messages=outline_messages,
-        response_format=OutlineDraft.model_json_schema(),
-        strict=True,
-        max_tokens=4000,
-    )
-    outline = OutlineDraft(**llm_outline)
+    try:
+        llm_outline = await llm_client.generate_structured(
+            model=get_model(),
+            messages=outline_messages,
+            response_format=OutlineDraft.model_json_schema(),
+            strict=True,
+            max_tokens=4000,
+        )
+        outline = OutlineDraft(**llm_outline)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Outline generation failed; falling back to deterministic outline. %s", exc)
+        outline = _build_outline_from_content(content)
 
     stmt = select(func.max(ProjectPresentationRevisionModel.revision_number)).where(
         ProjectPresentationRevisionModel.presentation_id == pres_uuid
@@ -1358,7 +1706,11 @@ async def get_outline_draft(
     outline_result = await sql_session.execute(outline_stmt)
     outline_revision = outline_result.scalar_one_or_none()
     if not outline_revision or not outline_revision.outline:
-        raise HTTPException(status_code=404, detail="Outline draft not found.")
+        return OutlineDraftResponse(
+            presentation_id=str(pres_uuid),
+            revision_id=None,
+            outline=None,
+        )
 
     outline = OutlineDraft(**_coerce_outline_payload(outline_revision.outline or {}))
     return OutlineDraftResponse(
@@ -1500,7 +1852,7 @@ async def update_editor_state(
             settings={},
         )
 
-    settings = dict(revision.settings or {})
+    settings = _as_dict(revision.settings)
     settings["editor_payload"] = payload.editor_payload
     if payload.logo_url is not None:
         settings["logo_url"] = payload.logo_url
@@ -1572,18 +1924,24 @@ def _build_project_content(project: Dict[str, Any]) -> str:
     """Build a null-safe markdown block from preferred and all additional project columns."""
     preferred_fields = [
         ("problem_statement", "Problem Statement"),
-        ("market_research", "Market Research"),
-        ("research_data", "Research Data"),
-        ("research_findings", "Research Findings"),
-        ("key_insights", "Key Insights"),
-        ("analysis", "Analysis"),
+        ("as_is_map", "As-Is Map"),
+        ("extreme_user_data", "Extreme User Data"),
         ("deep_empathy_data", "Deep Empathy Data"),
         ("psychological_analysis", "Psychological Analysis"),
         ("Behaviour_Framework", "Behaviour Framework"),
         ("HMW_Ideation_Framework", "HMW / Ideation Framework"),
         ("Idea_Clustering_and_Idea_Cards", "Idea Clustering and Idea Cards"),
+        ("transformation_framework", "Transformation Framework"),
+        ("market_research", "Market Research"),
+        ("research_data", "Research Data"),
+        ("research_findings", "Research Findings"),
+        ("key_insights", "Key Insights"),
+        ("analysis", "Analysis"),
         ("final_idea", "Final Idea"),
         ("implementation_plan", "Implementation Plan"),
+        ("prototype_images", "Prototype Images"),
+        ("testing", "Testing"),
+        ("design_research", "Design Research"),
     ]
 
     title = (
@@ -1594,6 +1952,24 @@ def _build_project_content(project: Dict[str, Any]) -> str:
     )
 
     content_parts = [f"# {title}"]
+    evidence_pack = _build_section_evidence_pack(project)
+
+    content_parts.insert(
+        1,
+        "\n## Narrative Frame\n"
+        "Build the deck as a tight editorial story: problem tension → key insight → evidence → recommendation → next step.\n"
+        "Use the strongest proof early and do not bury market research or testing behind methodology-heavy slides.\n"
+        "Treat idea clustering as a decision slide and testing as a proof slide.\n"
+        "\n## Visual Style Brief\n"
+        "Aim for a consulting-meets-editorial presentation style: bold claim-driven titles, crisp hierarchy, asymmetric but balanced layouts, and one clear visual anchor per slide.\n"
+        "Prefer scorecards, comparison matrices, tables, and charts over decorative imagery unless the project artifact itself is the story.\n"
+        "\n## Evidence Summary\n"
+        f"```json\n{json.dumps(evidence_pack['summary'], indent=2, ensure_ascii=False)}\n```\n"
+        "\n## Chart Guidance\n"
+        "- Use section_evidence_depth for a slide showing which pipeline sections have the most substance.\n"
+        "- Use section_numeric_signals for a slide showing where the source contains actual measurable data.\n"
+        "- Only use chart values that appear in the evidence pack or extracted quantitative datasets.\n",
+    )
 
     rendered_keys: set[str] = set()
     for key, label in preferred_fields:
@@ -1620,6 +1996,20 @@ def _build_project_content(project: Dict[str, Any]) -> str:
         if rendered:
             content_parts.append(rendered)
 
+    content_parts.insert(
+        2,
+        "\n## Source Asset Guidance\n"
+        "Use the most relevant project-specific evidence from the sections above.\n"
+        "Prefer charts, tables, callouts, and prototype artifacts over generic imagery whenever possible.\n"
+        "If a section contains statistics, surface them visually. If it contains workflows or user journeys, turn them into process or comparison slides.\n",
+    )
+    content_parts.insert(
+        3,
+        "\n## Deck Prioritization\n"
+        "When the strongest source material is market research, testing, or idea clustering, promote it to the center of the story instead of treating it like an appendix.\n"
+        "Make slide titles read like conclusions, not section names.\n"
+    )
+
     return "\n".join(part for part in content_parts if part)
 
 
@@ -1628,7 +2018,14 @@ def _build_outline_from_content(content: str) -> OutlineDraft:
 
     lines = [line.rstrip() for line in content.splitlines()]
     title = lines[0].lstrip("# ").strip() if lines else "Presentation"
-    slides.append(OutlineSlideDraft(title=title, details=["Project overview and goals."]))
+    slides.append(
+        OutlineSlideDraft(
+            title=title,
+            bullets=["Project overview and goals."],
+            visual_intent="Narrative",
+            has_quantitative_data=False,
+        )
+    )
 
     current_heading: Optional[str] = None
     current_buffer: list[str] = []
@@ -1694,12 +2091,37 @@ def _build_outline_from_content(content: str) -> OutlineDraft:
             return concise[:2]
         return ["Key points for this section."]
 
+    def _infer_visual_intent(heading: str, bullets: list[str], json_text: str) -> Literal[
+        "Data-Heavy",
+        "Visual-Hero",
+        "Narrative",
+        "Comparison",
+        "Process",
+    ]:
+        heading_lower = heading.lower()
+        if any(token in heading_lower for token in ("market", "testing", "research data", "analysis")):
+            return "Data-Heavy"
+        if any(token in heading_lower for token in ("journey", "flow", "process", "framework", "prototype")):
+            return "Process"
+        if any(token in heading_lower for token in ("compare", "comparison", "competitive", "differentiation")):
+            return "Comparison"
+        if len(bullets) <= 2 and not json_text:
+            return "Visual-Hero"
+        return "Narrative"
+
     def _flush_section():
         if not current_heading:
             return
         json_text = "\n".join(json_buffer).strip()
         details = _summarize_section(current_heading, current_buffer, json_text)
-        slides.append(OutlineSlideDraft(title=current_heading, details=details))
+        slides.append(
+            OutlineSlideDraft(
+                title=current_heading,
+                bullets=details,
+                visual_intent=_infer_visual_intent(current_heading, details, json_text),
+                has_quantitative_data=bool(json_text and any(char.isdigit() for char in json_text)),
+            )
+        )
 
     for line in lines[1:]:
         if line.startswith("## "):
@@ -1730,7 +2152,14 @@ def _build_outline_from_content(content: str) -> OutlineDraft:
 
     _flush_section()
 
-    slides.append(OutlineSlideDraft(title="Closing", details=["Summary and next steps."]))
+    slides.append(
+        OutlineSlideDraft(
+            title="Closing",
+            bullets=["Summary and next steps."],
+            visual_intent="Narrative",
+            has_quantitative_data=False,
+        )
+    )
     return OutlineDraft(slides=slides)
 
 
@@ -1834,6 +2263,12 @@ def _extract_preview(markdown: str) -> tuple[Optional[str], Optional[str]]:
     return heading or snippet, snippet
 
 
+def _as_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
 async def _build_project_presentation_summary(
     presentation: ProjectPresentationModel,
     sql_session: AsyncSession,
@@ -1857,9 +2292,10 @@ async def _build_project_presentation_summary(
                 slide_count = len(markdown.generated_slides or [])
                 if markdown.generated_slides:
                     preview_title, preview_snippet = _extract_preview(markdown.generated_slides[0])
-        if revision and revision.settings:
-            logo_url = revision.settings.get("logo_url")
-            logo_position = revision.settings.get("logo_position")
+        revision_settings = _as_dict(revision.settings) if revision else {}
+        if revision_settings:
+            logo_url = revision_settings.get("logo_url")
+            logo_position = revision_settings.get("logo_position")
 
     return ProjectPresentationSummary(
         id=str(presentation.id),

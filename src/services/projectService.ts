@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { ErrorHandler, ErrorContext } from './errorHandling';
 import { SecurityService } from './securityService';
 import type { Project } from '@/types/project';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 
 export class ProjectService {
   static async createProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>, userId: string): Promise<Project> {
@@ -455,7 +456,7 @@ export class ProjectService {
     let existing: Record<string, any> = {};
     try {
       existing = typeof row?.research_data === 'string'
-        ? JSON.parse(row.research_data)
+        ? relaxedJsonParse(row.research_data)
         : (row?.research_data || {});
     } catch { existing = {}; }
 
@@ -492,7 +493,7 @@ export class ProjectService {
     let existing: Record<string, any> = {};
     try {
       existing = typeof row?.research_data === 'string'
-        ? JSON.parse(row.research_data)
+        ? relaxedJsonParse(row.research_data)
         : (row?.research_data || {});
     } catch { existing = {}; }
 

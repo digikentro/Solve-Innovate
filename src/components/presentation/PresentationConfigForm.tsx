@@ -59,6 +59,7 @@ const THEME_GALLERY: Array<{
   previewClass: string;
   accentClass: string;
 }> = [
+  { title: 'Ink Press', themeId: 'editorial-ink', previewClass: 'bg-gradient-to-br from-amber-100 via-stone-200 to-slate-800', accentClass: 'bg-amber-700' },
   { title: 'Verdigris', themeId: 'nature', previewClass: 'bg-gradient-to-br from-emerald-950 via-emerald-700 to-teal-100', accentClass: 'bg-teal-200' },
   { title: 'Snowball', themeId: 'clean-light', previewClass: 'bg-gradient-to-br from-sky-50 via-blue-100 to-blue-200', accentClass: 'bg-blue-600' },
   { title: 'Gamma Dark', themeId: 'modern-dark', previewClass: 'bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-700', accentClass: 'bg-indigo-300' },

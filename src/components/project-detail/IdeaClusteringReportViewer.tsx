@@ -22,7 +22,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
 
-  const reportData = isEditMode ? editedData : (data?.content || data);
+  const reportData = (isEditMode ? editedData : (data?.content || data)) || {};
 
   if (!reportData) {
     return (
@@ -65,7 +65,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      const dataToEdit = data?.content || data;
+      const dataToEdit = (data?.content || data) || {};
       setOriginalData(structuredClone(dataToEdit));
       setEditedData(structuredClone(dataToEdit));
       setIsEditMode(true);
@@ -393,7 +393,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                         <div>
                           <h4 className="font-bold mb-2">Innovation Assessment:</h4>
                           <div className="grid grid-cols-2 gap-3 pl-4">
-                              {Object.entries(cluster.innovation_assessment).map(([key, assessment]: [string, any], j: number) => (
+                              {cluster.innovation_assessment && Object.entries(cluster.innovation_assessment).map(([key, assessment]: [string, any], j: number) => (
                                 key !== 'score' && (
                                   <div key={key} className="text-sm">
                                     <span className="font-semibold capitalize">
@@ -403,12 +403,12 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                                       <div className="mt-1 pl-2 space-y-2">
                                         <input
                                           type="number"
-                                          value={assessment.score ?? ''}
+                                          value={assessment?.score ?? ''}
                                           onChange={(e) => updateTextAtPath(['clusters', idx, 'innovation_assessment', key, 'score'], Number(e.target.value))}
                                           className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
                                         />
                                         <textarea
-                                          value={assessment.reasoning || ''}
+                                          value={assessment?.reasoning || ''}
                                           onChange={(e) => updateTextAtPath(['clusters', idx, 'innovation_assessment', key, 'reasoning'], e.target.value)}
                                           rows={2}
                                           className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
@@ -416,8 +416,8 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                                       </div>
                                     ) : (
                                       <>
-                                        <span className="ml-2">{assessment.score}/100</span>
-                                        {assessment.reasoning && (
+                                        <span className="ml-2">{assessment?.score}/100</span>
+                                        {assessment?.reasoning && (
                                           <p className="text-xs text-gray-600 mt-1">{assessment.reasoning}</p>
                                         )}
                                       </>

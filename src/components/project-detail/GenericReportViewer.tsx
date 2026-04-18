@@ -121,7 +121,7 @@ export const GenericReportViewer = ({ data, title, onGenerateNew }: GenericRepor
   };
 
   // Extract content if data has nested structure
-  const reportData = data?.content || data;
+  const reportData = (data?.content || data) || {};
 
   return (
     <div className="space-y-6">

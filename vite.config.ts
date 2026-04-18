@@ -12,6 +12,16 @@ export default defineConfig({
   server: {
     port: 3001,
     host: '127.0.0.1',
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/app_data': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+    },
   },
 });

@@ -118,12 +118,13 @@ export default function ProjectSlidePage() {
     <div className="max-w-6xl mx-auto py-10 px-4">
       <div className="flex items-center mb-6 gap-3">
         <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200"
+          onClick={() => navigate(`/projects/${id}`)}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white text-indigo-700 shadow-sm hover:bg-indigo-50 hover:text-indigo-900 transition-all border border-indigo-200 gap-2 group"
           type="button"
           aria-label="Back"
         >
-          <FiArrowLeft className="w-6 h-6" />
+          <FiArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Back</span>
         </button>
         <h1 className="text-2xl font-bold m-0">Presentable Slide</h1>
       </div>

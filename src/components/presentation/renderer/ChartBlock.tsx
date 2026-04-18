@@ -1,6 +1,6 @@
 import type { ChartBlock as ChartBlockType } from '@/types/presentation';
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
@@ -86,14 +86,45 @@ export const ChartBlock = ({ chartType, data }: ChartBlockType) => {
     );
   }
 
+  if (chartType === 'area') {
+    return (
+      <div className="w-full my-6" style={{ height: 450 }}>
+        <ResponsiveContainer>
+          <AreaChart data={chartData}>
+            <defs>
+              <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CHART_COLORS[0]} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={CHART_COLORS[0]} stopOpacity={0.08} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 14 }} />
+            <YAxis tick={{ fill: 'var(--text-color)', fontSize: 14 }} />
+            <Tooltip />
+            {valueKeys.map((key, i) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                fill="url(#areaFill)"
+                strokeWidth={3}
+              />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
   // Default: bar chart
   return (
     <div className="w-full my-6" style={{ height: 450 }}>
       <ResponsiveContainer>
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
-          <YAxis tick={{ fill: 'var(--text-color)', fontSize: 16 }} />
+          <XAxis dataKey={categoryKey} tick={{ fill: 'var(--text-color)', fontSize: 14 }} />
+          <YAxis tick={{ fill: 'var(--text-color)', fontSize: 14 }} />
           <Tooltip />
           {valueKeys.map((key, i) => (
             <Bar

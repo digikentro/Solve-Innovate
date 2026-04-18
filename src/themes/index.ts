@@ -2,6 +2,12 @@ import type { Theme } from '@/types/presentation';
 
 export const THEMES: Theme[] = [
   {
+    id: 'editorial-ink',
+    name: 'Editorial Ink',
+    colors: { primary: '#0f172a', accent: '#b45309', bg: '#f5efe6', text: '#16110d', subtext: '#6b5f55' },
+    fonts: { heading: 'Fraunces, serif', body: 'Manrope, sans-serif' },
+  },
+  {
     id: 'modern-dark',
     name: 'Modern Dark',
     colors: { primary: '#5146E5', bg: '#1a1a2e', text: '#ffffff', subtext: '#b0b0c8' },
@@ -33,7 +39,7 @@ export const THEMES: Theme[] = [
   },
 ];
 
-export const DEFAULT_THEME = THEMES[0];
+export const DEFAULT_THEME = THEMES.find((theme) => theme.id === 'editorial-ink') || THEMES[0];
 
 export const getThemeById = (id: string): Theme =>
   THEMES.find((t) => t.id === id) || DEFAULT_THEME;

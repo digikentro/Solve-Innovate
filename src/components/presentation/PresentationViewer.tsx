@@ -286,12 +286,12 @@ export const PresentationViewer = ({
 
   return (
     <ActiveEditorProvider>
-    <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative">
-      <div className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4">
+    <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50/60 overflow-hidden relative shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <div className="h-16 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm flex items-center justify-between px-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-100"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-sm text-slate-700 hover:bg-slate-100"
           >
             <FiArrowLeft className="h-4 w-4" />
             Back
@@ -300,7 +300,7 @@ export const PresentationViewer = ({
             value={title}
             onChange={(event) => onTitleChange(event.target.value)}
             aria-label="Presentation title"
-            className="w-72 max-w-[40vw] bg-transparent text-base font-semibold text-slate-900 border-b border-transparent focus:outline-none focus:border-sky-500"
+            className="w-72 max-w-[40vw] bg-transparent text-base font-semibold text-slate-900 border-b border-transparent focus:outline-none focus:border-sky-500 truncate"
           />
           <span className="text-xs text-slate-500">{getSaveLabel(saveState)}</span>
         </div>
@@ -309,14 +309,14 @@ export const PresentationViewer = ({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
+            className="px-3 py-2 rounded-full border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
           >
             Undo
           </button>
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
+            className="px-3 py-2 rounded-full border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
           >
             Redo
           </button>
@@ -324,7 +324,7 @@ export const PresentationViewer = ({
             onClick={() => setRightPanelOpen((prev) => !prev)}
             aria-label="Toggle side panel"
             title="Toggle side panel"
-            className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700"
+            className="px-3 py-2 rounded-full border border-slate-200 text-slate-700"
           >
             <FiSidebar className="h-4 w-4" />
           </button>
@@ -333,7 +333,7 @@ export const PresentationViewer = ({
         <div className="flex items-center gap-2 relative">
           <button
             onClick={enterPresentationMode}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-sm"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-900 text-white text-sm shadow-sm"
           >
             <FiPlay className="h-4 w-4" />
             Present
@@ -352,14 +352,14 @@ export const PresentationViewer = ({
                 <button
                   disabled={isExporting}
                   onClick={onExportPptx}
-                  className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 disabled:opacity-50"
                 >
                   Export PPTX
                 </button>
                 <button
                   disabled={isExporting || isExportingPdfLocal}
                   onClick={triggerPdfExport}
-                  className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 disabled:opacity-50"
                 >
                   Export PDF
                 </button>
@@ -383,12 +383,12 @@ export const PresentationViewer = ({
                   value={regenInstructions}
                   onChange={(event) => setRegenInstructions(event.target.value)}
                   aria-label="Single slide regeneration instructions"
-                  className="w-full min-h-[80px] rounded-md border border-slate-200 px-2 py-1 text-sm"
+                  className="w-full min-h-[80px] rounded-xl border border-slate-200 px-3 py-2 text-sm"
                   placeholder="Add optional instructions"
                 />
                 <button
                   onClick={() => onRegenerateSlide(currentIndex, regenInstructions || undefined)}
-                  className="w-full px-3 py-2 rounded-md bg-sky-600 text-white text-sm"
+                  className="w-full px-3 py-2 rounded-xl bg-sky-600 text-white text-sm"
                 >
                   Regenerate Current Slide
                 </button>
@@ -399,7 +399,7 @@ export const PresentationViewer = ({
       </div>
 
       <div className="flex h-[calc(100%-64px)] overflow-hidden relative">
-        <aside className="w-[280px] h-full border-r border-slate-200 bg-white p-3 overflow-hidden flex-shrink-0">
+        <aside className="w-[280px] h-full border-r border-slate-200 bg-white/90 backdrop-blur-sm p-3 overflow-hidden flex-shrink-0">
           <SlideThumbnails
             slides={slides}
             theme={activeTheme}
@@ -412,7 +412,7 @@ export const PresentationViewer = ({
           />
         </aside>
 
-        <main className="flex-1 h-full min-h-0 bg-slate-100 p-4 flex flex-col gap-3 relative">
+        <main className="flex-1 h-full min-h-0 bg-slate-100/70 p-4 flex flex-col gap-3 relative">
           <style>{`
             :fullscreen .slide-container {
               max-width: none !important;
@@ -427,7 +427,7 @@ export const PresentationViewer = ({
           `}</style>
           {selectedBlockIds.length > 0 && <div className="absolute top-2 left-0 right-0 z-20 flex justify-center"><RteToolbar /></div>}
         <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center py-6" ref={stageRef}>
-        <div className="w-full max-w-4xl px-4 slide-container">
+        <div className="w-full max-w-6xl px-4 slide-container">
               <SlideRenderer
                 key={currentIndex}
                 slide={slide}
@@ -450,7 +450,7 @@ export const PresentationViewer = ({
               <button
                 onClick={() => onSelectSlide(currentIndex - 1)}
                 disabled={!canGoPrevious}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
               >
                 <FiChevronLeft className="h-3.5 w-3.5" />
                 Prev
@@ -469,7 +469,7 @@ export const PresentationViewer = ({
               <button
                 onClick={() => onSelectSlide(currentIndex + 1)}
                 disabled={!canGoNext}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
               >
                 Next
                 <FiChevronRight className="h-3.5 w-3.5" />

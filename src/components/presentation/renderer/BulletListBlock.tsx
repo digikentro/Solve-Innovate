@@ -17,17 +17,17 @@ export const BulletListBlock = ({ items }: BulletListBlockType) => {
         return (
           <li 
             key={i} 
-            className="flex items-start gap-4 text-2xl md:text-3xl leading-snug" 
+            className="flex items-start gap-3 text-lg md:text-xl leading-snug break-words min-w-0" 
             style={{ color: 'var(--text-color)' }}
           >
             <div
-              className="mt-3 w-2.5 h-2.5 rounded-full flex-shrink-0"
+              className="mt-2.5 w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: 'var(--primary-color)' }}
             />
             {hasFormatting ? (
-              <span className="flex-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item) }} />
+              <span className="flex-1 min-w-0" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item) }} />
             ) : (
-              <span className="flex-1">{item}</span>
+              <span className="flex-1 min-w-0">{item}</span>
             )}
           </li>
         );

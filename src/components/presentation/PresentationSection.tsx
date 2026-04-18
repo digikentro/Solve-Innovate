@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FiArrowLeft, FiBarChart2, FiFilePlus, FiLoader, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FiArrowLeft, FiBarChart2, FiFilePlus, FiLoader, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi';
 
 import { usePresentation } from '@/hooks/usePresentation';
 import { useProjectPresentations } from '@/hooks/useProjectPresentations';
@@ -11,6 +11,8 @@ import type {
   OutlineSlideDraft,
   PresentationSettings,
   ProjectPresentationSummary,
+  SlideData,
+  SpatialDeckPayload,
 } from '@/types/presentation';
 import { PresentationConfigForm } from './PresentationConfigForm';
 import { PresentationViewer } from './PresentationViewer';
@@ -22,14 +24,66 @@ interface PresentationSectionProps {
 
 type ViewMode = 'list' | 'editor';
 
+interface PresentationSessionState {
+  viewMode: ViewMode;
+  activePresentationId: string | null;
+  activeMarkdownId: string | null;
+  phase: 'configure' | 'outline' | 'viewer';
+  currentSlideIndex: number;
+  titleDraft: string;
+  settings?: PresentationSettings;
+  editorPayload?: SpatialDeckPayload | null;
+}
+
+const getSessionStorageKey = (projectId: string): string => `presentationSectionSession_${projectId}`;
+
+const readSessionState = (projectId: string): PresentationSessionState | null => {
+  try {
+    const raw = localStorage.getItem(getSessionStorageKey(projectId));
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PresentationSessionState>;
+    return {
+      viewMode: parsed.viewMode === 'editor' ? 'editor' : 'list',
+      activePresentationId: typeof parsed.activePresentationId === 'string' ? parsed.activePresentationId : null,
+      activeMarkdownId: typeof parsed.activeMarkdownId === 'string' ? parsed.activeMarkdownId : null,
+      phase:
+        parsed.phase === 'outline' || parsed.phase === 'viewer' || parsed.phase === 'configure'
+          ? parsed.phase
+          : 'configure',
+      currentSlideIndex: typeof parsed.currentSlideIndex === 'number' && Number.isFinite(parsed.currentSlideIndex)
+        ? Math.max(0, parsed.currentSlideIndex)
+        : 0,
+      titleDraft: typeof parsed.titleDraft === 'string' ? parsed.titleDraft : '',
+      settings: parsed.settings && typeof parsed.settings === 'object'
+        ? (parsed.settings as PresentationSettings)
+        : undefined,
+      editorPayload: parsed.editorPayload && typeof parsed.editorPayload === 'object'
+        ? (parsed.editorPayload as SpatialDeckPayload)
+        : null,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const PresentationSection = ({ project }: PresentationSectionProps) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [activePresentationId, setActivePresentationId] = useState<string | null>(null);
-  const [activeMarkdownId, setActiveMarkdownId] = useState<string | null>(null);
+  const sessionKey = getSessionStorageKey(project.id);
+  const initialSession = readSessionState(project.id);
+  const hasRestoredSessionRef = useRef(false);
+
+  const [viewMode, setViewMode] = useState<ViewMode>(initialSession?.viewMode ?? 'list');
+  const [activePresentationId, setActivePresentationId] = useState<string | null>(
+    initialSession?.activePresentationId ?? null
+  );
+  const [activeMarkdownId, setActiveMarkdownId] = useState<string | null>(initialSession?.activeMarkdownId ?? null);
   const [titleDraft, setTitleDraft] = useState('');
   const [outline, setOutline] = useState<OutlineDraft | null>(null);
   const [outlineError, setOutlineError] = useState<string | null>(null);
   const [isOutlineGenerating, setIsOutlineGenerating] = useState(false);
+  const [isGeneratingDeck, setIsGeneratingDeck] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createTitle, setCreateTitle] = useState('Presentation Draft');
 
@@ -77,13 +131,71 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     copySelection,
     pasteSelection,
     deleteSelection,
-  } = usePresentation(project, activePresentationId, activeMarkdownId);
+  } = usePresentation(project, activePresentationId, activeMarkdownId, {
+    phase: initialSession?.phase ?? 'configure',
+    currentSlideIndex: initialSession?.currentSlideIndex ?? 0,
+    settings: initialSession?.settings,
+    slides:
+      initialSession?.phase === 'viewer' && initialSession.editorPayload?.slides
+        ? (initialSession.editorPayload.slides.map((slide) => ({
+            id: slide.id,
+            title: slide.title,
+            visual_intent: slide.visual_intent,
+            chart_candidate: slide.chart_candidate,
+            blocks: slide.blocks,
+          })) as SlideData[])
+        : [],
+  });
+
   useEffect(() => {
-    console.log("=== PresentationSection Debug ===");
-    console.log("Phase:", phase);
-    console.log("Slides length:", slides?.length);
-    console.log("Slides:", slides);
-  }, [phase, slides]);
+    if (!initialSession) {
+      return;
+    }
+
+    setCurrentSlideIndex(initialSession.currentSlideIndex);
+    setTitleDraft(initialSession.titleDraft);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const payload: PresentationSessionState = {
+        viewMode,
+        activePresentationId,
+        activeMarkdownId,
+        phase,
+        currentSlideIndex,
+        titleDraft,
+        settings,
+        editorPayload: {
+          format: 'spatial-json-canvas',
+          version: '1.0',
+          slides: slides.map((slide) => ({
+            id: slide.id,
+            title: slide.title,
+            visual_intent: slide.visual_intent || 'Narrative',
+            chart_candidate: slide.chart_candidate || false,
+            blocks: slide.blocks,
+          })),
+          config: {
+            text_mode: settings.textMode,
+            density: settings.verbosity,
+            write_for: settings.writingGuidance || settings.audience || '',
+            tone: settings.tone,
+            output_language: settings.language,
+            image_source: settings.imageSource,
+            image_model: settings.imageModel,
+            image_art_style: settings.imageArtStyle,
+            image_keywords: settings.imageKeywords || [],
+            theme: settings.theme,
+            visual_preference: settings.visualPreference,
+          },
+        },
+      };
+      localStorage.setItem(sessionKey, JSON.stringify(payload));
+    } catch {
+      // Ignore storage failures and continue with in-memory state.
+    }
+  }, [activeMarkdownId, activePresentationId, currentSlideIndex, phase, sessionKey, settings, slides, titleDraft, viewMode]);
 
   const theme = getThemeById(settings.theme);
 
@@ -111,6 +223,9 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     try {
       setOutlineError(null);
       const result = await presentationApi.getOutlineDraft(currentPresentationId);
+      if (!result?.outline) {
+        return false;
+      }
       setOutline(result.outline);
       setPhase('outline');
       return true;
@@ -133,6 +248,34 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     }
   };
 
+  const generatePitchDeck = async () => {
+    const deckTitle = `${project.title || 'Project'} Pitch Deck`;
+    setIsGeneratingDeck(true);
+    try {
+      setOutlineError(null);
+      const created = await createPresentation(deckTitle);
+      if (!created) {
+        return;
+      }
+
+      setViewMode('editor');
+      setTitleDraft(deckTitle);
+      setActivePresentationId(created.id);
+      setActiveMarkdownId(null);
+      setOutline(null);
+      resetToConfig();
+
+      const generated = await generate(created.id);
+      if (generated?.markdown_presentation_id) {
+        setActiveMarkdownId(generated.markdown_presentation_id);
+      }
+    } catch (err: any) {
+      setOutlineError(err?.message || 'Failed to generate pitch deck.');
+    } finally {
+      setIsGeneratingDeck(false);
+    }
+  };
+
   const saveOutline = async () => {
     if (!activePresentationId || !outline) {
       return;
@@ -146,10 +289,14 @@ export const PresentationSection = ({ project }: PresentationSectionProps) => {
     }
   };
 
-  const openPresentationItem = async (item: ProjectPresentationSummary) => {
-    console.log("Opening presentation:", item);
-console.log("current_markdown_presentation_id:", item.current_markdown_presentation_id);
-    resetToConfig();
+  const openPresentationItem = async (item: ProjectPresentationSummary, restoreSession?: PresentationSessionState | null) => {
+    const shouldPreserveRestoredDeck = Boolean(
+      restoreSession?.phase === 'viewer' && restoreSession.editorPayload
+    );
+
+    if (!shouldPreserveRestoredDeck) {
+      resetToConfig();
+    }
     setOutlineError(null);
     setActivePresentationId(item.id);
     setTitleDraft(item.title);
@@ -174,13 +321,28 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
       setActiveMarkdownId(item.current_markdown_presentation_id);
       setPresentationId(item.current_markdown_presentation_id);
       setPhase('viewer');
-      console.log("Setting phase to viewer");
       try {
         const editorState = await presentationApi.getEditorState(item.id);
         loadEditorPayload(editorState.editor, { markDirty: false, recordHistory: true });
+        const targetIndex = restoreSession?.currentSlideIndex ?? 0;
+        setCurrentSlideIndex(Math.min(targetIndex, Math.max(0, editorState.editor.slides.length - 1)));
       } catch {
         // Existing records may not have editor state yet.
       }
+      return;
+    }
+
+    if (shouldPreserveRestoredDeck && restoreSession?.editorPayload) {
+      setActiveMarkdownId(restoreSession.activeMarkdownId ?? null);
+      setPresentationId(restoreSession.activeMarkdownId ?? null);
+      setPhase('viewer');
+      loadEditorPayload(restoreSession.editorPayload, { markDirty: false, recordHistory: true });
+      setCurrentSlideIndex(
+        Math.min(
+          restoreSession.currentSlideIndex,
+          Math.max(0, restoreSession.editorPayload.slides.length - 1)
+        )
+      );
       return;
     }
 
@@ -189,6 +351,10 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
     if (!hasOutline) {
       await createOutline(item.id);
     }
+
+    if (restoreSession?.phase === 'outline') {
+      setPhase('outline');
+    }
   };
 
   const openPresentation = async (presentationIdToOpen: string) => {
@@ -196,7 +362,7 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
     if (!item) {
       return;
     }
-    await openPresentationItem(item);
+    await openPresentationItem(item, readSessionState(project.id));
   };
 
   const handleCreate = async () => {
@@ -207,8 +373,28 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
     }
     setShowCreateModal(false);
     setCreateTitle('Presentation Draft');
-    await openPresentationItem(created);
+    await openPresentationItem(created, null);
   };
+
+  useEffect(() => {
+    if (hasRestoredSessionRef.current || listLoading || presentations.length === 0) {
+      return;
+    }
+
+    if (!initialSession?.activePresentationId) {
+      hasRestoredSessionRef.current = true;
+      return;
+    }
+
+    const item = presentations.find((entry) => entry.id === initialSession.activePresentationId);
+    if (!item) {
+      hasRestoredSessionRef.current = true;
+      return;
+    }
+
+    hasRestoredSessionRef.current = true;
+    void openPresentationItem(item, initialSession);
+  }, [initialSession, listLoading, presentations]);
 
   const updateSlideOutline = (index: number, next: OutlineSlideDraft) => {
     if (!outline) {
@@ -298,22 +484,38 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
               <h2 className="text-2xl font-bold text-gray-900">Presentations</h2>
               <p className="text-sm text-gray-600">Create, rename, and reopen decks for this project.</p>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-600 text-white text-sm font-semibold"
-            >
-              <FiFilePlus className="w-4 h-4" />
-              Create New
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={generatePitchDeck}
+                disabled={isGeneratingDeck}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-700 text-white text-sm font-semibold disabled:opacity-60"
+              >
+                <FiBarChart2 className="w-4 h-4" />
+                {isGeneratingDeck ? 'Generating Deck...' : 'Generate Pitch Deck'}
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-600 text-white text-sm font-semibold"
+              >
+                <FiFilePlus className="w-4 h-4" />
+                Create Draft
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="w-full h-[200px] rounded-3xl border-2 border-dashed border-sky-200 bg-white p-4 flex flex-col items-center justify-center gap-2 text-sky-700"
+              onClick={generatePitchDeck}
+              disabled={isGeneratingDeck}
+              className="w-full h-[200px] rounded-3xl border-2 border-dashed border-sky-200 bg-white p-4 flex flex-col items-center justify-center gap-2 text-sky-700 disabled:opacity-60"
             >
-              <FiPlus className="w-7 h-7" />
-              <div className="text-sm font-semibold">Create New</div>
+              <FiZap className="w-7 h-7" />
+              <div className="text-sm font-semibold">
+                {isGeneratingDeck ? 'Generating...' : 'Generate Pitch Deck'}
+              </div>
+              <div className="text-xs text-sky-600 text-center max-w-[160px]">
+                Turn project data into a polished, investor-ready deck
+              </div>
             </button>
 
             {presentations.map((item) => (

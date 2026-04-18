@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import type { Project } from '@/types/project';
 
 interface ResearchDataState {
@@ -39,72 +40,22 @@ export const useResearchData = (project: Project | null) => {
         // Check if content is a string that needs parsing
         if (typeof data.content === 'string') {
           try {
-            data.content = JSON.parse(data.content);
+            data.content = relaxedJsonParse(data.content);
           } catch (e) {
-            // Try without escaped quotes
-            try {
-              const cleanContent = data.content.replace(/\\n/g, '').replace(/\\"/g, '"');
-              data.content = JSON.parse(cleanContent);
-            } catch (e2) {
-              // content is invalid JSON, leave as string
-            }
+            // content is invalid JSON, leave as string
           }
         }
         return data;
       }
 
       if (typeof data === 'string') {
-        // Pre-clean: strip the "prompt" field which often contains unescaped inner quotes
-        // from the webhook response (e.g. "prompt": "{...\"key\":\"value\"...}\"")
-        // making the outer JSON invalid. Removing it lets content + generated_at parse fine.
-        const stripped = data.replace(/,\s*"prompt"\s*:\s*"(?:[^"\\]|\\.)*"/g, '');
-
-        const tryParse = (str: string) => {
-          const parsed = JSON.parse(str);
-          // Check if content needs additional parsing
-          if (parsed && typeof parsed.content === 'string') {
-            try {
-              parsed.content = JSON.parse(parsed.content);
-            } catch {
-              try {
-                const cleanContent = parsed.content.replace(/\\n/g, '').replace(/\\"/g, '"');
-                parsed.content = JSON.parse(cleanContent);
-              } catch { /* leave as string */ }
-            }
-          }
-          return parsed;
-        };
-
-        // 1. Try stripped string first (removes broken prompt field)
-        try {
-          return tryParse(stripped);
-        } catch { /* fall through */ }
-
-        // 2. Try original string as-is
-        try {
-          return tryParse(data);
-        } catch { /* fall through */ }
-
-        // 3. Fallback: extract content + generated_at via regex
-        try {
-          const contentMatch =
-            stripped.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/) ||
-            data.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(generated_at|prompt)"/);
-          if (contentMatch && contentMatch[1]) {
-            let contentStr = contentMatch[1]
-              .replace(/\\n/g, '')
-              .replace(/\\"/g, '"')
-              .replace(/\\\\/g, '\\');
-            const contentParsed = JSON.parse(contentStr);
-            const generatedMatch = data.match(/"generated_at"\s*:\s*"([^"]+)"/);
-            return {
-              content: contentParsed,
-              generated_at: generatedMatch ? generatedMatch[1] : null,
-            };
-          }
-        } catch { /* regex extraction failed */ }
-
-        return null;
+        const parsed = relaxedJsonParse(data);
+        if (parsed && typeof parsed.content === 'string') {
+          try {
+            parsed.content = relaxedJsonParse(parsed.content);
+          } catch { /* leave as string */ }
+        }
+        return parsed;
       }
 
       return data;
@@ -159,7 +110,7 @@ export const useResearchData = (project: Project | null) => {
             .replace(/\r/g, '')
             .replace(/\s+/g, ' ')
             .trim();
-          transformationResult = JSON.parse(ultraClean);
+          transformationResult = relaxedJsonParse(ultraClean);
         } catch (e) {
           // Parse failed
         }

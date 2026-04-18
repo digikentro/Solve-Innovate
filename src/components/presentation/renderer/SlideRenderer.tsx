@@ -10,6 +10,7 @@ import type {
   SpatialChartDataPoint,
   SpatialImageBlock,
   SpatialTextBlock,
+  SpatialTextStyle,
   Theme,
 } from '@/types/presentation';
 
@@ -78,6 +79,41 @@ const toChartPoints = (raw: unknown): SpatialChartDataPoint[] => {
     }
   }
   return [];
+};
+
+const stripHtml = (value: string): string => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const getAdaptiveTextSize = (block: SpatialTextBlock, variant: NonNullable<SpatialTextStyle['variant']>) => {
+  const explicit = block.style?.font_size;
+  if (typeof explicit === 'number' && Number.isFinite(explicit)) {
+    return explicit;
+  }
+
+  const plainText = stripHtml(block.content || '');
+  const length = plainText.length;
+  const height = getNormalizedPosition(block, 0).height;
+
+  const baseByVariant: Record<NonNullable<SpatialTextStyle['variant']>, number> = {
+    title: 38,
+    subtitle: 24,
+    heading: 28,
+    body: 18,
+    bullets: 17,
+    caption: 11,
+  };
+
+  let size = baseByVariant[variant] ?? 18;
+
+  if (length > 180) size -= 2;
+  if (length > 340) size -= 3;
+  if (length > 540) size -= 3;
+  if (height < 18) size -= 2;
+  if (height < 14) size -= 2;
+  if (variant === 'body' || variant === 'bullets') size = Math.min(size, 17);
+
+  const minSize = variant === 'title' ? 22 : variant === 'subtitle' ? 14 : variant === 'heading' ? 16 : 11;
+  const maxSize = variant === 'title' ? 48 : variant === 'subtitle' ? 28 : variant === 'heading' ? 34 : 22;
+  return clamp(size, minSize, maxSize);
 };
 
 const buildChartOption = (block: SpatialChartBlock, primary: string) => {
@@ -492,13 +528,16 @@ export const SlideRenderer = ({
     bottom: logoPosition.startsWith('bottom') ? '2%' : 'auto',
   };
 
+  const slideTitle = slide.title?.trim() || 'Untitled slide';
+  const slideLabel = slide.visual_intent?.trim() || 'Editorial brief';
+
   return (
-    <div className={`relative w-full aspect-video rounded-2xl overflow-hidden ${className}`}>
+    <div className={`relative w-full aspect-video rounded-[28px] overflow-hidden ${className}`}>
       <div
         ref={stageRef}
         className="relative h-full w-full"
         style={{
-          background: theme.colors.bg,
+          background: `linear-gradient(135deg, ${theme.colors.bg} 0%, color-mix(in srgb, ${theme.colors.bg} 78%, white) 54%, color-mix(in srgb, ${theme.colors.primary} 12%, ${theme.colors.bg}) 100%)`,
           color: theme.colors.text,
           fontFamily: theme.fonts.body,
         }}
@@ -510,6 +549,43 @@ export const SlideRenderer = ({
           }
         }}
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 18% 18%, color-mix(in srgb, ${theme.colors.primary} 18%, transparent) 0, transparent 28%), radial-gradient(circle at 86% 12%, color-mix(in srgb, ${theme.colors.accent || theme.colors.primary} 16%, transparent) 0, transparent 24%), linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px)`,
+            backgroundSize: '100% 100%, 100% 100%, 40px 40px, 40px 40px',
+            backgroundPosition: 'center',
+            opacity: 0.9,
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-8 top-7 h-[6px] w-[118px] rounded-full"
+          style={{ background: theme.colors.primary, opacity: 0.88 }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-8 top-7 h-[6px] w-[72px] rounded-full"
+          style={{ background: theme.colors.accent || theme.colors.primary, opacity: 0.88 }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-8 bottom-8 flex items-end justify-between gap-4"
+        >
+          <div className="max-w-[60%] rounded-2xl border border-black/10 bg-white/40 px-4 py-2 backdrop-blur-sm shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.28em]" style={{ color: theme.colors.subtext }}>
+              {slideLabel}
+            </div>
+            <div className="mt-1 text-sm font-semibold" style={{ color: theme.colors.text, fontFamily: theme.fonts.heading }}>
+              {slideTitle}
+            </div>
+          </div>
+          <div className="rounded-full border border-black/10 bg-white/50 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] backdrop-blur-sm shadow-sm" style={{ color: theme.colors.subtext }}>
+            {theme.name}
+          </div>
+        </div>
+
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -586,13 +662,25 @@ const BlockBody = ({
   onChartRef,
 }: BlockBodyProps) => {
   if (block.type === 'text') {
+    const variant = block.style?.variant || 'body';
     const textStyle: React.CSSProperties = {
       textAlign: block.style?.align || 'left',
       color: block.style?.color || theme.colors.text,
       fontWeight: block.style?.emphasis === 'strong' ? 700 : 400,
-      fontSize: block.style?.font_size
-        ? `${block.style.font_size}px`
-        : 'clamp(12px, 1.2vw, 26px)',
+      fontFamily: variant === 'title' || variant === 'subtitle' || variant === 'heading'
+        ? theme.fonts.heading
+        : theme.fonts.body,
+      fontSize: `${getAdaptiveTextSize(block as SpatialTextBlock, variant)}px`,
+      letterSpacing: variant === 'title' ? '-0.03em' : variant === 'heading' ? '-0.02em' : 'normal',
+      lineHeight: variant === 'title' || variant === 'heading'
+        ? 1.06
+        : variant === 'subtitle'
+          ? 1.14
+          : variant === 'caption'
+            ? 1.22
+            : 1.28,
+      WebkitFontSmoothing: 'antialiased',
+      textRendering: 'optimizeLegibility',
     };
 
     if (isEditing) {
@@ -616,7 +704,7 @@ const BlockBody = ({
 
     return (
       <div
-        className="h-full w-full px-3 py-2 whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+        className="h-full w-full px-4 py-3 whitespace-pre-wrap break-words overflow-hidden [text-wrap:balance] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold"
         style={textStyle}
         dangerouslySetInnerHTML={{ __html: block.content }}
       />
@@ -646,11 +734,11 @@ const BlockBody = ({
 
   if (block.type === 'icon') {
     return (
-      <div className="h-full w-full flex items-center justify-center pointer-events-none">
+      <div className="h-full w-full flex items-center justify-center pointer-events-none rounded-2xl bg-white/70 border border-slate-200 overflow-hidden shadow-sm">
         <img 
           src={block.icon_query} 
           alt="icon" 
-          className="h-full w-full"
+          className="h-[78%] w-[78%]"
           style={{ objectFit: 'contain', filter: block.color ? `drop-shadow(0 0 0 ${block.color})` : 'none' }} 
         />
       </div>

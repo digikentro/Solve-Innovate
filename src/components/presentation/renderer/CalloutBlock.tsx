@@ -12,7 +12,7 @@ export const CalloutBlock = ({ icon, title, body }: CalloutBlockType) => {
 
   return (
     <div
-      className="p-4 rounded-xl my-2"
+      className="p-4 rounded-xl my-2 break-words"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--primary-color) 10%, transparent)',
         borderLeft: '4px solid var(--primary-color)',
@@ -22,7 +22,7 @@ export const CalloutBlock = ({ icon, title, body }: CalloutBlockType) => {
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg">{emoji}</span>
           <span
-            className="font-bold text-base"
+            className="font-bold text-sm md:text-base"
             style={{ color: 'var(--primary-color)' }}
           >
             {title}
@@ -31,7 +31,7 @@ export const CalloutBlock = ({ icon, title, body }: CalloutBlockType) => {
       )}
       {body && (
         <p
-          className="text-sm md:text-base leading-relaxed"
+          className="text-sm md:text-[15px] leading-relaxed break-words"
           style={{ color: 'var(--text-color)' }}
         >
           {body}

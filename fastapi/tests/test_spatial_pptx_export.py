@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import uuid
 from pathlib import Path
 from typing import AsyncGenerator
@@ -183,17 +184,71 @@ def test_missing_images_logs_warning_and_continues(caplog: pytest.LogCaptureFixt
     }
 
     with caplog.at_level("WARNING"):
-        _render_image_block(
-            slide,
-            broken_image_block,
-            left=Inches(1),
-            top=Inches(1),
-            width=Inches(2),
-            height=Inches(2),
+        asyncio.run(
+            _render_image_block(
+                slide,
+                broken_image_block,
+                left=Inches(1),
+                top=Inches(1),
+                width=Inches(2),
+                height=Inches(2),
+            )
         )
 
     assert len(slide.shapes) == before_shape_count
     assert "Skipping image block 'img-broken'" in caplog.text
+
+
+def test_image_block_embeds_data_uri(monkeypatch: pytest.MonkeyPatch) -> None:
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+
+    png_data_uri = (
+        "data:image/png;base64,"
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII="
+    )
+
+    asyncio.run(
+        _render_image_block(
+            slide,
+            {"id": "img-data", "type": "image", "prompt": png_data_uri},
+            left=Inches(1),
+            top=Inches(1),
+            width=Inches(1),
+            height=Inches(1),
+        )
+    )
+
+    assert len(slide.shapes) > 0
+
+
+def test_image_block_embeds_remote_url(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    image_file = tmp_path / "remote.png"
+    image_file.write_bytes(
+        base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII="
+        )
+    )
+
+    async def _fake_download(url: str, save_directory: str, headers=None):
+        return str(image_file)
+
+    monkeypatch.setattr("services.spatial_pptx_export.download_file", _fake_download)
+
+    asyncio.run(
+        _render_image_block(
+            slide,
+            {"id": "img-remote", "type": "image", "prompt": "https://example.com/test.png"},
+            left=Inches(1),
+            top=Inches(1),
+            width=Inches(1),
+            height=Inches(1),
+        )
+    )
+
+    assert len(slide.shapes) > 0
 
 
 def test_markdown_export_endpoint_returns_file_download(

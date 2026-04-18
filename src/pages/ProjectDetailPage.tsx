@@ -1,5 +1,6 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
@@ -52,8 +53,23 @@ export const ProjectDetailPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const sectionStorageKey = id ? `projectDetail_activeSection_${id}` : null;
+
+  const getInitialSection = () => {
+    if (!sectionStorageKey) {
+      return 'project-info';
+    }
+
+    try {
+      const saved = localStorage.getItem(sectionStorageKey);
+      return saved || 'project-info';
+    } catch {
+      return 'project-info';
+    }
+  };
+
   // Active section state
-  const [activeSection, setActiveSection] = useState('project-info');
+  const [activeSection, setActiveSection] = useState(getInitialSection);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Track sections with no generate button (chat, prototyping-tools) — visiting completes them
@@ -71,6 +87,18 @@ export const ProjectDetailPage = () => {
       localStorage.setItem(`visitedSections_${id}`, JSON.stringify(Array.from(visitedSections)));
     }
   }, [visitedSections, id]);
+
+  useEffect(() => {
+    if (!sectionStorageKey) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(sectionStorageKey, activeSection);
+    } catch {
+      // Ignore storage failures and fall back to in-memory state.
+    }
+  }, [activeSection, sectionStorageKey]);
 
   // State for presentable slide
   const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
@@ -192,20 +220,8 @@ export const ProjectDetailPage = () => {
     if (project?.research_data) {
       console.log('ProjectDetailPage - research_data found:', project.research_data);
 
-      let researchData: any;
-      try {
-        // Parse research_data (handle escaped newlines like other data)
-        if (typeof project.research_data === 'string') {
-          const cleanedData = project.research_data
-            .replace(/\\n/g, '')  // Remove escaped newlines
-            .replace(/\\r/g, '')  // Remove escaped carriage returns
-            .replace(/\n/g, '')   // Remove actual newlines
-            .replace(/\r/g, '');  // Remove actual carriage returns
-          researchData = JSON.parse(cleanedData);
-        } else {
-          researchData = project.research_data;
-        }
-
+      const researchData = relaxedJsonParse(project.research_data);
+      if (researchData) {
         console.log('Parsed research_data:', researchData);
 
         // Update Deep Empathy form with research data
@@ -217,8 +233,6 @@ export const ProjectDetailPage = () => {
           }));
           console.log('Updated Deep Empathy form with research data');
         }
-      } catch (error) {
-        console.error('Failed to parse research_data:', error);
       }
     }
   }, [project]);
@@ -425,12 +439,12 @@ export const ProjectDetailPage = () => {
             {activeSection === 'project-info' && (
               <div className="space-y-6 animate-fadeIn">
                 <ProjectInfo project={project} />
-                <SecondaryResearchSection
+{/* <SecondaryResearchSection
                   projectId={project.id}
                   userId={user.id}
                   secondaryresearch={project.secondaryresearch}
                   onRefreshProject={refetchProject}
-                />
+                /> */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
                   <div className="p-8">
                     <dl className="space-y-8">
@@ -811,6 +825,7 @@ export const ProjectDetailPage = () => {
               <div className="animate-fadeIn">
                 <MarketSearchSection
                   project={project}
+                  userId={user.id}
                   asIsMapData={asIsMapData}
                   extremeUserData={extremeUserData}
                   deepEmpathyData={deepEmpathyData}

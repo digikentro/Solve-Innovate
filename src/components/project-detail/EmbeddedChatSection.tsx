@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX,
@@ -44,7 +45,7 @@ interface EmbeddedChatSectionProps {
 function parseExtremeUserMap(raw: any): ExtremeUserMap {
   if (!raw) return {};
   try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const parsed = typeof raw === 'string' ? relaxedJsonParse(raw) : raw;
     if (typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     return parsed as ExtremeUserMap;
   } catch {
@@ -142,7 +143,7 @@ export const EmbeddedChatSection = ({
     let rd: Record<string, any> = {};
     try {
       rd = typeof project.research_data === 'string'
-        ? JSON.parse(project.research_data)
+        ? relaxedJsonParse(project.research_data)
         : (project.research_data || {});
     } catch { rd = {}; }
     if (rd.chatProvidedUser) setSavedProvidedUser(rd.chatProvidedUser);

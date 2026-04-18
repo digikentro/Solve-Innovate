@@ -10,9 +10,9 @@ function renderInlineMarkdown(text: string) {
 
 export const HeadingBlock = ({ level, text }: HeadingBlockType) => {
   const sizeMap = {
-    1: 'text-5xl md:text-6xl',
-    2: 'text-4xl md:text-5xl',
-    3: 'text-3xl md:text-4xl',
+    1: 'text-4xl md:text-5xl',
+    2: 'text-3xl md:text-4xl',
+    3: 'text-2xl md:text-3xl',
   };
   const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
   
@@ -21,7 +21,7 @@ export const HeadingBlock = ({ level, text }: HeadingBlockType) => {
   
   return (
     <Tag
-      className={`${sizeMap[level]} font-bold mb-8 tracking-tight`}
+      className={`${sizeMap[level]} font-bold mb-6 tracking-tight leading-tight break-words max-w-full`}
       style={{ 
         fontFamily: 'var(--heading-font)',
         color: 'var(--primary-color)' 

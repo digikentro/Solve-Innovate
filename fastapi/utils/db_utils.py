@@ -9,9 +9,10 @@ import ssl
 
 
 def get_database_url_and_connect_args() -> tuple[str, dict]:
-    sqlite_default = "sqlite:///" + os.path.join(
-        get_app_data_directory_env() or "/tmp/presenton", "fastapi.db"
-    )
+    app_data_dir = get_app_data_directory_env() or "./app_data"
+    # Normalize path for Windows/SQLite compatibility
+    abs_path = os.path.abspath(os.path.join(app_data_dir, "fastapi.db")).replace("\\", "/")
+    sqlite_default = f"sqlite:///{abs_path}"
     use_database_url_for_writes = (
         str(get_use_database_url_for_sql_writes_env() or "").strip().lower() == "true"
     )
@@ -41,6 +42,8 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
     connect_args = {}
     if "sqlite" in database_url:
         connect_args["check_same_thread"] = False
+        print(f"DEBUG: SQLite database_url: {database_url}")
+        return database_url, connect_args
 
     try:
         split_result = urlsplit(database_url)

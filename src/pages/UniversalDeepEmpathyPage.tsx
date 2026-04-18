@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -100,7 +101,7 @@ export default function UniversalDeepEmpathyPage() {
         // Handle case where deep_empathy_data might be stored as a JSON string
         if (typeof deepEmpathyData === 'string') {
           try {
-            deepEmpathyData = JSON.parse(deepEmpathyData);
+            deepEmpathyData = relaxedJsonParse(deepEmpathyData);
             console.log('Parsed deep_empathy_data from string:', deepEmpathyData);
           } catch (error) {
             console.error('Failed to parse deep_empathy_data string:', error);

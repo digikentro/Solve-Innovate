@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
 import logging
 import os
 import re
+import tempfile
 from html import unescape
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote
 
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData
@@ -14,6 +17,7 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Emu, Inches, Pt
 
+from utils.download_helpers import download_file
 from utils.get_env import get_app_data_directory_env
 
 logger = logging.getLogger(__name__)
@@ -187,6 +191,50 @@ def _resolve_image_path(raw_path: Any) -> Optional[str]:
     return None
 
 
+async def _materialize_image_source(raw_path: Any) -> Optional[str]:
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None
+
+    candidate = raw_path.strip()
+    resolved_path = _resolve_image_path(candidate)
+    if resolved_path:
+        return resolved_path
+
+    if candidate.startswith("data:image/"):
+        header, _, encoded = candidate.partition(",")
+        if not encoded:
+            return None
+
+        suffix = ".png"
+        match = re.match(r"data:image/([a-zA-Z0-9.+-]+)", header)
+        if match:
+            mime = match.group(1).lower()
+            if mime in {"jpeg", "jpg"}:
+                suffix = ".jpg"
+            elif mime == "gif":
+                suffix = ".gif"
+            elif mime == "webp":
+                suffix = ".webp"
+            elif mime == "svg+xml":
+                suffix = ".svg"
+
+        payload = base64.b64decode(encoded) if ";base64" in header else unquote(encoded).encode("utf-8")
+        temp_dir = os.path.join(tempfile.gettempdir(), "solve_innovate_pptx_images")
+        os.makedirs(temp_dir, exist_ok=True)
+        file_path = os.path.join(temp_dir, f"image_{abs(hash(candidate))}{suffix}")
+        with open(file_path, "wb") as file_handle:
+            file_handle.write(payload)
+        return file_path
+
+    if candidate.startswith(("http://", "https://")):
+        temp_dir = os.path.join(tempfile.gettempdir(), "solve_innovate_pptx_images")
+        downloaded = await download_file(candidate, temp_dir)
+        if downloaded:
+            return downloaded
+
+    return None
+
+
 def _render_text_block(slide, block: Dict[str, Any], left: Emu, top: Emu, width: Emu, height: Emu) -> None:
     shape = slide.shapes.add_textbox(left, top, width, height)
     tf = shape.text_frame
@@ -216,8 +264,8 @@ def _render_text_block(slide, block: Dict[str, Any], left: Emu, top: Emu, width:
                 run.font.color.rgb = color
 
 
-def _render_image_block(slide, block: Dict[str, Any], left: Emu, top: Emu, width: Emu, height: Emu) -> None:
-    image_path = _resolve_image_path(block.get("prompt"))
+async def _render_image_block(slide, block: Dict[str, Any], left: Emu, top: Emu, width: Emu, height: Emu) -> None:
+    image_path = await _materialize_image_source(block.get("prompt"))
     if not image_path:
         logger.warning("Skipping image block '%s': image path not found (%s)", block.get("id"), block.get("prompt"))
         return
@@ -317,7 +365,7 @@ async def export_spatial_to_pptx(
             if block_type == "text":
                 _render_text_block(slide, block, left, top, width, height)
             elif block_type == "image":
-                _render_image_block(slide, block, left, top, width, height)
+                await _render_image_block(slide, block, left, top, width, height)
             elif block_type == "chart":
                 _render_chart_block(slide, block, left, top, width, height)
             else:

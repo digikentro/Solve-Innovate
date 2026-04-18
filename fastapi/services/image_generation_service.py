@@ -55,6 +55,48 @@ class ImageGenerationService:
             return self.generate_image_comfyui
         return None
 
+    def _select_image_gen_func(self, prompt: ImagePrompt):
+        if self.is_image_generation_disabled:
+            return None
+
+        requested_source = (prompt.image_source or "").strip().lower()
+        requested_model = (prompt.image_model or "").strip().lower()
+
+        if requested_source == "none":
+            return None
+
+        if requested_source == "stock":
+            if is_pixabay_selected() or get_pixabay_api_key_env():
+                return self.get_image_from_pixabay
+            if is_pixels_selected() or get_pexels_api_key_env():
+                return self.get_image_from_pexels
+            return self.image_gen_func
+
+        if requested_source == "ai":
+            model_map = {
+                "gpt-image-1.5": self.generate_image_openai_gpt_image_1_5,
+                "dalle3": self.generate_image_openai_dalle3,
+                "gemini-flash": self.generate_image_gemini_flash,
+                "nanobanana_pro": self.generate_image_nanobanana_pro,
+                "comfyui": self.generate_image_comfyui,
+            }
+            if requested_model in model_map:
+                return model_map[requested_model]
+
+            if is_gpt_image_1_5_selected():
+                return self.generate_image_openai_gpt_image_1_5
+            if is_dalle3_selected():
+                return self.generate_image_openai_dalle3
+            if is_gemini_flash_selected():
+                return self.generate_image_gemini_flash
+            if is_nanobanana_pro_selected():
+                return self.generate_image_nanobanana_pro
+            if is_comfyui_selected():
+                return self.generate_image_comfyui
+            return self.image_gen_func
+
+        return self.image_gen_func
+
     def is_stock_provider_selected(self):
         return is_pixels_selected() or is_pixabay_selected()
 
@@ -74,16 +116,21 @@ class ImageGenerationService:
             print("No image generation function found. Using placeholder image.")
             return "/static/images/placeholder.jpg"
 
+        image_gen_func = self._select_image_gen_func(prompt)
+        if not image_gen_func:
+            print("No image generation function found. Using placeholder image.")
+            return "/static/images/placeholder.jpg"
+
         image_prompt = prompt.get_image_prompt(
-            with_theme=not self.is_stock_provider_selected()
+            with_theme=(prompt.image_source or "ai") != "stock"
         )
         print(f"Request - Generating Image for {image_prompt}")
 
         try:
-            if self.is_stock_provider_selected():
-                image_path = await self.image_gen_func(image_prompt)
+            if getattr(image_gen_func, "__name__", "") in {"get_image_from_pixabay", "get_image_from_pexels"}:
+                image_path = await image_gen_func(image_prompt)
             else:
-                image_path = await self.image_gen_func(
+                image_path = await image_gen_func(
                     image_prompt, self.output_directory
                 )
             if image_path:

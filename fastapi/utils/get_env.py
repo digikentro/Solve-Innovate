@@ -1,4 +1,19 @@
 import os
+from pathlib import Path
+
+
+_FASTAPI_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _resolve_path_env(value: str | None, default: str) -> str:
+    raw_value = (value or default).strip()
+    if not raw_value:
+        raw_value = default
+
+    path = Path(raw_value)
+    if path.is_absolute():
+        return str(path)
+    return str((_FASTAPI_ROOT / path).resolve())
 
 
 def get_can_change_keys_env():
@@ -14,15 +29,15 @@ def get_use_database_url_for_sql_writes_env():
 
 
 def get_app_data_directory_env():
-    return os.getenv("APP_DATA_DIRECTORY")
+    return _resolve_path_env(os.getenv("APP_DATA_DIRECTORY"), "./app_data")
 
 
 def get_temp_directory_env():
-    return os.getenv("TEMP_DIRECTORY")
+    return _resolve_path_env(os.getenv("TEMP_DIRECTORY"), "./tmp")
 
 
 def get_user_config_path_env():
-    return os.getenv("USER_CONFIG_PATH")
+    return _resolve_path_env(os.getenv("USER_CONFIG_PATH"), "./user_config.json")
 
 
 def get_llm_provider_env():

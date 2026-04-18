@@ -29,7 +29,7 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
 
 export const ParagraphBlock = ({ text }: ParagraphBlockType) => {
   return (
-    <p className="text-2xl md:text-3xl leading-relaxed opacity-90" style={{ color: 'var(--text-color)' }}>
+    <p className="text-lg md:text-xl leading-relaxed opacity-90 break-words max-w-full" style={{ color: 'var(--text-color)' }}>
       {renderInlineMarkdown(text)}
     </p>
   );

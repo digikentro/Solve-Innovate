@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,7 @@ export default function PsychologicalAnalysisPage() {
         // Handle case where psychological_analysis might be stoblack as a JSON string
         if (typeof psychologicalAnalysisData === 'string') {
           try {
-            psychologicalAnalysisData = JSON.parse(psychologicalAnalysisData);
+            psychologicalAnalysisData = relaxedJsonParse(psychologicalAnalysisData);
             console.log('Parsed psychological_analysis from string:', psychologicalAnalysisData);
           } catch (error) {
             console.error('Failed to parse psychological_analysis string:', error);

@@ -20,7 +20,7 @@ export const HMWIdeationFrameworkReportViewer = ({ data, onGenerateNew, projectI
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
 
-  const reportData = isEditMode ? editedData : (data?.content || data);
+  const reportData = isEditMode ? editedData : (data?.content || data || {});
 
   const toggleIdeation = (idx: number) => {
     setExpandedIdeation(prev => ({ ...prev, [idx]: !prev[idx] }));
@@ -49,7 +49,7 @@ export const HMWIdeationFrameworkReportViewer = ({ data, onGenerateNew, projectI
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      const dataToEdit = data?.content || data;
+      const dataToEdit = (data?.content || data) || {};
       setOriginalData(structuredClone(dataToEdit));
       setEditedData(structuredClone(dataToEdit));
       setIsEditMode(true);

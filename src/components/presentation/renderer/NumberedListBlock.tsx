@@ -17,19 +17,19 @@ export const NumberedListBlock = ({ items }: NumberedListBlockType) => {
         return (
           <li 
             key={i} 
-            className="flex items-start gap-4 text-2xl md:text-3xl leading-snug" 
+            className="flex items-start gap-3 text-lg md:text-xl leading-snug break-words min-w-0" 
             style={{ color: 'var(--text-color)' }}
           >
             <div
-              className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-white shadow-sm"
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-sm"
               style={{ backgroundColor: 'var(--primary-color)' }}
             >
               {i + 1}
             </div>
             {hasFormatting ? (
-              <span className="flex-1 mt-0.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item) }} />
+              <span className="flex-1 min-w-0 mt-0.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item) }} />
             ) : (
-              <span className="flex-1 mt-0.5">{item}</span>
+              <span className="flex-1 min-w-0 mt-0.5">{item}</span>
             )}
           </li>
         );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { HorizontalModal } from '@/components/ui/Modal';
 import { toast } from 'react-hot-toast';
 
@@ -21,19 +22,8 @@ export const getAsIsMapContent = (asIsMapData: any, projectAsIsMapData?: any) =>
     if (typeof dataToUse === 'string') {
         const raw = dataToUse.trim();
 
-        // Try to extract JSON from fenced code blocks like ```json ... ``` or ``` ... ```
-        const fencedMatch = raw.match(/```(?:json)?\n([\s\S]*?)\n```/i);
-        const possibleJson = fencedMatch ? fencedMatch[1] : raw;
-
-        // Also handle leading/trailing backticks or stray characters
-        const cleaned = possibleJson
-            .replace(/^```(?:json)?/i, '')
-            .replace(/```$/i, '')
-            .trim();
-
         try {
-            const parsed = JSON.parse(cleaned);
-            // recurse once with parsed
+            const parsed = relaxedJsonParse(raw);
             return (
                 parsed?.[0]?.message?.content ||
                 parsed?.message?.content ||
@@ -43,30 +33,9 @@ export const getAsIsMapContent = (asIsMapData: any, projectAsIsMapData?: any) =>
                 parsed?.response ||
                 parsed
             );
-        } catch {
-            // Not valid JSON; sometimes providers return a JSON-looking string but with single quotes -> try a lenient fix
-            try {
-                const lenient = cleaned
-                    .replace(/\r\n/g, '\n')
-                    .replace(/\n/g, '\n')
-                    .replace(/\t/g, '\t')
-                    // replace single quotes around keys/strings carefully (basic heuristic)
-                    .replace(/([,{\s])'([^']+)'\s*:/g, '$1"$2":')
-                    .replace(/:\s*'([^']*)'/g, ': "$1"');
-                const parsed2 = JSON.parse(lenient);
-                return (
-                    parsed2?.[0]?.message?.content ||
-                    parsed2?.message?.content ||
-                    parsed2?.content ||
-                    parsed2?.data ||
-                    parsed2?.result ||
-                    parsed2?.response ||
-                    parsed2
-                );
-            } catch {
-                // Non-JSON string, return as-is (will be rendered in a pre block)
-                return dataToUse;
-            }
+        } catch (error) {
+            console.error('Failed to parse AsIsMap data:', error);
+            return dataToUse;
         }
     }
 

@@ -7,31 +7,59 @@ from typing import Dict, List, Optional
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 
 SPATIAL_SYSTEM_PROMPT = """
-You generate structured spatial JSON for a slide canvas editor. You are producing a high-end, Consultant-level presentation.
+You are a Lead Designer for a top-tier strategy and editorial presentation team building board-ready, founder-ready, and investor-ready decks.
+You generate structured spatial JSON for a slide canvas editor.
 
-OUTPUT FORMAT
-1) Return valid JSON only. No markdown. No prose.
-2) Match the provided JSON schema exactly.
-3) Every slide must include blocks.
-4) Every block must include position: {x, y, width, height} using percentages in [0, 100].
+DECK PRIORITIES
+- Make the story feel like a sharp strategy memo turned into a presentation: tension, insight, recommendation, evidence, next step.
+- Lead with claims, not labels. Every slide title should read like a conclusion, decision, or pressure point.
+- Use the project research as proof, but do not waste space on methodology unless it directly changes the recommendation.
+- Keep every slide executive-level, visually disciplined, and easy to scan at presentation distance.
+- If evidence exists, prefer charts, metric rows, tables, scorecards, and comparisons over generic image slides.
+- Make the deck feel data-backed and opinionated: at least 2 slides should be explicitly data-heavy when quantitative datasets are provided.
+- For market research, testing, and idea clustering, compress the slide into what matters: what was learned, what it means, and what should happen next.
 
-LAYOUT RULES
-1) Do not overlap blocks.
-2) Ensure clear whitespace between blocks.
-3) Keep all block rectangles fully inside the 0-100 canvas bounds.
-4) Use a coherent, beautiful visual hierarchy (title first, supporting content below).
-5) Maximize the use of empty space! Stretch content horizontally and vertically. Use columns, grids, metrics calls-outs, and varying text blocks to create rich, dense layouts. DO NOT leave slides empty or overly simple.
-6) Distribute content effectively: instead of a single giant bulleted list, break it down into multiple structured text blocks (e.g., side-by-side columns, quadrants).
+CONTENT STYLE
+- Write like a strategist with an editorial point of view. Use crisp, assertive language. Avoid filler, hedging, and tutorial phrasing.
+- Favor strong nouns and verbs over passive descriptions.
+- Do not name slides with generic labels like "Overview" or "Details" when a sharper claim is available.
+- When a section is weak or exploratory, show that honestly and compress it into a bridge slide instead of padding it.
+- Keep the tone mixing consulting rigor with magazine-level clarity: analytical, polished, and a little more distinctive than a standard corporate deck.
 
-BLOCK RULES
-1) text blocks require content and style.
-2) image blocks require prompt; do not provide URLs. Limit the total number of image blocks in the entire presentation to 4 maximum. Focus on high-impact visual slides only.
-3) chart blocks require chart_type and data points with numeric values.
-4) icon blocks require type "icon" and icon_query (search term).
-5) shape blocks require type "shape", shape_type (square, circle, rectangle, triangle, line) and color. Use these to frame content!
-6) Keep exact numbers, percentages, names, and quotes from source content.
-7) Never invent unsupported quantitative facts.
-8) You CAN use placeholder text or icons if it helps to construct a beautiful layout, as long as the core content is preserved.
+PHASE 1: CANVAS COORDINATES (0-100)
+- TITLE ZONE: Always at y=[5, 15], height~10. Width 60-90.
+- MAIN CONTENT ZONE: y=[18, 85]. This is where the magic happens.
+- BRANDING ZONE: y=[90, 95]. Small text or shapes.
+- GUTTER: Keep a 5% margin from all edges.
+
+PHASE 2: LAYOUT ARCHETYPES
+1) THE HERO: Large statement slide, data callout, or image with a single thesis.
+2) THE SPLIT: Left 50% for evidence/chart, Right 50% for synthesis and implications.
+3) THE TRIO: Three balanced columns for before / after / next or insight / evidence / action.
+4) THE QUADRANT: Four boxes for comparative analysis, option scoring, or cluster mapping.
+5) THE JOURNEY: Horizontal flow using shape connectors and sequential text blocks for funnels, journeys, or decision paths.
+6) THE SCORECARD: A compact matrix of options, clusters, or metrics with a recommendation highlighted.
+
+PHASE 3: BLOCK RULES
+1) text blocks: Use 'variant' (title, heading, body, bullets). Keep z_index clear.
+2) image blocks: Include high-quality prompts. Limit to 4 slides total in the deck.
+3) chart blocks: REQUIRED for 'Data-Heavy' slides. Use provided dataset points.
+4) shape blocks: Use lines or rectangles to create 'Boxed' layouts or connectors.
+5) icon blocks: Search for relevant business icons.
+6) When the evidence pack includes section_evidence_depth or section_numeric_signals, those values must be charted exactly as provided. Do not invent, normalize, or smooth them.
+
+SYMMETRY & DENSITY
+- Symmetrical layouts feel more professional.
+- Use 'width: fill_container' style logic (width ~ 90% if single column).
+- Never overlap. Use x+width and y+height math to verify gaps.
+- Prefer one dominant idea per slide and convert supporting detail into callouts, charts, or comparison blocks.
+- Avoid skinny boxes and clipped text. Prefer 2-3 well-proportioned regions over many tiny blocks.
+- Avoid icon blocks unless the slide truly needs them; use shapes, callouts, or images instead.
+- Never use placeholder icons, empty image frames, or decorative filler text.
+- Keep slide titles short, strong, and specific. Avoid generic titles like "Overview" or "Structure" when a more narrative title is possible.
+- If a slide is data-light, use a bold visual hero, quote, comparison, or scorecard layout rather than padding with weak bullets.
+- Use editorial spacing: generous breathing room around the title, a defined left-to-right reading path, and one visual anchor per slide.
+- Use visual contrast intentionally: dense evidence slides can be tighter, but story slides should feel spacious and confident.
 """
 
 
@@ -130,13 +158,23 @@ def get_markdown_generation_messages(
 - Audience: {audience or "General stakeholders"}
 
 ## Consultant-Level Layout Instructions
-- This must look like a premium McKinsey/BCG/Bain deck.
-- Fill the slide canvas! Don't just dump 3 text bullet points in the middle.
+- This must look like a premium strategy deck with editorial clarity, not a template-driven slide dump.
+- Build a clear story arc: cover, agenda or framing, insight, evidence, recommendation, and closing action.
 - If there is enough space, create complex, multi-column layouts using multiple blocks.
-- Distribute content efficiently (e.g., 50% left side: visual, 50% right side: split into top and bottom text quadrants).
-- Use rich formatting: Add titles, strong/bold emphasis, and descriptive labels to textual blocks.
-- For data, use varied presentations.
-- DO NOT be conservative. Write verbose text that fills the space appropriately if the density mode asks for it. Make things look beautiful, symmetrical, and dense!
+- Distribute content efficiently, but keep a single visual anchor per slide so the eye knows where to land first.
+- Use rich formatting: strong slide titles, bold emphasis, and descriptive labels for every block.
+- For data, use varied presentations and make the most important metric or comparison visually dominant.
+- Prefer elegant whitespace over overcrowding. The deck should feel designed, not squeezed.
+- Use only as many blocks as needed to make the slide feel intentional. Fewer, larger, better-aligned blocks are better than many cramped ones.
+- Never create placeholder-style icon columns or unlabeled decorative boxes.
+- Never put important text inside very narrow columns; if a column would be skinny, merge it into a wider section.
+- Make every slide feel like a polished consulting deliverable with a point of view, not a rough worksheet.
+- Prefer project-provided facts, metrics, prototypes, and screenshots over invented decorative visuals.
+- If a slide can be expressed as a chart, table, metric row, recommendation matrix, or comparison scorecard, choose that over a stock or AI image.
+- If you do use an image block, it should support a specific claim or story beat from the source data, not just fill space.
+- When quantitative data is present, dedicate at least one slide to a section evidence chart and one slide to a metric/table summary.
+- For market research and testing, emphasize outcome, severity, and implication; avoid method-heavy recaps.
+- For idea clustering, show the best clusters, why they matter, and which one wins. Do not present all clusters with equal weight.
 
 ## Content Density Rules
 - If density is 'Concise', text blocks may contain at most 4 bullets.
@@ -150,19 +188,30 @@ def get_markdown_generation_messages(
 - Preserve exact numbers/percentages and quoted text.
 - Preserve person and framework names exactly.
 - Do not invent unsupported data.
+- Map every important slide back to a real section from the project pipeline: research, as-is map, user profiles, deep empathy, behavior frameworks, ideation, prototype, testing, or market research.
+- Make the strongest evidence visible early. Do not bury the most strategic section at the end if it should anchor the argument.
+- If the source contains statistics, turn them into charts, metric rows, or tables instead of burying them in bullets.
+- If the source contains stepwise workflows or funnel stages, use process, journey, or comparison layouts.
+- If the source contains prototype or product artifacts, feature them as real visual assets rather than generic stock imagery.
+- Use the exact labels from the datasets where possible so the viewer can trace chart values back to the project sections.
+- For slides about market research, testing, and idea clustering, write the conclusion first, then the evidence. The slide should answer "so what?" immediately.
 
 ## Spatial Layout Rules (Mandatory)
 - Do not overlap blocks.
 - Calculate x and y so blocks keep clear whitespace.
 - Keep x, y, width, height in [0, 100].
 - Ensure x + width <= 100 and y + height <= 100.
+- Avoid layouts where any text container is narrower than about 16 width units unless it is a label, chip, or icon.
+- If you use three columns, ensure each column is visually balanced and the gutters are consistent.
 
 ## Visual Generation
 - Include AI Images: {include_images}
 - Include Data Charts: {include_charts}
 
-If Include AI Images is true, add image blocks with prompt text only. IMPORTANT: Maximum 4 Image Blocks in total across the entire presentation.
+If Include AI Images is true, add image blocks only when the source clearly benefits from a visual hero or product illustration. IMPORTANT: Maximum 4 Image Blocks in total across the entire presentation. Do not use images just to fill space. Prefer using product/prototype imagery, charts, icons, or diagrams derived from the source pipeline whenever available.
 If Include Data Charts is true, for quantitative slides add chart blocks using data points from the provided quantitative datasets.
+- Rotate chart types across the deck when data supports it. Do not repeat bar charts on every quantitative slide; vary between bar, line, pie, donut, and area so the deck feels intentionally designed.
+- If the evidence pack includes section_evidence_depth or section_numeric_signals, use those datasets for at least one chart slide and one comparison slide.
 
 ## Quantitative Datasets (from source research)
 {dataset_section}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 
 interface TransformationFrameworkReportViewerProps {
     data: any;
@@ -21,17 +22,17 @@ export const TransformationFrameworkReportViewer = ({ data, onGenerateNew, proje
 
     const parsedData = typeof data === 'string' ? (() => {
         try {
-            return JSON.parse(data);
+            return relaxedJsonParse(data);
         } catch {
             return data;
         }
     })() : data;
 
-    const reportData = isEditMode ? editedData : (parsedData?.content || parsedData);
+    const reportData = isEditMode ? editedData : (parsedData?.content || parsedData || {});
 
     const handleEditToggle = () => {
         if (!isEditMode) {
-            const dataToEdit = parsedData?.content || parsedData;
+            const dataToEdit = (parsedData?.content || parsedData) || {};
             setOriginalData(structuredClone(dataToEdit));
             setEditedData(structuredClone(dataToEdit));
             setIsEditMode(true);

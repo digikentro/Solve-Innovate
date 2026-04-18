@@ -16,7 +16,7 @@ export const MarketResearchReportViewer = ({ data, onGenerateNew }: MarketResear
         'references': false,
     });
 
-    const reportData = data?.content || data;
+    const reportData = (data?.content || data) || {};
 
     if (!reportData) {
         return (

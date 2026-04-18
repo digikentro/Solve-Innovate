@@ -20,7 +20,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
         'sectionH': false,
     });
 
-    const reportData = data?.content || data;
+    const reportData = (data?.content || data) || {};
 
     if (!reportData) {
         return (

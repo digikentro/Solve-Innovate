@@ -21,11 +21,11 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
 
-  const reportData = isEditMode ? editedData : (data?.content || data);
+  const reportData = (isEditMode ? editedData : (data?.content || data)) || {};
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      const dataToEdit = data?.content || data;
+      const dataToEdit = (data?.content || data) || {};
       setOriginalData(structuredClone(dataToEdit));
       setEditedData(structuredClone(dataToEdit));
       setIsEditMode(true);

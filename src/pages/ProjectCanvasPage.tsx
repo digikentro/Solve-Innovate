@@ -185,7 +185,7 @@ export default function ProjectCanvasPage() {
     <div className="max-w-6xl mx-auto py-10 px-4">
       <div className="flex items-center mb-6 gap-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(`/projects/${id}`)}
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200"
           type="button"
           aria-label="Back"

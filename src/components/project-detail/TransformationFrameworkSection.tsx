@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { toast } from 'react-hot-toast';
 import { FiTarget, FiLoader } from 'react-icons/fi';
 import type { Project } from '@/types/project';
@@ -59,7 +60,7 @@ export const TransformationFrameworkSection = ({
             try {
                 const text = await response.text();
                 if (text && text.trim()) {
-                    JSON.parse(text); // Just validate, we'll get data from refresh
+                    relaxedJsonParse(text); // Just validate, we'll get data from refresh
                 }
             } catch (parseError) {
                 // Response parsing skipped or empty response

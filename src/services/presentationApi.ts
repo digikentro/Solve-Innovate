@@ -19,11 +19,24 @@ const resolveApiBase = (): string => {
   const raw = String(import.meta.env.VITE_PPT_API_URL || '').trim();
 
   if (!raw) {
-    return import.meta.env.PROD ? '' : 'http://localhost:8000';
+    return '';
   }
 
   // Guard against common dashboard input mistakes like "=https://...".
   const withoutLeadingEquals = raw.replace(/^=+/, '');
+  if (import.meta.env.DEV) {
+    try {
+      const parsed = new URL(withoutLeadingEquals);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        return '';
+      }
+    } catch {
+      if (/^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(withoutLeadingEquals)) {
+        return '';
+      }
+    }
+  }
+
   return withoutLeadingEquals.replace(/\/+$/, '');
 };
 
@@ -174,7 +187,7 @@ export const presentationApi = {
           tone: settings.tone || 'professional',
           density: toBackendDensity(settings.verbosity),
           text_mode: settings.textMode || 'condense',
-          theme: settings.theme || 'modern-dark',
+          theme: settings.theme || 'editorial-ink',
           language: settings.language || 'English',
           visual_preference: settings.visualPreference || 'balanced',
           image_source: settings.imageSource || 'ai',
@@ -218,7 +231,7 @@ export const presentationApi = {
    */
   getOutlineDraft: async (
     presentationId: string
-  ): Promise<{ outline: OutlineDraft }> => {
+  ): Promise<{ outline: OutlineDraft | null; revision_id?: string | null; presentation_id?: string } | null> => {
     const res = await apiFetch(
       `${API_BASE}/api/v1/ppt/markdown/project/presentations/${presentationId}/outline`
     );
@@ -307,7 +320,7 @@ export const presentationApi = {
           tone: settings.tone || 'professional',
           verbosity: settings.verbosity || 'concise',
           text_mode: settings.textMode || 'condense',
-          theme: settings.theme || 'modern-dark',
+          theme: settings.theme || 'editorial-ink',
           language: settings.language || 'English',
           image_source: settings.imageSource || 'ai',
         }),

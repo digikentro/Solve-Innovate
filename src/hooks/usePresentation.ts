@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'react-hot-toast';
 
+import { exportSpatialDeckToPptx } from '@/lib/pptx/exportSpatialDeck';
 import { presentationApi } from '@/services/presentationApi';
 import { DEFAULT_THEME } from '@/themes';
 import type { Project } from '@/types/project';
 import type {
+  GenerateProjectPresentationResponse,
   PresentationPhase,
   PresentationSettings,
   SlideData,
@@ -16,7 +18,7 @@ import type {
 const DEFAULT_SETTINGS: PresentationSettings = {
   nSlides: 10,
   tone: 'professional',
-  verbosity: 'concise',
+  verbosity: 'standard',
   textMode: 'condense',
   audience: '',
   writingGuidance: '',
@@ -42,6 +44,13 @@ interface MutationOptions {
   markDirty?: boolean;
 }
 
+export interface PresentationRestoreState {
+  phase: PresentationPhase;
+  currentSlideIndex: number;
+  settings?: PresentationSettings;
+  slides?: SlideData[];
+}
+
 interface UsePresentationReturn {
   phase: PresentationPhase;
   setPhase: React.Dispatch<React.SetStateAction<PresentationPhase>>;
@@ -57,7 +66,7 @@ interface UsePresentationReturn {
   saveState: 'idle' | 'saving' | 'saved' | 'error';
   error: string | null;
   isLoading: boolean;
-  generate: (projectPresentationId: string) => Promise<void>;
+  generate: (projectPresentationId: string) => Promise<GenerateProjectPresentationResponse | null>;
   switchTheme: (themeId: string) => Promise<void>;
   regenerateSlide: (index: number, instructions?: string) => Promise<void>;
   exportPptx: () => Promise<void>;
@@ -231,17 +240,22 @@ const createDefaultTextBlock = (blockIndex: number): SpatialBlock => ({
 });
 
 export function usePresentation(
-  _project: Project,
+  project: Project,
   projectPresentationId: string | null,
-  initialMarkdownPresentationId: string | null
+  initialMarkdownPresentationId: string | null,
+  initialRestoreState?: PresentationRestoreState | null
 ): UsePresentationReturn {
-  const [phase, setPhase] = useState<PresentationPhase>('configure');
-  const [settings, setSettings] = useState<PresentationSettings>(DEFAULT_SETTINGS);
+  const [phase, setPhase] = useState<PresentationPhase>(initialRestoreState?.phase ?? 'configure');
+  const [settings, setSettings] = useState<PresentationSettings>(
+    initialRestoreState?.settings ?? DEFAULT_SETTINGS
+  );
   const [presentationId, setPresentationIdState] = useState<string | null>(
     initialMarkdownPresentationId
   );
-  const [slides, setSlides] = useState<SlideData[]>([]);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [slides, setSlides] = useState<SlideData[]>(initialRestoreState?.slides ?? []);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(
+    initialRestoreState?.currentSlideIndex ?? 0
+  );
   const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -360,6 +374,9 @@ export function usePresentation(
         };
         setPresentationIdState(response.markdown_presentation_id);
         loadEditorPayload(deckWithConfig, { recordHistory: true, markDirty: false });
+        setCurrentSlideIndex(0);
+        setSelectedBlockIds([]);
+        setPhase('viewer');
         await presentationApi.updateEditorState(activeProjectPresentationId, {
           markdown_presentation_id: response.markdown_presentation_id,
           editor_payload: deckWithConfig,
@@ -368,8 +385,10 @@ export function usePresentation(
           logo_position: settings.logoPosition || null,
           custom_colors: settings.customColors || null,
         });
+        return response;
       } catch (err: any) {
         setError(err?.message || 'Failed to generate presentation');
+        return null;
       } finally {
         setIsLoading(false);
       }
@@ -407,27 +426,20 @@ export function usePresentation(
     setIsExporting(true);
     const toastId = toast.loading('Exporting to PPTX...');
     try {
-      const apiBase = import.meta.env.VITE_PPT_API_URL || 'http://localhost:8000';
-      const res = await fetch(
-        `${apiBase}/api/v1/ppt/markdown/presentation/${presentationId}/export/pptx`,
-        { method: 'POST' }
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Export failed' }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') || '';
-      const nameMatch = disposition.match(/filename="?([^"]+)"?/);
-      const filename = nameMatch?.[1] || 'presentation.pptx';
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const safeTitle = (project.title || 'presentation')
+        .replace(/[<>:"/\\|?*\x00-\x1F]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-');
+      const filename = `${safeTitle || 'presentation'}.pptx`;
+
+      await exportSpatialDeckToPptx({
+        slides,
+        settings,
+        fileName: filename,
+        title: project.title || 'Presentation',
+      });
       toast.success('PPTX downloaded', { id: toastId });
     } catch (err: any) {
       setError(err?.message || 'Failed to export PPTX');
@@ -435,7 +447,7 @@ export function usePresentation(
     } finally {
       setIsExporting(false);
     }
-  }, [presentationId]);
+  }, [presentationId, project.title, settings, slides]);
 
   const exportPdf = useCallback(async () => {
     toast.error('PDF export is not yet available. Please use PPTX export.');

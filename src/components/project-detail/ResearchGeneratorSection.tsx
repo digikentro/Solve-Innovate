@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiPlus } from 'react-icons/fi';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
+
+const isWebhookNotRegisteredError = (detail: string): boolean =>
+  /not registered/i.test(detail) || /execute workflow/i.test(detail);
+
+const buildTestWebhookUrl = (apiEndpoint: string): string =>
+  apiEndpoint.includes('/webhook-test/')
+    ? apiEndpoint
+    : apiEndpoint.replace('/webhook/', '/webhook-test/');
 
 interface FormField {
   id: string;
@@ -151,20 +160,31 @@ export const ResearchGeneratorSection = ({
 
       console.log(`Sending ${title} Request via proxy:`, requestBody);
 
-      const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
+      const sendToWebhook = (webhookUrl: string) => fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          target_url: apiEndpoint,
+          target_url: webhookUrl,
           payload: requestBody
         })
       });
 
+      const testWebhookUrl = buildTestWebhookUrl(apiEndpoint);
+      let response = await sendToWebhook(apiEndpoint);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const detail = await response.text().catch(() => '');
+        if (response.status === 404 && testWebhookUrl !== apiEndpoint && isWebhookNotRegisteredError(detail)) {
+          response = await sendToWebhook(testWebhookUrl);
+        }
+
+        if (!response.ok) {
+          const retryDetail = await response.text().catch(() => '');
+          throw new Error(retryDetail || detail || `HTTP error! status: ${response.status}`);
+        }
       }
 
       let responseData = await response.json();
@@ -173,7 +193,7 @@ export const ResearchGeneratorSection = ({
       // Handle different response formats
       if (typeof responseData === 'string') {
         try {
-          responseData = JSON.parse(responseData);
+          responseData = relaxedJsonParse(responseData);
         } catch (parseError) {
           console.error('Failed to parse string response:', parseError);
           throw new Error('Invalid response format');

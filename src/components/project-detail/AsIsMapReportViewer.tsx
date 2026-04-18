@@ -28,7 +28,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
 
-  const reportData = isEditMode && editedData ? editedData?.content || editedData : data?.content || data;
+  const reportData = (isEditMode && editedData ? editedData?.content || editedData : data?.content || data) || {};
 
   // Precompute step offsets so numbering is continuous across stages,
   // regardless of which stages are expanded in the UI

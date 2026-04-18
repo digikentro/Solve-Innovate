@@ -1,8 +1,125 @@
 import { useState, useMemo } from 'react';
+import { relaxedJsonParse } from '@/utils/jsonUtils';
 import { toast } from 'react-hot-toast';
 import { FiActivity, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { TestingReportViewer } from './TestingReportViewer';
+
+const TESTING_WEBHOOK_URL = 'https://n8n.srv922914.hstgr.cloud/webhook/testing';
+const TESTING_TEST_WEBHOOK_URL = 'https://n8n.srv922914.hstgr.cloud/webhook-test/testing';
+
+const isWebhookNotRegisteredError = (detail: string): boolean =>
+    /not registered/i.test(detail) || /execute workflow/i.test(detail);
+
+const buildTestWebhookUrl = (apiEndpoint: string): string =>
+    apiEndpoint.includes('/webhook-test/')
+        ? apiEndpoint
+        : apiEndpoint.replace('/webhook/', '/webhook-test/');
+
+const buildLocalTestingReport = (requestBody: Record<string, string>) => {
+    const productName = requestBody.product_name || 'Product';
+    const problemStatement = requestBody.problem_statement || 'No problem statement provided.';
+    const targetUsers = requestBody.target_users || 'Target users not specified.';
+    const designStage = requestBody.design_stage || 'Early Concept';
+    const keyFeatures = (requestBody.key_features || '')
+        .split('\n')
+        .map(item => item.trim())
+        .filter(Boolean);
+    const scenarios = (requestBody.user_scenarios || '')
+        .split('\n')
+        .map(item => item.trim())
+        .filter(Boolean);
+
+    return {
+        content: {
+            'SECTION A: Priority Issues & Pain Points': {
+                Critical: [
+                    {
+                        issue: `Primary validation gap for ${productName}: the core experience still needs evidence from a live test flow.`,
+                        impact: 'high',
+                        identified_by: [targetUsers],
+                        manifestations_per_persona: {
+                            users: problemStatement,
+                        },
+                    },
+                ],
+                Important: [
+                    {
+                        issue: 'Prototype clarity and onboarding friction still need observation with real users.',
+                        impact: 'medium',
+                        identified_by: ['Research team'],
+                        manifestations_per_persona: {
+                            users: 'Users may hesitate before completing the primary task.',
+                        },
+                    },
+                ],
+                Minor: [
+                    {
+                        issue: 'Microcopy and visual hierarchy can be refined after the first test cycle.',
+                        impact: 'low',
+                        identified_by: ['Design team'],
+                        manifestations_per_persona: {
+                            users: 'Small wording and layout issues may slow down task completion.',
+                        },
+                    },
+                ],
+            },
+            'SECTION B: Key Modifications to Make the Prototype Desirable': {
+                'Issues mapped to modifications': [
+                    {
+                        issue: 'Reduce onboarding friction',
+                        user_impact: [targetUsers],
+                        design_change: 'Shorten the first-run flow and surface the primary action earlier.',
+                        why_it_matters: 'Users need a faster path to value before they trust the prototype.',
+                        implementation_approach: 'Collapse optional fields, add inline guidance, and show progress feedback.',
+                        success_metric: 'Task completion rate improves in the first 2 minutes of the session.',
+                    },
+                    {
+                        issue: 'Clarify the value proposition',
+                        user_impact: [productName],
+                        design_change: 'Rewrite the hero copy and supporting labels in user language.',
+                        why_it_matters: 'People need to understand why the prototype matters immediately.',
+                        implementation_approach: 'Use direct, benefit-led copy and align visuals with the core workflow.',
+                        success_metric: 'Users can explain the product back in one sentence after viewing the screen.',
+                    },
+                ],
+            },
+            'SECTION C: Design Recommendations by Category': {
+                Structure: [
+                    'Keep the primary action prominent and reduce competing calls to action.',
+                    'Group related inputs together and make the next step explicit.',
+                ],
+                Content: [
+                    'Use concise, plain-language labels that match the problem statement.',
+                    'Reflect the target user context directly in helper text and empty states.',
+                ],
+                Interaction: [
+                    'Add confirmation feedback after the main action completes.',
+                    'Provide a clear reset path so testers can rerun the flow quickly.',
+                ],
+            },
+            'SECTION D: Quick Wins vs Strategic Improvements': {
+                'Quick Wins': [
+                    'Tighten copy and reduce visual clutter.',
+                    'Add explicit helper text for the main action.',
+                    'Show a clearer success state after generation.',
+                ],
+                'Strategic Improvements': [
+                    'Run moderated usability tests with the target audience.',
+                    'Iterate on the interaction model based on observed task failures.',
+                    'Connect the report to persisted project data after validation stabilizes.',
+                ],
+            },
+            metadata: {
+                generated_at: new Date().toISOString(),
+                source: 'local_fallback',
+                design_stage: designStage,
+                key_features: keyFeatures,
+                user_scenarios: scenarios,
+            },
+        },
+    };
+};
 
 interface TestingSectionProps {
     project: Project;
@@ -26,7 +143,15 @@ export const TestingSection = ({
     onRefreshProject,
 }: TestingSectionProps) => {
     // User input fields
-    const [productName, setProductName] = useState('');
+    const [productName, setProductName] = useState(() => 
+        localStorage.getItem(`testing_product_name_${project.id}`) || ''
+    );
+    
+    // Save product name to localStorage when it changes
+    const updateProductName = (name: string) => {
+        setProductName(name);
+        localStorage.setItem(`testing_product_name_${project.id}`, name);
+    };
     const [specificFocus, setSpecificFocus] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -75,34 +200,24 @@ export const TestingSection = ({
         // Design Stage - computed from prototype status
         let designStage = 'Early Concept';
         if (project.prototype_images) {
-            try {
-                const protoImages = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
-                if (protoImages?.image) {
-                    designStage = 'Refined Prototype';
-                } else if (protoImages?.sketch) {
-                    designStage = 'Rough Prototype';
-                }
-            } catch (e) {
-                console.error('Failed to parse prototype_images', e);
+            const raw = project.prototype_images;
+            const protoImages = relaxedJsonParse(raw);
+            if (protoImages?.image) {
+                designStage = 'Refined Prototype';
+            } else if (protoImages?.sketch) {
+                designStage = 'Rough Prototype';
             }
         }
 
         // Prototype Artifacts - from prototype_images
         let prototypeArtifacts: { sketch?: string; image?: string } = {};
         if (project.prototype_images) {
-            try {
-                const parsed = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
-                prototypeArtifacts = {
-                    sketch: parsed?.sketch,
-                    image: parsed?.image,
-                };
-            } catch (e) {
-                console.error('Failed to parse prototype_images', e);
-            }
+            const raw = project.prototype_images;
+            const parsed = relaxedJsonParse(raw);
+            prototypeArtifacts = {
+                sketch: parsed?.sketch,
+                image: parsed?.image,
+            };
         }
 
         // Feature Descriptions - from idea card innovations
@@ -156,23 +271,44 @@ export const TestingSection = ({
             console.log('Testing Request Body:', requestBody);
 
             const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
-            const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/testing';
+            const targetUrl = (import.meta as any).env?.DEV
+                ? TESTING_TEST_WEBHOOK_URL
+                : TESTING_WEBHOOK_URL;
 
-            const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
+            const sendToWebhook = (webhookUrl: string) => fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    target_url: targetUrl,
-                    payload: requestBody
+                    target_url: webhookUrl,
+                    payload: requestBody,
                 }),
             });
 
+            const fallbackUrl = buildTestWebhookUrl(targetUrl);
+            let response = await sendToWebhook(targetUrl);
+
             if (!response.ok) {
-                console.error('API Response not ok:', response.status, response.statusText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const detail = await response.text().catch(() => '');
+                if (response.status === 404 && fallbackUrl !== targetUrl && isWebhookNotRegisteredError(detail)) {
+                    response = await sendToWebhook(fallbackUrl);
+                }
+
+                if (!response.ok) {
+                    const retryDetail = await response.text().catch(() => '');
+                    console.warn('Testing webhook unavailable, using local fallback report.', retryDetail || detail);
+                    setTestingData(buildLocalTestingReport(requestBody));
+
+                    localStorage.setItem(`testing_product_name_${project.id}`, productName.trim());
+                    toast.success('Testing scenarios generated locally because the webhook is unavailable.');
+
+                    if (onRefreshProject) {
+                        setTimeout(() => onRefreshProject(), 2000);
+                    }
+                    return;
+                }
             }
 
             // Try to parse response, but don't fail if empty
@@ -180,7 +316,7 @@ export const TestingSection = ({
             try {
                 const text = await response.text();
                 if (text && text.trim()) {
-                    data = JSON.parse(text);
+                    data = relaxedJsonParse(text);
                 }
             } catch (parseError) {
                 console.log('Response parsing skipped or empty response');
@@ -269,7 +405,7 @@ export const TestingSection = ({
                             type="text"
                             id="productName"
                             value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
+                            onChange={(e) => updateProductName(e.target.value)}
                             placeholder="Enter your product name..."
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
                         />
