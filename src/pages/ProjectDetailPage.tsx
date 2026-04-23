@@ -1,6 +1,7 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
@@ -51,6 +52,7 @@ export const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { setTopBarTitle, setActiveProjectScore, setActiveProjectAssessment } = useWorkspace();
 
   // Active section state
   const [activeSection, setActiveSection] = useState('project-info');
@@ -186,6 +188,22 @@ export const ProjectDetailPage = () => {
 
   // Custom hooks
   const { project, setProject, isLoading, error, handleDelete, refetchProject } = useProjectData(id, user.id);
+
+  // Set Topbar Title and Assessment Data
+  useEffect(() => {
+    if (project?.title) {
+      setTopBarTitle(project.title);
+      setActiveProjectScore(project.score || project.iosAssessment?.overallScore || null);
+      setActiveProjectAssessment(project.iosAssessment || null);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      setTopBarTitle('New Project');
+      setActiveProjectScore(null);
+      setActiveProjectAssessment(null);
+    };
+  }, [project?.title, setTopBarTitle, setActiveProjectScore, setActiveProjectAssessment, project?.score, project?.iosAssessment]);
 
   // Populate Deep Empathy form from research_data when project loads
   useEffect(() => {
@@ -334,7 +352,7 @@ export const ProjectDetailPage = () => {
     <div className="fixed inset-x-0 top-16 bottom-0 flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Left Sidebar - fixed */}
       <aside className={`
-        fixed top-16 left-0 h-[calc(100vh-64px)] w-56 flex-shrink-0
+        fixed top-16 left-0 h-[calc(100vh-64px)] w-64 flex-shrink-0
         bg-white/80 backdrop-blur-sm border-r border-gray-200
         transition-transform duration-300 ease-in-out z-30
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -386,38 +404,8 @@ export const ProjectDetailPage = () => {
         />
       )}
 
-      {/* Right Side - Header + Scrollable Content */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-56">
-        {/* Fixed Project Header */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 flex-shrink-0 z-10">
-          <div className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="Back to Projects"
-                >
-                  <FiArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-                  <p className="text-sm text-gray-600">Project Detail</p>
-                </div>
-              </div>
-
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-                className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
-              >
-                {isMobileSidebarOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
+      {/* Right Side - Scrollable Content */}
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8">

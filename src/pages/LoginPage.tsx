@@ -36,7 +36,7 @@ export function LoginPage() {
         }
         return;
       }
-      navigate('/projects');
+      navigate('/workspace');
     } catch (err) {
       console.error('Error signing in:', err);
       setFormError('Failed to sign in. Please check your credentials.');
