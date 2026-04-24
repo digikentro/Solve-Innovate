@@ -110,6 +110,9 @@ export const ProjectDetailPage = () => {
     extremeUserType: ''
   });
 
+  const [contentVisible, setContentVisible] = useState(false);
+
+
   const [hmwIdeationForm, setHmwIdeationForm] = useState({
     painPointInvestigated: '',
     extremeUserType: ''
@@ -188,6 +191,14 @@ export const ProjectDetailPage = () => {
 
   // Custom hooks
   const { project, setProject, isLoading, error, handleDelete, refetchProject } = useProjectData(id, user.id);
+
+  // Sync content visible state
+  useEffect(() => {
+    if (!isLoading && project) {
+      const timer = setTimeout(() => setContentVisible(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, project]);
 
   // Set Topbar Title and Assessment Data
   useEffect(() => {
@@ -321,11 +332,19 @@ export const ProjectDetailPage = () => {
     }
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - removed spinning buffer for smoother feel
+  if (isLoading && !project) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="h-full flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 animate-pulse">
+        {/* Sidebar Skeleton */}
+        <aside className="hidden lg:block w-64 bg-white/50 border-r border-gray-200" />
+        
+        {/* Content Skeleton */}
+        <div className="flex-1 p-8 space-y-6">
+          <div className="h-8 bg-gray-200 rounded-lg w-1/4"></div>
+          <div className="h-64 bg-gray-100 rounded-3xl"></div>
+          <div className="h-48 bg-gray-50 rounded-3xl"></div>
+        </div>
       </div>
     );
   }
@@ -349,10 +368,10 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="fixed inset-x-0 top-16 bottom-0 flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Left Sidebar - fixed */}
+    <div className={`h-full flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
       <aside className={`
-        fixed top-16 left-0 h-[calc(100vh-64px)] w-64 flex-shrink-0
+        absolute lg:relative top-0 left-0 h-full w-64 flex-shrink-0
         bg-white/80 backdrop-blur-sm border-r border-gray-200
         transition-transform duration-300 ease-in-out z-30
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -404,14 +423,13 @@ export const ProjectDetailPage = () => {
         />
       )}
 
-      {/* Right Side - Scrollable Content */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto">
+      {/* Right Side - Content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1">
           <div className="p-4 sm:p-6 lg:p-8">
             {/* Project Information */}
             {activeSection === 'project-info' && (
-              <div className="space-y-6 animate-fadeIn">
+              <div>
                 <ProjectInfo project={project} />
                 <SecondaryResearchSection
                   projectId={project.id}
@@ -437,7 +455,7 @@ export const ProjectDetailPage = () => {
 
             {/* As-Is Map */}
             {activeSection === 'as-is-map' && (
-              <div className="animate-fadeIn">
+              <div>
                 <AsIsMapSection
                   project={project}
                   asIsMapData={asIsMapData}
@@ -466,7 +484,7 @@ export const ProjectDetailPage = () => {
 
             {/* Extreme User Generator */}
             {activeSection === 'extreme-user' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Extreme User Generator"
                   description="Generate extreme user personas to identify edge cases and design opportunities for your project. This helps you understand the full spectrum of user needs."
@@ -538,7 +556,7 @@ export const ProjectDetailPage = () => {
 
             {/* Deep Empathy Research */}
             {activeSection === 'deep-empathy' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Deep Empathy Research Generator"
                   description="Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow. Pain points will be automatically copied from the Extreme User Generator when you click 'Generate' above. You can edit any field as needed."
@@ -600,14 +618,14 @@ export const ProjectDetailPage = () => {
 
             {/* Chat Section */}
             {activeSection === 'chat' && (
-              <div className="animate-fadeIn">
+              <div>
                 <EmbeddedChatSection projectId={project.id} extremeUserData={extremeUserData} project={project} userId={user.id} />
               </div>
             )}
 
             {/* Psychological Analysis */}
             {activeSection === 'psychological' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Psychological Analysis"
                   description="Transform unprocessed research data into deep behavioral insights through psychological analysis. This helps you understand the underlying motivations and patterns in user behavior."
@@ -641,7 +659,7 @@ export const ProjectDetailPage = () => {
 
             {/* Transformation Framework */}
             {activeSection === 'transformation-framework' && (
-              <div className="animate-fadeIn">
+              <div>
                 <TransformationFrameworkSection
                   project={project}
                   transformationFrameworkData={transformationFrameworkData}
@@ -659,7 +677,7 @@ export const ProjectDetailPage = () => {
 
             {/* HMW Framework */}
             {activeSection === 'hmw-framework' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Outcome-to-Behavior HMW Framework"
                   description="Convert insights into actionable HMW (How Might We) questions tailored to the project. This helps you create a structured approach to problem-solving and innovation."
@@ -693,7 +711,7 @@ export const ProjectDetailPage = () => {
 
             {/* HMW Ideation Framework */}
             {activeSection === 'hmw-ideation' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="HMW Ideation Framework"
                   description="Generate comprehensive ideation solutions using four distinct creative approaches: Simple Ideas, Outside Category Inspiration, Feature Addition, and Feature Removal. Each approach provides unique perspectives for solving the identified pain points."
@@ -732,7 +750,7 @@ export const ProjectDetailPage = () => {
 
             {/* Idea Clustering and Idea Cards */}
             {activeSection === 'idea-clustering' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Idea Clustering and Idea Cards"
                   description="Generate idea clusters and detailed idea cards from your ideation framework. This analysis groups related ideas, evaluates innovation potential, and provides actionable implementation pathways for the most promising concepts."
@@ -769,7 +787,7 @@ export const ProjectDetailPage = () => {
 
             {/* Prototyping Tools */}
             {activeSection === 'prototyping-tools' && (
-              <div className="animate-fadeIn">
+              <div>
                 <PrototypingToolsSection
                   ideaClusteringData={ideaClusteringData}
                   project={project}
@@ -780,7 +798,7 @@ export const ProjectDetailPage = () => {
 
             {/* Testing */}
             {activeSection === 'testing' && (
-              <div className="animate-fadeIn">
+              <div>
                 <TestingSection
                   project={project}
                   asIsMapData={asIsMapData}
@@ -796,7 +814,7 @@ export const ProjectDetailPage = () => {
 
             {/* Market Search */}
             {activeSection === 'market-search' && (
-              <div className="animate-fadeIn">
+              <div>
                 <MarketSearchSection
                   project={project}
                   asIsMapData={asIsMapData}

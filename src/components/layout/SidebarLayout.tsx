@@ -20,6 +20,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
+import { Plasma } from '@/components/ui/Plasma';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 import { toast } from 'react-hot-toast';
 
@@ -28,7 +29,7 @@ export function SidebarLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setDirection } = useNavDirection();
-  const { topBarTitle, activeProjectScore, activeProjectAssessment } = useWorkspace();
+  const { topBarTitle, activeProjectScore, activeProjectAssessment, showPlasma } = useWorkspace();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -294,7 +295,19 @@ export function SidebarLayout() {
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Persistent Global Plasma Background */}
+        <div className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 ${showPlasma ? 'opacity-100' : 'opacity-0'}`}>
+          <Plasma 
+            color="#ffffffff"
+            speed={0.25}
+            opacity={0.20}
+            scale={2.5}
+          />
+          {/* Subtle overlay to soften the plasma on light pages if needed */}
+          <div className="absolute inset-0 bg-indigo-50/10 pointer-events-none" />
+        </div>
+
         {/* Topbar */}
         <header className="h-16 flex-shrink-0 flex items-center justify-between px-4 lg:px-8 border-b border-gray-100 bg-white/50 backdrop-blur-sm z-10">
           <div className="flex items-center gap-2 sm:gap-4 flex-1">

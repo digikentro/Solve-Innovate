@@ -16,6 +16,7 @@ import { SourceVerificationInfo } from '@/components/ui/SourceVerificationInfo';
 import { SourceVerificationService } from '@/services/sourceVerificationService';
 import { AnimatedBlob } from '@/components/ui/AnimatedBlob';
 import { IOSAssessmentCard } from '@/components/ui/IOSAssessmentCard';
+import { Plasma } from '@/components/ui/Plasma';
 
 type ProblemStatementWithGeneratedAt = ProblemStatement & { generatedAt?: string };
 
@@ -48,9 +49,10 @@ const LOADING_MESSAGES = [
 export function WorkspacePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setTopBarTitle } = useWorkspace();
+  const { setTopBarTitle, setShowPlasma } = useWorkspace();
   const { setDirection } = useNavDirection();
   
+  const [profileLoading, setProfileLoading] = useState(true);
   const [projectType, setProjectType] = useState<'social-impact' | 'business' | null>(null);
   const [prompt, setPrompt] = useState('');
   
@@ -77,6 +79,12 @@ export function WorkspacePage() {
 
   const [msgIdx, setMsgIdx] = useState(0);
 
+  const [contentVisible, setContentVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setContentVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     setTopBarTitle(generatedProblem ? generatedProblem.title : 'New Project');
   }, [generatedProblem, setTopBarTitle]);
@@ -93,11 +101,31 @@ export function WorkspacePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const prof = await profileService.getProfile();
-      setProfile(prof);
+      if (!user) {
+        setProfileLoading(false);
+        return;
+      }
+      try {
+        console.log('Fetching profile for user:', user.id);
+        const prof = await profileService.getProfile();
+        console.log('Fetched profile:', prof);
+        setProfile(prof);
+      } finally {
+        setProfileLoading(false);
+      }
     };
     fetchProfile();
-  }, []);
+  }, [user]);
+
+  // Handle Global Plasma visibility
+  useEffect(() => {
+    // Show plasma if we haven't generated a problem and aren't generating one
+    const shouldShow = !generatedProblem && !isGenerating;
+    setShowPlasma(shouldShow);
+    
+    // Clean up on unmount
+    return () => setShowPlasma(false);
+  }, [generatedProblem, isGenerating, setShowPlasma]);
 
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -243,15 +271,45 @@ export function WorkspacePage() {
   const isProfileIncomplete = !profile?.skills?.length && !profile?.interests?.length;
   const sectors = projectType === 'social-impact' ? SDG_GOALS : BUSINESS_SECTORS;
 
+  // Extract first name from available sources
+  const getFirstName = () => {
+    const fullName = profile?.full_name || 
+                     user?.user_metadata?.full_name || 
+                     user?.user_metadata?.name || 
+                     user?.user_metadata?.display_name ||
+                     user?.email?.split('@')[0];
+    
+    if (fullName && fullName !== 'there') {
+      return fullName.trim().split(/\s+/)[0];
+    }
+    return '';
+  };
+
+  const firstName = getFirstName();
+
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 max-w-4xl mx-auto w-full">
+    <div className={`h-full flex flex-col items-center justify-start p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full relative overflow-hidden transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
       
       {/* State 1: Input / Chat Prompt */}
       {!generatedProblem && !isGenerating && (
-        <div className="w-full flex flex-col items-center space-y-8 animate-fadeIn mt-8">
-          <h2 className="text-3xl md:text-4xl font-semibold text-gray-800 text-center">
-            What would you like to build?
-          </h2>
+        <>
+          <div className="w-full flex flex-col items-center space-y-6 mt-2 md:mt-4 relative z-10">
+            {/* Greeting */}
+            <p style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 'min(12vw, 5rem)',
+              fontStyle: 'italic',
+              color: '#111827',
+              marginBottom: '-12px',
+              letterSpacing: '-0.03em',
+              lineHeight: 0.9,
+              minHeight: '1em'
+            }}>
+              {profileLoading ? '' : firstName ? `Hello, ${firstName}` : 'Hello there'}
+            </p>
+            <h2 className="text-xl md:text-2xl font-medium text-gray-400 text-center tracking-tight mb-8">
+              What would you like to build?
+            </h2>
 
           {/* Project Type Selection Boxes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
@@ -286,7 +344,7 @@ export function WorkspacePage() {
           
           {/* Input Area (only visible if projectType is selected) */}
           {projectType && (
-            <div className="w-full relative max-w-3xl animate-fadeIn space-y-4">
+            <div className="w-full relative max-w-3xl space-y-4">
               
               {/* PDF Preview */}
               {uploadedPdfs.length > 0 && (
@@ -373,12 +431,13 @@ export function WorkspacePage() {
               <span>Complete your profile for better AI matching</span>
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Generating State */}
       {isGenerating && (
-        <div className="flex flex-col items-center space-y-6 animate-fadeIn mt-8">
+        <div className="flex flex-col items-center space-y-6 mt-8">
           <AnimatedBlob />
           <div className="text-xl font-medium text-gray-700 animate-pulse text-center mt-6">
             {LOADING_MESSAGES[msgIdx]}
@@ -388,7 +447,7 @@ export function WorkspacePage() {
 
       {/* State 2: Generated Problem */}
       {generatedProblem && !isGenerating && (
-        <div className="w-full space-y-6 animate-fadeIn pb-20">
+        <div className="w-full space-y-6 pb-20">
           
           {/* Top Actions */}
           <div className="flex justify-end gap-3 mb-2">
@@ -466,7 +525,7 @@ export function WorkspacePage() {
 
             {/* Detailed View Content */}
             {isDetailedViewOpen && (
-              <div className="border-t border-gray-100 p-6 md:p-8 bg-white animate-fadeIn">
+              <div className="border-t border-gray-100 p-6 md:p-8 bg-white">
                 <AssessmentProblemDetailedView
                   assessment={generatedProblem.iosAssessment}
                   problemTitle={generatedProblem.title}

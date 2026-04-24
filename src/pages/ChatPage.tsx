@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { FiArrowLeft, FiSend, FiUser, FiMessageCircle } from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 interface Message {
   id: string;
@@ -20,6 +21,7 @@ export const ChatPage = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const { topBarTitle, setShowPlasma } = useWorkspace();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   if (!user) {
@@ -145,6 +147,11 @@ export const ChatPage = () => {
     }
   };
 
+  useEffect(() => {
+    setShowPlasma(true);
+    return () => setShowPlasma(false);
+  }, [setShowPlasma]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -153,39 +160,36 @@ export const ChatPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 w-full relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-indigo-400/20 to-purple-400/20"></div>
-        <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-l from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-gradient-to-r from-purple-400/10 to-transparent rounded-full blur-3xl"></div>
-      </div>
+    <div className="h-screen flex flex-col w-full relative overflow-hidden bg-slate-900/40">
+      {/* Background overlay for readability - softened to let global plasma show */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(13,14,26,0.25)' }} />
+
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-md shadow-lg border-b border-white/20 px-6 py-4 flex-shrink-0 w-full relative z-10">
+      <div className="backdrop-blur-md shadow-lg border-b px-6 py-4 flex-shrink-0 w-full relative" style={{ zIndex: 10, background: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.12)' }}>
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate(`/projects/${id}`)}
-              className="p-3 hover:bg-indigo-50 rounded-xl transition-all duration-200 hover:scale-105 group"
+              className="p-3 hover:bg-white/10 rounded-xl transition-all duration-200 hover:scale-105 group"
             >
-              <FiArrowLeft className="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" />
+              <FiArrowLeft className="w-5 h-5 text-white/80 group-hover:text-white" />
             </button>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">
                 Project Chat
               </h1>
-              <p className="text-sm text-gray-600 font-medium">Collaborate and discuss your project</p>
+              <p className="text-sm text-white/50 font-medium">Collaborate and discuss your project</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600 font-medium">Online</span>
+            <span className="text-sm text-white/60 font-medium">Online</span>
           </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className={`flex-1 p-8 space-y-6 ${messages.length > 0 ? 'overflow-y-auto no-scrollbar' : 'flex items-center justify-center'} relative z-10`} style={{ paddingBottom: messages.length > 0 ? '120px' : '0' }}>
+      <div className={`flex-1 p-8 space-y-6 ${messages.length > 0 ? 'overflow-y-auto no-scrollbar' : 'flex items-center justify-center'} relative`} style={{ zIndex: 10, paddingBottom: messages.length > 0 ? '120px' : '0' }}>
         <div className="max-w-4xl mx-auto w-full">
           {isLoadingHistory ? (
             <div className="text-center">
@@ -195,8 +199,8 @@ export const ChatPage = () => {
                 </div>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Loading chat history...</h3>
-              <p className="text-gray-600 font-medium">Fetching your previous conversations.</p>
+              <h3 className="text-xl font-bold text-white mb-3">Loading chat history...</h3>
+              <p className="text-white/60 font-medium">Fetching your previous conversations.</p>
               <div className="mt-4 flex justify-center space-x-1">
                 <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -213,11 +217,11 @@ export const ChatPage = () => {
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Start a conversation</h3>
-              <p className="text-gray-600 font-medium mb-6">Send a message to begin chatting about your project.</p>
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 rounded-full">
+              <h3 className="text-2xl font-bold text-white mb-3">Start a conversation</h3>
+              <p className="text-white/60 font-medium mb-6">Send a message to begin chatting about your project.</p>
+              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
                 <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
-                <span className="text-sm text-indigo-600 font-medium">AI Assistant Ready</span>
+                <span className="text-sm text-indigo-300 font-medium">AI Assistant Ready</span>
               </div>
             </div>
           ) : (
@@ -281,7 +285,7 @@ export const ChatPage = () => {
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="bg-white/90 backdrop-blur-md border-t border-white/20 p-6 flex-shrink-0 shadow-2xl w-full relative z-10">
+      <div className="backdrop-blur-md border-t p-6 flex-shrink-0 shadow-2xl w-full relative" style={{ zIndex: 10, background: 'rgba(13,14,26,0.6)', borderColor: 'rgba(255,255,255,0.1)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="flex space-x-4">
             <div className="flex-1 relative">
@@ -291,7 +295,8 @@ export const ChatPage = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="w-full px-6 py-4 bg-white/80 border border-gray-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-300 transition-all duration-200 shadow-lg backdrop-blur-sm text-gray-900 placeholder-gray-500 font-medium"
+                className="w-full px-6 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-200 shadow-lg backdrop-blur-sm font-medium"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white' }}
                 disabled={isTyping}
               />
               {inputMessage && (
