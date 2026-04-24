@@ -1,7 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './AnimatedBlob.css';
 
+const LOADING_MESSAGES = [
+  'Brainstorming creative challenges...',
+  'Scouting for innovation opportunities...',
+  'Synthesizing insights from global experts...',
+];
+
 export function AnimatedBlob() {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const blobRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIdx(idx => (idx + 1) % LOADING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (blobRef.current) {
+      const animations = blobRef.current.getAnimations({ subtree: true });
+      animations.forEach(anim => {
+        anim.playbackRate = 4;
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (blobRef.current) {
+      const animations = blobRef.current.getAnimations({ subtree: true });
+      animations.forEach(anim => {
+        anim.playbackRate = 1;
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center">
       <svg width="0" height="0" className="absolute">
@@ -30,10 +64,19 @@ export function AnimatedBlob() {
         </filter>
       </svg>
 
-      <div className="blob-wrapper scale-50 md:scale-75 lg:scale-100">
+      <div 
+        ref={blobRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="blob-wrapper scale-50 md:scale-75 lg:scale-100 cursor-pointer transition-transform duration-500 hover:scale-[1.05]"
+      >
         <div className="blob blob-shape">
           <div className="grain-overlay"></div>
         </div>
+      </div>
+
+      <div className="text-xl font-medium text-gray-700 animate-pulse text-center mt-12 transition-all duration-500 min-h-[2em] max-w-md">
+        {LOADING_MESSAGES[msgIdx]}
       </div>
     </div>
   );

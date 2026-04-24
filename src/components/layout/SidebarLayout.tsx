@@ -408,7 +408,7 @@ export function SidebarLayout() {
         </header>
 
         {/* Page Content — animated */}
-        <div className="flex-1 overflow-auto">
+        <div className={`flex-1 ${isProjectPage ? 'overflow-hidden' : 'overflow-auto'}`}>
           <PageTransition>
             <Outlet />
           </PageTransition>

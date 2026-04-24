@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiTerminal, FiChevronRight, FiDatabase, FiUsers } from 'react-icons/fi';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface FormField {
   id: string;
@@ -242,42 +244,39 @@ export const ResearchGeneratorSection = ({
   return (
     <>
       {!showReport ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className={`px-8 py-6 bg-gradient-to-r from-${gradientFrom} to-${gradientTo} border-b border-gray-100`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 bg-gradient-to-r from-${iconBgFrom} to-${iconBgTo} rounded-xl flex items-center justify-center`}>
-                  <FiPlus className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
-                  <p className="text-sm text-gray-600">{description}</p>
-                </div>
+        <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden">
+          <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
+                <FiTerminal className="w-5 h-5 text-gray-400" />
               </div>
-              {onShowPainPointsModal && (
-                <button
-                  type="button"
-                  className={`px-6 py-3 bg-gradient-to-r from-${iconBgFrom} to-${iconBgTo} text-white text-sm font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200`}
-                  onClick={onShowPainPointsModal}
-                  title="Choose from AS-IS Map Pain Points"
-                >
-                  Choose Pain Point
-                </button>
-              )}
+              <div>
+                <CardTitle className="text-xl font-medium text-gray-900">{title}</CardTitle>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">{description.split('.')[0]}</p>
+              </div>
             </div>
-          </div>
+            {onShowPainPointsModal && (
+              <Button
+                variant="outline"
+                className="border-black text-black hover:bg-black hover:text-white rounded-none h-10 px-6 font-normal transition-colors"
+                onClick={onShowPainPointsModal}
+              >
+                Choose Pain Point
+              </Button>
+            )}
+          </CardHeader>
 
-          <div className="p-8">
-            <div className="space-y-6">
-              <div className={`bg-${gradientFrom}/80 p-6 rounded-2xl border border-${gradientFrom.replace('-50', '-200')}`}>
-                <p className="text-gray-700 text-sm leading-relaxed">{description}</p>
+          <CardContent className="p-8">
+            <div className="space-y-10">
+              <div className="border-l-2 border-gray-900 pl-6 py-2">
+                <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{description}</p>
               </div>
-              <div className="space-y-6">
+
+              <div className="space-y-8">
                 {formFields.map((element, index) => {
                   if ('type' in element && element.type === 'inline') {
-                    // Render inline field group
                     return (
-                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
+                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-8">
                         {element.fields.map((field) => {
                           const widthClass = field.width === '1/3' ? 'col-span-4' :
                             field.width === '2/3' ? 'col-span-8' :
@@ -285,29 +284,29 @@ export const ResearchGeneratorSection = ({
 
                           return (
                             <div key={field.id} className={widthClass}>
-                              <div className="flex items-center justify-between mb-3">
-                                <label htmlFor={field.id} className="block text-sm font-semibold text-gray-700">
+                              <div className="flex items-center justify-between mb-4">
+                                <label htmlFor={field.id} className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                   {field.label}
                                 </label>
                                 {field.id === 'selectedExtremeUser' && onShowUsersModal && (
-                                  <button
-                                    type="button"
-                                    className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
                                     onClick={onShowUsersModal}
-                                    title="Choose from Extreme User Analysis"
                                   >
-                                    Choose User
-                                  </button>
+                                    <FiUsers className="w-3 h-3" /> Choose User
+                                  </Button>
                                 )}
                                 {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
-                                  <button
-                                    type="button"
-                                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
                                     onClick={onPopulateFromAsIsMap}
-                                    title="Use Target Users from As-Is Map Report"
                                   >
-                                    Use As-Is Map
-                                  </button>
+                                    <FiDatabase className="w-3 h-3" /> Use As-Is Map
+                                  </Button>
                                 )}
                               </div>
                               {field.type === 'textarea' ? (
@@ -317,7 +316,7 @@ export const ResearchGeneratorSection = ({
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   rows={field.rows || 3}
                                   placeholder={field.placeholder}
-                                  className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent resize-none transition-all duration-200`}
+                                  className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black resize-none transition-colors"
                                 />
                               ) : (
                                 <input
@@ -326,7 +325,7 @@ export const ResearchGeneratorSection = ({
                                   value={formData[field.id] || ''}
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   placeholder={field.placeholder}
-                                  className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent transition-all duration-200`}
+                                  className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black transition-colors"
                                 />
                               )}
                             </div>
@@ -335,33 +334,32 @@ export const ResearchGeneratorSection = ({
                       </div>
                     );
                   } else {
-                    // Render regular field
                     const field = element as FormField;
                     return (
                       <div key={field.id}>
-                        <div className="flex items-center justify-between mb-3">
-                          <label htmlFor={field.id} className="block text-sm font-semibold text-gray-700">
+                        <div className="flex items-center justify-between mb-4">
+                          <label htmlFor={field.id} className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                             {field.label}
                           </label>
                           {field.id === 'selectedExtremeUser' && onShowUsersModal && (
-                            <button
-                              type="button"
-                              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
                               onClick={onShowUsersModal}
-                              title="Choose from Extreme User Analysis"
                             >
-                              Choose User
-                            </button>
+                              <FiUsers className="w-3 h-3" /> Choose User
+                            </Button>
                           )}
                           {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
-                            <button
-                              type="button"
-                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
                               onClick={onPopulateFromAsIsMap}
-                              title="Use Target Users from As-Is Map Report"
                             >
-                              Use As-Is Map
-                            </button>
+                              <FiDatabase className="w-3 h-3" /> Use As-Is Map
+                            </Button>
                           )}
                         </div>
                         {field.type === 'textarea' ? (
@@ -371,7 +369,7 @@ export const ResearchGeneratorSection = ({
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             rows={field.rows || 3}
                             placeholder={field.placeholder}
-                            className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent resize-none transition-all duration-200`}
+                            className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black resize-none transition-colors"
                           />
                         ) : (
                           <input
@@ -380,34 +378,33 @@ export const ResearchGeneratorSection = ({
                             value={formData[field.id] || ''}
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             placeholder={field.placeholder}
-                            className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-${iconBgFrom} focus:border-transparent transition-all duration-200`}
+                            className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black transition-colors"
                           />
                         )}
                       </div>
                     );
                   }
                 })}
-                <div className="flex justify-end">
-                  <button
+                <div className="flex justify-end pt-4">
+                  <Button
                     onClick={handleGenerate}
                     disabled={isLoading || isGenerating}
-                    className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-black text-white hover:bg-black/90 rounded-none h-14 px-10 font-normal transition-all"
                   >
-                    {isLoading || isGenerating ? 'Generating...' : `Generate ${title}`}
-                  </button>
+                    {isLoading || isGenerating ? 'Generating...' : (
+                      <span className="flex items-center gap-2">
+                        Generate {title} <FiChevronRight className="w-4 h-4" />
+                      </span>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ) : (
-        <div>
-          {/* Inline Report Display */}
-          {renderReport && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-              {renderReport(data, handleReset)}
-            </div>
-          )}
+        <div className="animate-fadeIn">
+          {renderReport && renderReport(data, handleReset)}
         </div>
       )}
     </>

@@ -40,11 +40,6 @@ const SDG_GOALS = [
   { id: 'sdg-13', name: 'Climate Action', number: 13 },
 ];
 
-const LOADING_MESSAGES = [
-  'Brainstorming creative challenges...',
-  'Scouting for innovation opportunities...',
-  'Synthesizing insights from global experts...',
-];
 
 export function WorkspacePage() {
   const navigate = useNavigate();
@@ -77,7 +72,6 @@ export function WorkspacePage() {
   const [pdfContext, setPdfContext] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
 
-  const [msgIdx, setMsgIdx] = useState(0);
 
   const [contentVisible, setContentVisible] = useState(false);
   useEffect(() => {
@@ -89,15 +83,6 @@ export function WorkspacePage() {
     setTopBarTitle(generatedProblem ? generatedProblem.title : 'New Project');
   }, [generatedProblem, setTopBarTitle]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isGenerating) {
-      interval = setInterval(() => {
-        setMsgIdx(idx => (idx + 1) % LOADING_MESSAGES.length);
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [isGenerating]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -435,13 +420,9 @@ export function WorkspacePage() {
         </>
       )}
 
-      {/* Generating State */}
       {isGenerating && (
-        <div className="flex flex-col items-center space-y-6 mt-8">
+        <div className="flex flex-col items-center mt-8">
           <AnimatedBlob />
-          <div className="text-xl font-medium text-gray-700 animate-pulse text-center mt-6">
-            {LOADING_MESSAGES[msgIdx]}
-          </div>
         </div>
       )}
 

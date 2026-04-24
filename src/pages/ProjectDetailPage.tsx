@@ -7,6 +7,8 @@ import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
 import { ProjectInfo, SecondaryResearchSection } from '@/components/project-detail/ProjectInfo';
 import { PresentableSlideSection } from '@/components/project-detail/PresentableSlideSection';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 import { ProjectAnalysisSection } from '@/components/project-detail/ProjectAnalysisSection';
 import { AsIsMapSection } from '@/components/project-detail/AsIsMapSection';
@@ -368,15 +370,15 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className={`h-full flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`h-full flex bg-[#faf8f5] transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'} overflow-hidden`}>
       {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
       <aside className={`
         absolute lg:relative top-0 left-0 h-full w-64 flex-shrink-0
-        bg-white/80 backdrop-blur-sm border-r border-gray-200
+        bg-[#f5f3ef] border-r border-gray-200/50
         transition-transform duration-300 ease-in-out z-30
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <nav className="h-full overflow-y-auto p-4 space-y-2">
+        <nav className="h-full overflow-y-auto py-8 px-4 space-y-3 custom-scrollbar">
             {SECTIONS.map((section, index) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
@@ -385,31 +387,48 @@ export const ProjectDetailPage = () => {
                 index === 0 ||
                 isSectionCompleted(SECTIONS[index - 1].id);
 
+              if (isActive) {
+                return (
+                  <Button
+                    key={section.id}
+                    variant="default"
+                    className="w-full justify-start bg-[#0f121f] text-white hover:bg-[#0f121f]/90 transition-all duration-200 shadow-sm h-11 px-4"
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      setVisitedSections(prev => new Set([...prev, section.id]));
+                      setIsMobileSidebarOpen(false);
+                    }}
+                  >
+                    <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="truncate flex-1 text-left">{section.label}</span>
+                  </Button>
+                );
+              }
+
               return (
-                <button
-                  key={section.id}
-                  disabled={!isUnlocked}
-                  onClick={() => {
-                    if (!isUnlocked) return;
-                    setActiveSection(section.id);
-                    setVisitedSections(prev => new Set([...prev, section.id]));
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                      transition-all duration-200
-                      ${isActive
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                        : !isUnlocked
-                          ? 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
-                          : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+                  <Button
+                    key={section.id}
+                    variant="ghost"
+                    disabled={!isUnlocked}
+                    onClick={() => {
+                      if (!isUnlocked) return;
+                      setActiveSection(section.id);
+                      setVisitedSections(prev => new Set([...prev, section.id]));
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className={`
+                      w-full justify-start h-10 px-4 border-none shadow-none
+                      transition-all duration-200 bg-transparent hover:bg-transparent
+                      ${!isUnlocked
+                        ? 'text-gray-300 opacity-50'
+                        : 'text-gray-500 hover:text-[#0f121f] font-normal'
                       }
                     `}
-                >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : !isUnlocked ? 'text-gray-300' : 'text-gray-500'}`} />
-                  <span className="truncate flex-1 text-left">{section.label}</span>
-                  {!isUnlocked && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300" />}
-                </button>
+                  >
+                    <Icon className={`w-4 h-4 mr-3 flex-shrink-0 ${!isUnlocked ? 'text-gray-300' : 'text-gray-400'}`} />
+                    <span className="truncate flex-1 text-left">{section.label}</span>
+                    {!isUnlocked && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300 ml-2" />}
+                  </Button>
               );
             })}
         </nav>
@@ -424,12 +443,12 @@ export const ProjectDetailPage = () => {
       )}
 
       {/* Right Side - Content area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar">
         <main className="flex-1">
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
             {/* Project Information */}
             {activeSection === 'project-info' && (
-              <div>
+              <div className="space-y-8">
                 <ProjectInfo project={project} />
                 <SecondaryResearchSection
                   projectId={project.id}
@@ -437,18 +456,15 @@ export const ProjectDetailPage = () => {
                   secondaryresearch={project.secondaryresearch}
                   onRefreshProject={refetchProject}
                 />
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-                  <div className="p-8">
-                    <dl className="space-y-8">
-                      <PresentableSlideSection
-                        project={project}
-                        presentableSlide={presentableSlide}
-                        setPresentableSlide={setPresentableSlide}
-                      />
-
-                    </dl>
-                  </div>
-                </div>
+                <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden">
+                  <CardContent className="p-8">
+                    <PresentableSlideSection
+                      project={project}
+                      presentableSlide={presentableSlide}
+                      setPresentableSlide={setPresentableSlide}
+                    />
+                  </CardContent>
+                </Card>
                 <ProjectAnalysisSection project={project} setProject={setProject} />
               </div>
             )}

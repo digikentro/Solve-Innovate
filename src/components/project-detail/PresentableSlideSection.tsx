@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { FiTrendingUp } from 'react-icons/fi';
+import { FiMonitor } from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/types/project';
 
@@ -34,36 +35,35 @@ export const PresentableSlideSection = ({ project, presentableSlide, setPresenta
 
   return (
     <div className="group">
-      <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Presentable Slide</dt>
-      <dd className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <FiTrendingUp className="w-5 h-5 text-white" />
-            </div>
+      <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Presentable Slide</dt>
+      <dd className="border border-gray-100 p-8 rounded-none">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
+          <div className="flex items-center gap-4">
+            <FiMonitor className="w-6 h-6 text-gray-400" />
             <div>
               <p className="text-gray-900 font-medium">
-                {presentableSlide ? 'Slide generated and ready for viewing' : 'No slide generated yet'}
+                {presentableSlide ? 'Ready for viewing' : 'No slide generated yet'}
               </p>
-              <p className="text-sm text-gray-600">Create professional presentations</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Professional Presentation Format</p>
             </div>
           </div>
           {project && project.id && (
             presentableSlide ? (
-              <button
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+              <Button
+                className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-none h-11 px-8"
                 onClick={() => navigate(`/projects/${project.id}/slide`)}
               >
                 View Slide
-              </button>
+              </Button>
             ) : (
-              <button
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50"
+              <Button
+                variant="outline"
+                className="border-black text-black hover:bg-black hover:text-white rounded-none h-11 px-8 transition-colors"
                 onClick={handleGenerateSlide}
                 disabled={isGenerating}
               >
                 {isGenerating ? 'Generating...' : 'Generate Slide'}
-              </button>
+              </Button>
             )
           )}
         </div>

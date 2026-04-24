@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { FiTrendingUp } from 'react-icons/fi';
+import { FiTrendingUp, FiSearch, FiCalendar, FiArrowRight, FiActivity } from 'react-icons/fi';
 import { HorizontalModal } from '@/components/ui/Modal';
 import { ResourceFrameworkSelector } from '@/components/assessment/ResourceFrameworkSelector';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 import type { Project } from '@/types/project';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface ProjectAnalysisSectionProps {
   project: Project;
@@ -42,29 +44,24 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
 
   return (
     <>
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-        <div className="px-8 py-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                <FiTrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">Project Analysis</h3>
-                <p className="text-sm text-gray-600">Comprehensive project assessments and insights</p>
-              </div>
+      <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden mb-8">
+        <CardHeader className="border-b border-gray-100 py-6 flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <FiActivity className="w-5 h-5 text-gray-400" />
+            <div>
+              <CardTitle className="text-xl font-medium text-gray-900">Project Analysis</CardTitle>
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Assessments and insights</p>
             </div>
-            <button
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-              onClick={() => setShowAssessmentModal(true)}
-            >
-              <FiTrendingUp className="mr-2 h-5 w-5" />
-              Analyse Project
-            </button>
           </div>
-        </div>
+          <Button
+            onClick={() => setShowAssessmentModal(true)}
+            className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-none h-10 px-6 font-normal"
+          >
+            Analyse Project
+          </Button>
+        </CardHeader>
         
-        <div className="p-8">
+        <CardContent className="p-8">
           {analysis.length > 0 ? (
             <div className="space-y-4">
               {[...analysis]
@@ -86,73 +83,62 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
                   }
                   
                   return (
-                    <div key={idx} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                              <FiTrendingUp className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="text-lg font-semibold text-gray-900">{name}</h4>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
-                              </p>
-                            </div>
+                    <div key={idx} className="group border border-gray-100 p-6 flex items-center justify-between transition-colors hover:border-gray-300">
+                      <div className="flex items-center gap-6">
+                        <FiSearch className="w-5 h-5 text-gray-300" />
+                        <div>
+                          <h4 className="text-base font-medium text-gray-900">{name}</h4>
+                          <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 uppercase tracking-widest">
+                            <FiCalendar className="w-3 h-3" />
+                            {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                            onClick={() => setViewAssessmentIdx(idx)}
-                          >
-                            View Analysis
-                          </button>
-                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        className="text-gray-400 hover:text-black group-hover:bg-gray-50 rounded-none"
+                        onClick={() => setViewAssessmentIdx(idx)}
+                      >
+                        View Analysis <FiArrowRight className="ml-2 w-3 h-3" />
+                      </Button>
                     </div>
                   );
                 })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FiTrendingUp className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analysis Available</h3>
-              <p className="text-gray-600">Start by analyzing your project to get insights and recommendations.</p>
+            <div className="text-center py-16 border border-dashed border-gray-100">
+              <FiSearch className="w-8 h-8 text-gray-200 mx-auto mb-4" />
+              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-2">No Analysis Available</h3>
+              <p className="text-xs text-gray-400">Start by analyzing your project to get insights.</p>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Assessment Modal */}
       <HorizontalModal open={showAssessmentModal} onClose={() => setShowAssessmentModal(false)}>
-        <div className="p-8 no-scrollbar bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+        <div className="p-12 bg-white min-h-screen">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FiTrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Assess Project</h2>
-              <p className="text-gray-600">Choose an assessment tier to analyze your project comprehensively</p>
+            <div className="mb-12">
+              <h2 className="text-3xl font-light text-gray-900 mb-2">Assess Project</h2>
+              <p className="text-xs text-gray-400 uppercase tracking-[0.2em]">Comprehensive analysis configuration</p>
             </div>
             
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
+            <div className="border border-gray-100 p-8 mb-12">
               <ResourceFrameworkSelector
                 onTierSelect={setSelectedTier}
                 selectedTier={selectedTier as any}
               />
             </div>
             
-            <div className="flex justify-center mt-8">
-              <button
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            <div className="flex justify-start">
+              <Button
+                className="bg-black text-white hover:bg-black/90 rounded-none h-14 px-12 text-lg font-light transition-all disabled:opacity-30"
                 disabled={!selectedTier}
                 onClick={handleStartAssessment}
               >
                 {selectedTier ? `Start ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Assessment` : 'Select Assessment Tier'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

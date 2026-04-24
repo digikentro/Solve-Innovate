@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface ExtremeUserReportViewerProps {
   data: any;
@@ -162,120 +163,119 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>Changes saved successfully!</span>
+        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-none shadow-xl z-50 flex items-center gap-2 border border-white/20">
+          <span className="text-xs uppercase tracking-widest">Changes saved successfully</span>
         </div>
       )}
 
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          <span>{errorText || 'Failed to save changes'}</span>
+        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-none shadow-xl z-50 flex items-center gap-2 border border-red-500">
+          <span className="text-xs uppercase tracking-widest text-red-500">{errorText || 'Failed to save changes'}</span>
         </div>
       )}
 
       {/* Header with Edit and Generate New Buttons */}
-      <div className="pb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Extreme User Analysis Report</h1>
-        <div className="flex items-center gap-3">
+      <div className="pb-8 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-medium text-gray-900">Extreme User Analysis</h1>
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Primary research report</p>
+        </div>
+        <div className="flex items-center gap-4">
           {!isEditMode && projectId && onSave && (
-            <button
+            <Button
+              variant="outline"
+              className="border-black text-black hover:bg-black hover:text-white rounded-none h-10 px-8 font-normal transition-colors"
               onClick={handleEditToggle}
-              className="px-6 py-2 text-[0.85rem] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-md"
             >
-              Edit
-            </button>
+              Edit Report
+            </Button>
           )}
           {onGenerateNew && (
-            <button
+            <Button
+              className="bg-black text-white hover:bg-black/90 rounded-none h-10 px-8 font-normal transition-colors"
               onClick={onGenerateNew}
-              className="px-6 py-2 text-[0.85rem] font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors rounded-md"
             >
               Generate New
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Edit Mode Banner */}
       {isEditMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-            <span className="text-blue-800 font-medium">Edit Mode - Click on text fields to edit</span>
+        <div className="bg-black text-white p-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] uppercase tracking-widest opacity-70">Status</span>
+            <span className="text-sm font-medium">Edit Mode Active — Modification enabled</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/10 rounded-none h-10 px-6 font-normal transition-colors"
               onClick={handleCancel}
-              className="px-4 py-2 text-[0.85rem] font-semibold bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-md"
               disabled={isSaving}
             >
-              Cancel
-            </button>
-            <button
+              Discard Changes
+            </Button>
+            <Button
+              className="bg-white text-black hover:bg-white/90 rounded-none h-10 px-8 font-normal transition-colors"
               onClick={handleSave}
-              className="px-4 py-2 text-[0.85rem] font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors rounded-md"
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         </div>
       )}
 
       {/* Pain Point Context */}
       {reportData.painPointAnalysis && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Pain Point Context</h2>
+        <section className="p-8 border border-gray-100">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Pain Point Context</h2>
           
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Step Analyzed</h3>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Step Analyzed</label>
               {isEditMode ? (
                 <input
                   type="text"
                   value={reportData.painPointAnalysis.step || ''}
                   onChange={(e) => updateTextAtPath(['painPointAnalysis', 'step'], e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors"
                 />
               ) : (
-                <p className="text-base pl-4">{reportData.painPointAnalysis.step}</p>
+                <p className="text-sm font-medium text-gray-900 border-l border-black pl-4">{reportData.painPointAnalysis.step}</p>
               )}
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.painPointAnalysis.description || ''}
-                  onChange={(e) => updateTextAtPath(['painPointAnalysis', 'description'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-4 leading-relaxed">{reportData.painPointAnalysis.description}</p>
-              )}
-            </div>
+            <div className="md:col-span-2 space-y-8">
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Description</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.painPointAnalysis.description || ''}
+                    onChange={(e) => updateTextAtPath(['painPointAnalysis', 'description'], e.target.value)}
+                    rows={3}
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.painPointAnalysis.description}</p>
+                )}
+              </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-2">User Context</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.painPointAnalysis.userContext || ''}
-                  onChange={(e) => updateTextAtPath(['painPointAnalysis', 'userContext'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-4 leading-relaxed">{reportData.painPointAnalysis.userContext}</p>
-              )}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">User Context</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.painPointAnalysis.userContext || ''}
+                    onChange={(e) => updateTextAtPath(['painPointAnalysis', 'userContext'], e.target.value)}
+                    rows={3}
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.painPointAnalysis.userContext}</p>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -284,129 +284,127 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
       {/* Power Users (High-Need Extreme) */}
       {reportData.extremeUserProfiles?.powerUsersHighNeedExtreme && 
        reportData.extremeUserProfiles.powerUsersHighNeedExtreme.length > 0 && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Power Users (High-Need Extreme)</h2>
-          <p className="text-sm text-gray-600 mb-6">
-            Users who push the boundaries and have amplified needs - Click to expand details
+        <section className="p-8 border border-gray-100">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Power Users (High-Need Extreme)</h2>
+          <p className="text-xs text-gray-400 mb-8 max-w-xl italic">
+            Users who push the boundaries and have amplified needs - Select to expand profile
           </p>
 
           <div className="space-y-4">
             {reportData.extremeUserProfiles.powerUsersHighNeedExtreme.map((user: any, index: number) => (
-              <div key={index} className="bg-white">
+              <div key={index} className="border border-gray-100">
                 {/* User Header */}
                 <button
                   onClick={() => toggleUser(index)}
-                  onMouseEnter={() => handleUserMouseEnter(index)}
-                  onMouseLeave={() => handleUserMouseLeave(index)}
-                  className={`w-full px-4 py-3 text-left transition-all duration-200 ${hoverUserId === index ? 'bg-gray-300 shadow-md scale-[1.01]' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`w-full px-6 py-4 text-left flex items-center justify-between transition-colors ${expandedUsers[index] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold">#{index + 1}</span>
-                      <span className="text-lg font-semibold">{user.label}</span>
-                    </div>
-                    <span className={`text-xl transition-transform duration-200 ${hoverUserId === index ? 'translate-y-[-1px]' : ''}`}>{expandedUsers[index] ? '−' : '+'}</span>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedUsers[index] ? 'opacity-70' : 'text-gray-400'}`}>User 0{index + 1}</span>
+                    <span className="text-sm font-medium">{user.label}</span>
                   </div>
+                  <span className="text-xs">{expandedUsers[index] ? 'CLOSE' : 'EXPAND'}</span>
                 </button>
 
                 {/* User Details */}
                 {expandedUsers[index] && (
-                  <div className="p-4 space-y-4 bg-gray-50">
-                    <div>
-                      <h4 className="font-bold mb-2">Demographics</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.demographics || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'demographics'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.demographics}</p>
-                      )}
+                  <div className="p-8 space-y-10 border-t border-gray-100 bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Demographics</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.demographics || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'demographics'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.demographics}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Amplified Needs</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.amplifiedNeeds || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'amplifiedNeeds'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.amplifiedNeeds}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Pain Point Experience</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.painPointExperience || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'painPointExperience'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.painPointExperience}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Current Workarounds</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.currentWorkarounds || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'currentWorkarounds'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.currentWorkarounds}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Unique Challenges</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.uniqueChallenges || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'uniqueChallenges'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.uniqueChallenges}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Focus Areas</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={user.interviewFocus || ''}
+                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'interviewFocus'], e.target.value)}
+                            rows={2}
+                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.interviewFocus}</p>
+                        )}
+                      </div>
                     </div>
 
-                    <div>
-                      <h4 className="font-bold mb-2">Amplified Needs</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.amplifiedNeeds || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'amplifiedNeeds'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.amplifiedNeeds}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold mb-2">Pain Point Experience</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.painPointExperience || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'painPointExperience'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.painPointExperience}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold mb-2">Current Workarounds</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.currentWorkarounds || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'currentWorkarounds'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.currentWorkarounds}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold mb-2">Unique Challenges</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.uniqueChallenges || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'uniqueChallenges'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.uniqueChallenges}</p>
-                      )}
-                    </div>
-
-                    <div className="pt-3 mt-3 bg-gray-100 p-3">
-                      <h4 className="font-bold mb-2">Research Value</h4>
+                    <div className="pt-8 border-t border-gray-100">
+                      <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-4">Research Value</label>
                       {isEditMode ? (
                         <textarea
                           value={user.researchValue || ''}
                           onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'researchValue'], e.target.value)}
                           rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500 font-semibold"
+                          className="w-full bg-white border border-black py-3 px-4 text-sm font-medium focus:outline-none transition-colors resize-none"
                         />
                       ) : (
-                        <p className="text-sm pl-4 font-semibold">{user.researchValue}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold mb-2">Interview Focus Areas</h4>
-                      {isEditMode ? (
-                        <textarea
-                          value={user.interviewFocus || ''}
-                          onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'interviewFocus'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <p className="text-sm pl-4">{user.interviewFocus}</p>
+                        <p className="text-sm font-medium text-gray-900 leading-relaxed bg-gray-50 p-6 border-l-2 border-black">{user.researchValue}</p>
                       )}
                     </div>
                   </div>
@@ -420,131 +418,129 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
       {/* Marginalized Users (Barrier-Facing Extreme) */}
       {reportData.extremeUserProfiles?.marginalizedUsersBarrierFacingExtreme && 
        reportData.extremeUserProfiles.marginalizedUsersBarrierFacingExtreme.length > 0 && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Marginalized Users (Barrier-Facing Extreme)</h2>
-          <p className="text-sm text-gray-600 mb-6">
-            Users who face significant barriers and exclusion - Click to expand details
+        <section className="p-8 border border-gray-100">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Marginalized Users (Barrier-Facing Extreme)</h2>
+          <p className="text-xs text-gray-400 mb-8 max-w-xl italic">
+            Users who face significant barriers and exclusion - Select to expand profile
           </p>
 
           <div className="space-y-4">
             {reportData.extremeUserProfiles.marginalizedUsersBarrierFacingExtreme.map((user: any, index: number) => {
               const userIndex = index + 1000; // Unique id to avoid conflicts with power users
               return (
-                <div key={index} className="bg-white">
+                <div key={index} className="border border-gray-100">
                   {/* User Header */}
                   <button
                     onClick={() => toggleUser(userIndex)}
-                    onMouseEnter={() => handleUserMouseEnter(userIndex)}
-                    onMouseLeave={() => handleUserMouseLeave(userIndex)}
-                    className={`w-full px-4 py-3 text-left transition-all duration-200 ${hoverUserId === userIndex ? 'bg-gray-300 shadow-md scale-[1.01]' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    className={`w-full px-6 py-4 text-left flex items-center justify-between transition-colors ${expandedUsers[userIndex] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold">#{index + 1}</span>
-                        <span className="text-lg font-semibold">{user.label}</span>
-                      </div>
-                      <span className={`text-xl transition-transform duration-200 ${hoverUserId === userIndex ? 'translate-y-[-1px]' : ''}`}>{expandedUsers[userIndex] ? '−' : '+'}</span>
+                    <div className="flex items-center gap-4">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedUsers[userIndex] ? 'opacity-70' : 'text-gray-400'}`}>User M{index + 1}</span>
+                      <span className="text-sm font-medium">{user.label}</span>
                     </div>
+                    <span className="text-xs">{expandedUsers[userIndex] ? 'CLOSE' : 'EXPAND'}</span>
                   </button>
 
                   {/* User Details */}
                   {expandedUsers[userIndex] && (
-                    <div className="p-4 space-y-4 bg-gray-50">
-                      <div>
-                        <h4 className="font-bold mb-2">Demographics</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.demographics || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'demographics'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.demographics}</p>
-                        )}
+                    <div className="p-8 space-y-10 border-t border-gray-100 bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Demographics</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.demographics || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'demographics'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.demographics}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Barriers Faced</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.barriersFaced || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'barriersFaced'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.barriersFaced}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Pain Point Experience</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.painPointExperience || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'painPointExperience'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.painPointExperience}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Exclusion Factors</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.exclusionFactors || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'exclusionFactors'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.exclusionFactors}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Unique Challenges</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.uniqueChallenges || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'uniqueChallenges'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.uniqueChallenges}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Focus Areas</label>
+                          {isEditMode ? (
+                            <textarea
+                              value={user.interviewFocus || ''}
+                              onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'interviewFocus'], e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.interviewFocus}</p>
+                          )}
+                        </div>
                       </div>
 
-                      <div>
-                        <h4 className="font-bold mb-2">Barriers Faced</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.barriersFaced || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'barriersFaced'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.barriersFaced}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold mb-2">Pain Point Experience</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.painPointExperience || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'painPointExperience'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.painPointExperience}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold mb-2">Exclusion Factors</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.exclusionFactors || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'exclusionFactors'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.exclusionFactors}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold mb-2">Unique Challenges</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.uniqueChallenges || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'uniqueChallenges'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.uniqueChallenges}</p>
-                        )}
-                      </div>
-
-                      <div className="pt-3 mt-3 bg-gray-100 p-3">
-                        <h4 className="font-bold mb-2">Research Value</h4>
+                      <div className="pt-8 border-t border-gray-100">
+                        <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-4">Research Value</label>
                         {isEditMode ? (
                           <textarea
                             value={user.researchValue || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'researchValue'], e.target.value)}
                             rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500 font-semibold"
+                            className="w-full bg-white border border-black py-3 px-4 text-sm font-medium focus:outline-none transition-colors resize-none"
                           />
                         ) : (
-                          <p className="text-sm pl-4 font-semibold">{user.researchValue}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold mb-2">Interview Focus Areas</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={user.interviewFocus || ''}
-                            onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'interviewFocus'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{user.interviewFocus}</p>
+                          <p className="text-sm font-medium text-gray-900 leading-relaxed bg-gray-50 p-6 border-l-2 border-black">{user.researchValue}</p>
                         )}
                       </div>
                     </div>
@@ -558,68 +554,74 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Research Strategy */}
       {reportData.researchStrategy && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Research Strategy</h2>
+        <section className="p-8 border border-gray-100">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Research Strategy</h2>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
             {reportData.researchStrategy.userRecruitment && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">User Recruitment</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">User Recruitment</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchStrategy.userRecruitment || ''}
                     onChange={(e) => updateTextAtPath(['researchStrategy', 'userRecruitment'], e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
                   />
                 ) : (
-                  <p className="text-sm pl-4">{reportData.researchStrategy.userRecruitment}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.researchStrategy.userRecruitment}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.interviewApproach && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Interview Approach</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Approach</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchStrategy.interviewApproach || ''}
                     onChange={(e) => updateTextAtPath(['researchStrategy', 'interviewApproach'], e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
                   />
                 ) : (
-                  <p className="text-sm pl-4">{reportData.researchStrategy.interviewApproach}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.researchStrategy.interviewApproach}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.keyInsightsToExplore && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Key Insights to Explore</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Key Insights to Explore</label>
                 {Array.isArray(reportData.researchStrategy.keyInsightsToExplore) ? (
-                  <ul className="list-disc list-inside space-y-1 pl-4">
+                  <ul className="space-y-2 border-l border-gray-100 pl-4">
                     {reportData.researchStrategy.keyInsightsToExplore.map((insight: string, i: number) => (
-                      <li key={i} className="text-sm">{insight}</li>
+                      <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                        <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                        {insight}
+                      </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm pl-4">{reportData.researchStrategy.keyInsightsToExplore}</p>
+                  <p className="text-sm text-gray-600 border-l border-gray-100 pl-4">{reportData.researchStrategy.keyInsightsToExplore}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.expectedBreakthroughAreas && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Expected Breakthrough Areas</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Expected Breakthrough Areas</label>
                 {Array.isArray(reportData.researchStrategy.expectedBreakthroughAreas) ? (
-                  <ul className="list-disc list-inside space-y-1 pl-4">
+                  <ul className="space-y-2 border-l border-gray-100 pl-4">
                     {reportData.researchStrategy.expectedBreakthroughAreas.map((area: string, i: number) => (
-                      <li key={i} className="text-sm">{area}</li>
+                      <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                        <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                        {area}
+                      </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm pl-4">{reportData.researchStrategy.expectedBreakthroughAreas}</p>
+                  <p className="text-sm text-gray-600 border-l border-gray-100 pl-4">{reportData.researchStrategy.expectedBreakthroughAreas}</p>
                 )}
               </div>
             )}
@@ -629,38 +631,38 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Design Implications */}
       {reportData.designImplications && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Design Implications</h2>
+        <section className="p-8 border border-gray-100">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Design Implications</h2>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
             {reportData.designImplications.powerUserInsights && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Power User Insights</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Power User Insights</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.designImplications.powerUserInsights || ''}
                     onChange={(e) => updateTextAtPath(['designImplications', 'powerUserInsights'], e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
                   />
                 ) : (
-                  <p className="text-sm pl-4">{reportData.designImplications.powerUserInsights}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.designImplications.powerUserInsights}</p>
                 )}
               </div>
             )}
 
             {reportData.designImplications.marginalizedUserInsights && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Marginalized User Insights</h3>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Marginalized User Insights</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.designImplications.marginalizedUserInsights || ''}
                     onChange={(e) => updateTextAtPath(['designImplications', 'marginalizedUserInsights'], e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
                   />
                 ) : (
-                  <p className="text-sm pl-4">{reportData.designImplications.marginalizedUserInsights}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.designImplications.marginalizedUserInsights}</p>
                 )}
               </div>
             )}
@@ -668,10 +670,13 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             {reportData.designImplications.solutionOpportunities && 
              reportData.designImplications.solutionOpportunities.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Solution Opportunities</h3>
-                <ul className="list-disc list-inside space-y-1 pl-4">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Solution Opportunities</label>
+                <ul className="space-y-2 border-l border-gray-100 pl-4">
                   {reportData.designImplications.solutionOpportunities.map((opportunity: string, i: number) => (
-                    <li key={i} className="text-sm">{opportunity}</li>
+                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                      <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                      {opportunity}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -680,10 +685,13 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             {reportData.designImplications.implementationConsiderations && 
              reportData.designImplications.implementationConsiderations.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Implementation Considerations</h3>
-                <ul className="list-disc list-inside space-y-1 pl-4">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Implementation Considerations</label>
+                <ul className="space-y-2 border-l border-gray-100 pl-4">
                   {reportData.designImplications.implementationConsiderations.map((consideration: string, i: number) => (
-                    <li key={i} className="text-sm">{consideration}</li>
+                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                      <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                      {consideration}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -694,8 +702,8 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Report Metadata */}
       {data.generated_at && (
-        <div className="text-sm text-gray-500 text-center pt-4">
-          Report generated on {new Date(data.generated_at).toLocaleString()}
+        <div className="text-[10px] text-gray-400 text-center pt-8 border-t border-gray-100 uppercase tracking-[0.2em]">
+          Generated on {new Date(data.generated_at).toLocaleString()} — Solver Labs Research Engine
         </div>
       )}
     </div>
