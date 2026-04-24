@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { HorizontalModal } from '@/components/ui/Modal';
 import { toast } from 'react-hot-toast';
@@ -165,7 +166,7 @@ export const AsIsMapForm: React.FC<{
                     onClick={handleGenerate}
                     disabled={!prompt.trim() || isGenerating}
                 >
-                    {isGenerating ? 'Generating...' : 'Generate AS-IS Map'}
+                    {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Generating...</> : 'Generate AS-IS Map'}
                 </button>
             </div>
         </div>

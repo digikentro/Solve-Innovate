@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { FiCheck, FiFileText, FiInfo, FiLink, FiLoader, FiPlus, FiSave, FiTrash2, FiTrendingUp, FiUpload, FiX } from 'react-icons/fi';
 import type { Project } from '@/types/project';
@@ -19,7 +20,7 @@ import { Button } from '@/components/ui/button';
 
 export const ProjectInfo = ({ project }: ProjectInfoProps) => {
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden mb-8">
+    <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
       <CardHeader className="border-b border-gray-100 py-6">
         <CardTitle className="text-xl font-medium text-gray-900 flex items-center gap-3">
           <FiInfo className="w-5 h-5 text-gray-400" />
@@ -44,7 +45,7 @@ export const ProjectInfo = ({ project }: ProjectInfoProps) => {
                   {project.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center px-3 py-1 rounded-none text-xs font-medium bg-white text-gray-600 border border-gray-200"
+                      className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-medium bg-white text-gray-600 border border-gray-200"
                     >
                       {skill}
                     </span>
@@ -239,7 +240,7 @@ export const SecondaryResearchSection = ({
   };
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden mb-8">
+    <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
       <CardHeader className="border-b border-gray-100 py-5 flex flex-row items-center justify-between gap-4 flex-wrap">
         <div>
           <CardTitle className="text-xl font-medium text-gray-900 flex items-center gap-3">
@@ -254,9 +255,9 @@ export const SecondaryResearchSection = ({
         <Button
           onClick={handleSaveAndUpload}
           disabled={isSaving}
-          className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-none h-10 px-6 font-normal"
+          className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-xl h-10 px-6 font-normal"
         >
-          {isSaving ? 'Saving...' : 'Save and Upload'}
+          {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save and Upload'}
         </Button>
       </CardHeader>
 

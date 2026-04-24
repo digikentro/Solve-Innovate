@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -69,15 +70,24 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
     }
   };
 
-  const updateTextAtPath = (path: string[], value: string) => {
-    setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return updated;
+  const updateTextAtPath = (path: string[], value: string) => {    setEditedData((prev: any) => {
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, path);
     });
   };
 
@@ -131,7 +141,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                 className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md transition-colors"
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save'}
               </button>
             </div>
           </div>
@@ -163,13 +173,13 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-none shadow-xl z-50 flex items-center gap-2 border border-white/20">
+        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2 border border-white/20">
           <span className="text-xs uppercase tracking-widest">Changes saved successfully</span>
         </div>
       )}
 
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-none shadow-xl z-50 flex items-center gap-2 border border-red-500">
+        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2 border border-red-500">
           <span className="text-xs uppercase tracking-widest text-red-500">{errorText || 'Failed to save changes'}</span>
         </div>
       )}
@@ -184,7 +194,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
           {!isEditMode && projectId && onSave && (
             <Button
               variant="outline"
-              className="border-black text-black hover:bg-black hover:text-white rounded-none h-10 px-8 font-normal transition-colors"
+              className="border-black text-black hover:bg-black hover:text-white rounded-xl h-10 px-8 font-normal transition-colors"
               onClick={handleEditToggle}
             >
               Edit Report
@@ -192,7 +202,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
           )}
           {onGenerateNew && (
             <Button
-              className="bg-black text-white hover:bg-black/90 rounded-none h-10 px-8 font-normal transition-colors"
+              className="bg-black text-white hover:bg-black/90 rounded-xl h-10 px-8 font-normal transition-colors"
               onClick={onGenerateNew}
             >
               Generate New
@@ -211,18 +221,18 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              className="text-white hover:bg-white/10 rounded-none h-10 px-6 font-normal transition-colors"
+              className="text-white hover:bg-white/10 rounded-xl h-10 px-6 font-normal transition-colors"
               onClick={handleCancel}
               disabled={isSaving}
             >
               Discard Changes
             </Button>
             <Button
-              className="bg-white text-black hover:bg-white/90 rounded-none h-10 px-8 font-normal transition-colors"
+              className="bg-white text-black hover:bg-white/90 rounded-xl h-10 px-8 font-normal transition-colors"
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save Changes'}
             </Button>
           </div>
         </div>

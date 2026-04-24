@@ -370,7 +370,7 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className={`h-full flex bg-[#faf8f5] transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'} overflow-hidden`}>
+    <div className="h-full flex bg-[#faf8f5] overflow-hidden font-sans">
       {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
       <aside className={`
         absolute lg:relative top-0 left-0 h-full w-64 flex-shrink-0

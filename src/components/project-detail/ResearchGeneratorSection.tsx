@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiTerminal, FiChevronRight, FiDatabase, FiUsers } from 'react-icons/fi';
@@ -244,7 +245,7 @@ export const ResearchGeneratorSection = ({
   return (
     <>
       {!showReport ? (
-        <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden">
+        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
           <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
@@ -258,7 +259,7 @@ export const ResearchGeneratorSection = ({
             {onShowPainPointsModal && (
               <Button
                 variant="outline"
-                className="border-black text-black hover:bg-black hover:text-white rounded-none h-10 px-6 font-normal transition-colors"
+                className="border-black text-black hover:bg-black hover:text-white rounded-xl h-10 px-6 font-normal transition-colors"
                 onClick={onShowPainPointsModal}
               >
                 Choose Pain Point
@@ -389,9 +390,9 @@ export const ResearchGeneratorSection = ({
                   <Button
                     onClick={handleGenerate}
                     disabled={isLoading || isGenerating}
-                    className="bg-black text-white hover:bg-black/90 rounded-none h-14 px-10 font-normal transition-all"
+                    className="bg-black text-white hover:bg-black/90 rounded-xl h-14 px-10 font-normal transition-all"
                   >
-                    {isLoading || isGenerating ? 'Generating...' : (
+                    {isLoading || isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Generating...</> : (
                       <span className="flex items-center gap-2">
                         Generate {title} <FiChevronRight className="w-4 h-4" />
                       </span>

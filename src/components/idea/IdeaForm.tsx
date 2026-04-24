@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -181,7 +182,7 @@ export const IdeaForm = ({ initialData, onSuccess }: IdeaFormProps) => {
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 <FiZap className="-ml-0.5 mr-1.5 h-4 w-4" />
-                {isGenerating ? 'Generating...' : 'Generate Ideas'}
+                {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Generating...</> : 'Generate Ideas'}
               </button>
               <button
                 type="button"
@@ -190,7 +191,7 @@ export const IdeaForm = ({ initialData, onSuccess }: IdeaFormProps) => {
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 <FiRefreshCw className="-ml-0.5 mr-1.5 h-4 w-4" />
-                {isGenerating ? 'Refining...' : 'Refine with AI'}
+                {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Refining...</> : 'Refine with AI'}
               </button>
             </div>
           </div>

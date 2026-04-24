@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState, useRef } from 'react';
 
 interface AsIsMapReportViewerProps {
@@ -173,7 +174,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               ) : (
                 <div className="flex gap-2">
                   <button onClick={handleCancel} disabled={isSaving} className="px-6 h-10 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black disabled:opacity-50">Discard</button>
-                  <button onClick={handleSave} disabled={isSaving} className="px-8 h-10 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-black/90 disabled:opacity-50">{isSaving ? 'Saving...' : 'Save Changes'}</button>
+                  <button onClick={handleSave} disabled={isSaving} className="px-8 h-10 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-black/90 disabled:opacity-50">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save Changes'}</button>
                 </div>
               )}
             </>

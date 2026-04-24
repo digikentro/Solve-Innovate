@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FiChevronDown, FiChevronUp, FiEdit3, FiRefreshCw, FiSave, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
@@ -57,27 +58,46 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
     }
   };
 
-  const updateTextAtPath = (path: string[], value: string) => {
-    setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return updated;
+  const updateTextAtPath = (path: string[], value: string) => {    setEditedData((prev: any) => {
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, path);
     });
   };
 
-  const updateArrayItemAtPath = (path: string[], index: number, value: string) => {
-    setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length; i++) {
-        current = current[path[i]];
-      }
-      current[index] = value;
-      return updated;
+  const updateArrayItemAtPath = (path: string[], index: number, value: string) => {    setEditedData((prev: any) => {
+      const fullPath = [...path, index];
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, fullPath);
     });
   };
 
@@ -147,7 +167,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
                 <Button
                   variant="outline"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-none h-12 px-8 font-normal transition-all"
+                  className="border-black text-black hover:bg-black hover:text-white rounded-xl h-12 px-8 font-normal transition-all"
                 >
                   <FiEdit3 className="mr-2 w-4 h-4" /> Edit Report
                 </Button>
@@ -155,7 +175,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               {onGenerateNew && (
                 <Button
                   onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-none h-12 px-8 font-normal transition-all"
+                  className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-8 font-normal transition-all"
                 >
                   <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
                 </Button>
@@ -166,7 +186,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               <Button
                 variant="ghost"
                 onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-none h-12 px-6 font-normal transition-all"
+                className="text-gray-400 hover:text-black rounded-xl h-12 px-6 font-normal transition-all"
                 disabled={isSaving}
               >
                 <FiX className="mr-2 w-4 h-4" /> Discard
@@ -174,9 +194,9 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-none h-12 px-10 font-normal transition-all"
+                className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-10 font-normal transition-all"
               >
-                <FiSave className="mr-2 w-4 h-4" /> {isSaving ? 'Saving...' : 'Commit Changes'}
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
               </Button>
             </>
           )}

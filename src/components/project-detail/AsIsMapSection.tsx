@@ -37,7 +37,7 @@ export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderRep
   return (
     <>
       {!hasData ? (
-        <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden mb-8">
+        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
           <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">

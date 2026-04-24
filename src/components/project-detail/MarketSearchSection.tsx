@@ -3,6 +3,8 @@ import { toast } from 'react-hot-toast';
 import { FiSearch, FiLoader } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { MarketResearchReportViewer } from './MarketResearchReportViewer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface MarketSearchSectionProps {
     project: Project;
@@ -206,39 +208,44 @@ export const MarketSearchSection = ({
 
     // Show generate button only
     return (
-        <div className="space-y-6">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-3xl shadow-lg p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-start gap-3">
-                        <div className="p-3 rounded-2xl bg-white/10">
-                            <FiSearch className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Market Search</h2>
-                            <p className="text-sm text-emerald-100 mt-1">
-                                Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project.
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isGenerating}
-                        className="px-8 py-4 bg-white text-emerald-700 font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
-                    >
-                        {isGenerating ? (
-                            <>
-                                <FiLoader className="w-5 h-5 animate-spin" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <FiSearch className="w-5 h-5" />
-                                Generate Market Research
-                            </>
-                        )}
-                    </button>
-                </div>
+        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
+          <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
+                <FiSearch className="w-5 h-5 text-gray-400" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-medium text-gray-900">Market Search</CardTitle>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Comprehensive market research generation</p>
+              </div>
             </div>
-        </div>
+          </CardHeader>
+          
+          <CardContent className="p-8">
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project insights, testing scenarios, and prototype details.
+              </p>
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                size="lg"
+                className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
+              >
+                {isGenerating ? (
+                  <>
+                    <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FiSearch className="w-4 h-4 mr-2" />
+                    Generate Market Research
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
     );
 };

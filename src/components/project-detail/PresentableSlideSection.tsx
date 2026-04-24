@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -36,7 +37,7 @@ export const PresentableSlideSection = ({ project, presentableSlide, setPresenta
   return (
     <div className="group">
       <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Presentable Slide</dt>
-      <dd className="border border-gray-100 p-8 rounded-none">
+      <dd className="border border-gray-100 p-8 rounded-xl">
         <div className="flex items-center justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4">
             <FiMonitor className="w-6 h-6 text-gray-400" />
@@ -50,7 +51,7 @@ export const PresentableSlideSection = ({ project, presentableSlide, setPresenta
           {project && project.id && (
             presentableSlide ? (
               <Button
-                className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-none h-11 px-8"
+                className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-xl h-11 px-8"
                 onClick={() => navigate(`/projects/${project.id}/slide`)}
               >
                 View Slide
@@ -58,11 +59,11 @@ export const PresentableSlideSection = ({ project, presentableSlide, setPresenta
             ) : (
               <Button
                 variant="outline"
-                className="border-black text-black hover:bg-black hover:text-white rounded-none h-11 px-8 transition-colors"
+                className="border-black text-black hover:bg-black hover:text-white rounded-xl h-11 px-8 transition-colors"
                 onClick={handleGenerateSlide}
                 disabled={isGenerating}
               >
-                {isGenerating ? 'Generating...' : 'Generate Slide'}
+                {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Generating...</> : 'Generate Slide'}
               </Button>
             )
           )}

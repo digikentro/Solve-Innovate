@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { FiTarget, FiLoader } from 'react-icons/fi';
+import { Target, Loader2 } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { TransformationFrameworkReportViewer } from './TransformationFrameworkReportViewer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface TransformationFrameworkSectionProps {
     project: Project;
@@ -85,76 +87,68 @@ export const TransformationFrameworkSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-                <TransformationFrameworkReportViewer
-                    data={transformationFrameworkData}
-                    onGenerateNew={handleGenerateNew}
-                    projectId={project.id}
-                    onSave={onSaveData}
-                />
-            </div>
+            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
+                <CardContent className="p-6">
+                    <TransformationFrameworkReportViewer
+                        data={transformationFrameworkData}
+                        onGenerateNew={handleGenerateNew}
+                        projectId={project.id}
+                        onSave={onSaveData}
+                    />
+                </CardContent>
+            </Card>
         );
     }
 
     // Show generate button only
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-3xl shadow-lg p-8">
-                <div className="flex items-start gap-4">
-                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
-                        <FiTarget className="w-8 h-8" />
+            {/* Header Card */}
+            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
+                <CardHeader className="px-8 py-6 border-b border-gray-100">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
+                            <Target className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-xl font-medium text-gray-900">Transformation Framework</CardTitle>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                                Psychological transformation insights
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-3xl font-bold">Transformation Framework</h2>
-                        <p className="text-indigo-100 mt-2 text-lg">
+                </CardHeader>
+
+                <CardContent className="p-8">
+                    <div className="space-y-6">
+                        <p className="text-sm text-gray-600 leading-relaxed">
                             Generate psychological transformation insights that bridge behavior patterns to actionable outcomes.
                             This framework identifies irrationality clusters and provides outcome-driven solutions.
                         </p>
-                    </div>
-                </div>
-            </div>
 
-            {/* Generate Button */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-                <div className="text-center space-y-6">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100">
-                        <FiTarget className="w-10 h-10 text-indigo-600" />
+                        <div className="flex justify-end">
+                            <Button
+                                onClick={handleGenerate}
+                                disabled={isGenerating}
+                                size="lg"
+                                className="bg-primary text-white hover:bg-primary/90"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Target className="mr-2 h-4 w-4" />
+                                        Generate Framework
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            Generate Transformation Framework
-                        </h3>
-                        <p className="text-gray-600 max-w-md mx-auto">
-                            Analyze irrationality clusters and psychological patterns to create outcome-driven transformation insights for your project.
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isGenerating}
-                        className={`
-                            inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg
-                            transition-all duration-200 shadow-lg
-                            ${isGenerating
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white hover:shadow-xl transform hover:-translate-y-0.5'
-                            }
-                        `}
-                    >
-                        {isGenerating ? (
-                            <>
-                                <FiLoader className="w-5 h-5 animate-spin" />
-                                Generating Framework...
-                            </>
-                        ) : (
-                            <>
-                                <FiTarget className="w-5 h-5" />
-                                Generate Transformation Framework
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     );
 };

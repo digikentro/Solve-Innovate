@@ -1,8 +1,12 @@
+import { Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiActivity, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { TestingReportViewer } from './TestingReportViewer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface TestingSectionProps {
     project: Project;
@@ -210,21 +214,7 @@ export const TestingSection = ({
         setTestingData(null);
     };
 
-    const DataCard = ({ title, content, isEmpty }: { title: string; content: React.ReactNode; isEmpty?: boolean }) => (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-                {isEmpty ? (
-                    <FiAlertCircle className="w-4 h-4 text-amber-500" />
-                ) : (
-                    <FiCheck className="w-4 h-4 text-green-500" />
-                )}
-                <h4 className="text-sm font-semibold text-gray-700">{title}</h4>
-            </div>
-            <div className="text-sm text-gray-600">
-                {isEmpty ? <span className="italic text-gray-400">No data available</span> : content}
-            </div>
-        </div>
-    );
+    const DataCard = ({ title, content, isEmpty }: { title: string; content: React.ReactNode; isEmpty?: boolean }) => null;
 
     // Show report viewer if data exists
     if (hasData) {
@@ -242,155 +232,205 @@ export const TestingSection = ({
     // Show form if no data
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-3xl shadow-lg p-6">
-                <div className="flex items-start gap-3">
-                    <div className="p-3 rounded-2xl bg-white/10">
-                        <FiActivity className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold">Testing</h2>
-                        <p className="text-sm text-cyan-100 mt-1">
-                            Generate comprehensive testing scenarios for your prototype. Product details are auto-filled from your project data.
-                        </p>
-                    </div>
+            {/* Header Card */}
+            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
+              <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
+                    <FiActivity className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-medium text-gray-900">Testing</CardTitle>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Generate comprehensive testing scenarios</p>
+                  </div>
                 </div>
-            </div>
-
-            {/* User Input Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Input</h3>
+              </CardHeader>
+              
+              <CardContent className="p-8 space-y-8">
+                {/* User Input Section */}
                 <div className="space-y-4">
-                    <div>
-                        <label htmlFor="productName" className="block text-sm font-medium text-gray-700 mb-2">
-                            Product Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="productName"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                            placeholder="Enter your product name..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                        />
+                  <h3 className="text-sm font-semibold text-gray-900">Your Input</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="productName" className="text-sm font-semibold text-gray-900">
+                        Product Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        id="productName"
+                        type="text"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        placeholder="Enter your product name..."
+                      />
                     </div>
-                    <div>
-                        <label htmlFor="specificFocus" className="block text-sm font-medium text-gray-700 mb-2">
-                            Specific Focus Areas <span className="text-gray-400">(Optional)</span>
-                        </label>
-                        <textarea
-                            id="specificFocus"
-                            value={specificFocus}
-                            onChange={(e) => setSpecificFocus(e.target.value)}
-                            placeholder="Any specific concerns, edge cases, or areas to focus on during testing..."
-                            rows={3}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none transition-all duration-200"
-                        />
+                    <div className="space-y-2">
+                      <label htmlFor="specificFocus" className="text-sm font-semibold text-gray-900">
+                        Specific Focus Areas <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+                      </label>
+                      <textarea
+                        id="specificFocus"
+                        value={specificFocus}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpecificFocus(e.target.value)}
+                        placeholder="Any specific concerns, edge cases, or areas to focus on during testing..."
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
+                      />
                     </div>
-                </div>
-            </div>
-
-            {/* Auto-Populated Data Preview */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Auto-Populated from Project Data
-                    <span className="text-sm font-normal text-gray-500 ml-2">(Read-only)</span>
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DataCard
-                        title="Problem Statement"
-                        content={<p className="line-clamp-3">{autoPopulatedData.problemStatement}</p>}
-                        isEmpty={!autoPopulatedData.problemStatement}
-                    />
-
-                    <DataCard
-                        title="Target Users"
-                        content={<p className="line-clamp-3">{autoPopulatedData.targetUsers}</p>}
-                        isEmpty={!autoPopulatedData.targetUsers}
-                    />
-
-                    <DataCard
-                        title="Key Features"
-                        content={
-                            <ul className="list-disc list-inside space-y-1">
-                                {autoPopulatedData.keyFeatures.slice(0, 5).map((f, i) => (
-                                    <li key={i} className="line-clamp-1">{f}</li>
-                                ))}
-                            </ul>
-                        }
-                        isEmpty={autoPopulatedData.keyFeatures.length === 0}
-                    />
-
-                    <DataCard
-                        title="User Scenarios"
-                        content={
-                            <ul className="list-disc list-inside space-y-1">
-                                {autoPopulatedData.userScenarios.map((s, i) => (
-                                    <li key={i} className="line-clamp-1">{s}</li>
-                                ))}
-                            </ul>
-                        }
-                        isEmpty={autoPopulatedData.userScenarios.length === 0}
-                    />
-
-                    <DataCard
-                        title="Design Stage"
-                        content={
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${autoPopulatedData.designStage === 'Refined Prototype'
-                                ? 'bg-green-100 text-green-700'
-                                : autoPopulatedData.designStage === 'Rough Prototype'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                {autoPopulatedData.designStage}
-                            </span>
-                        }
-                    />
-
-                    <DataCard
-                        title="Prototype Artifacts"
-                        content={
-                            <div className="flex gap-2">
-                                {autoPopulatedData.prototypeArtifacts.sketch && (
-                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Sketch ✓</span>
-                                )}
-                                {autoPopulatedData.prototypeArtifacts.image && (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Image ✓</span>
-                                )}
-                                {!autoPopulatedData.prototypeArtifacts.sketch && !autoPopulatedData.prototypeArtifacts.image && (
-                                    <span className="text-gray-400 italic">None generated yet</span>
-                                )}
-                            </div>
-                        }
-                    />
+                  </div>
                 </div>
 
-                {autoPopulatedData.featureDescriptions.length > 0 && (
-                    <div className="mt-4">
-                        <DataCard
-                            title="Feature Descriptions"
-                            content={
-                                <ul className="space-y-2">
-                                    {autoPopulatedData.featureDescriptions.map((desc, i) => (
-                                        <li key={i} className="text-sm">{desc}</li>
-                                    ))}
-                                </ul>
-                            }
-                        />
-                    </div>
-                )}
-            </div>
+                {/* Auto-Populated Data Preview */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Auto-Populated from Project Data</h3>
+                    <p className="text-xs text-muted-foreground mt-1">(Read-only)</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          {autoPopulatedData.problemStatement ? (
+                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-xs font-semibold text-gray-700">Problem Statement</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-3">
+                          {autoPopulatedData.problemStatement || <span className="italic text-muted-foreground">No data available</span>}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          {autoPopulatedData.targetUsers ? (
+                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-xs font-semibold text-gray-700">Target Users</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-3">
+                          {autoPopulatedData.targetUsers || <span className="italic text-muted-foreground">No data available</span>}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          {autoPopulatedData.keyFeatures.length > 0 ? (
+                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-xs font-semibold text-gray-700">Key Features</h4>
+                        </div>
+                        {autoPopulatedData.keyFeatures.length > 0 ? (
+                          <ul className="list-disc list-inside space-y-1">
+                            {autoPopulatedData.keyFeatures.slice(0, 3).map((f, i) => (
+                              <li key={i} className="text-xs text-gray-600 line-clamp-1">{f}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs italic text-muted-foreground">No data available</span>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          {autoPopulatedData.userScenarios.length > 0 ? (
+                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-xs font-semibold text-gray-700">User Scenarios</h4>
+                        </div>
+                        {autoPopulatedData.userScenarios.length > 0 ? (
+                          <ul className="list-disc list-inside space-y-1">
+                            {autoPopulatedData.userScenarios.slice(0, 3).map((s, i) => (
+                              <li key={i} className="text-xs text-gray-600 line-clamp-1">{s}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs italic text-muted-foreground">No data available</span>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <h4 className="text-xs font-semibold text-gray-700">Design Stage</h4>
+                        </div>
+                        <span className={`inline-flex text-xs font-medium px-2 py-1 rounded ${autoPopulatedData.designStage === 'Refined Prototype'
+                          ? 'bg-green-100 text-green-700'
+                          : autoPopulatedData.designStage === 'Rough Prototype'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                          }`}>
+                          {autoPopulatedData.designStage}
+                        </span>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          {autoPopulatedData.prototypeArtifacts.sketch || autoPopulatedData.prototypeArtifacts.image ? (
+                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <h4 className="text-xs font-semibold text-gray-700">Prototype Artifacts</h4>
+                        </div>
+                        <div className="flex gap-2">
+                          {autoPopulatedData.prototypeArtifacts.sketch && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Sketch ✓</span>
+                          )}
+                          {autoPopulatedData.prototypeArtifacts.image && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Image ✓</span>
+                          )}
+                          {!autoPopulatedData.prototypeArtifacts.sketch && !autoPopulatedData.prototypeArtifacts.image && (
+                            <span className="text-xs text-muted-foreground italic">None generated yet</span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {autoPopulatedData.featureDescriptions.length > 0 && (
+                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
+                      <CardContent className="pt-4">
+                        <h4 className="text-xs font-semibold text-gray-700 mb-3">Feature Descriptions</h4>
+                        <ul className="space-y-2">
+                          {autoPopulatedData.featureDescriptions.map((desc, i) => (
+                            <li key={i} className="text-xs text-gray-600">{desc}</li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Generate Button */}
             <div className="flex justify-end">
-                <button
+                <Button
                     onClick={handleGenerate}
                     disabled={isGenerating || !productName.trim()}
-                    className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    size="lg"
+                    className="bg-primary text-white hover:bg-primary/90"
                 >
-                    {isGenerating ? 'Generating Testing Scenarios...' : 'Generate Testing Scenarios'}
-                </button>
+                    {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate Testing Scenarios'}
+                </Button>
             </div>
         </div>
     );

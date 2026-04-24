@@ -134,7 +134,7 @@ export const GenericReportViewer = ({ data, title, onGenerateNew }: GenericRepor
           {onGenerateNew && (
             <Button
               variant="outline"
-              className="border-black text-black hover:bg-black hover:text-white rounded-none h-10 px-6 font-normal transition-colors"
+              className="border-black text-black hover:bg-black hover:text-white rounded-xl h-10 px-6 font-normal transition-colors"
               onClick={onGenerateNew}
             >
               Generate New

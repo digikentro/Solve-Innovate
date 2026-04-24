@@ -44,7 +44,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
 
   return (
     <>
-      <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden mb-8">
+      <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
         <CardHeader className="border-b border-gray-100 py-6 flex flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <FiActivity className="w-5 h-5 text-gray-400" />
@@ -55,7 +55,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
           </div>
           <Button
             onClick={() => setShowAssessmentModal(true)}
-            className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-none h-10 px-6 font-normal"
+            className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-xl h-10 px-6 font-normal"
           >
             Analyse Project
           </Button>
@@ -96,7 +96,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
                       </div>
                       <Button
                         variant="ghost"
-                        className="text-gray-400 hover:text-black group-hover:bg-gray-50 rounded-none"
+                        className="text-gray-400 hover:text-black group-hover:bg-gray-50 rounded-xl"
                         onClick={() => setViewAssessmentIdx(idx)}
                       >
                         View Analysis <FiArrowRight className="ml-2 w-3 h-3" />
@@ -133,7 +133,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
             
             <div className="flex justify-start">
               <Button
-                className="bg-black text-white hover:bg-black/90 rounded-none h-14 px-12 text-lg font-light transition-all disabled:opacity-30"
+                className="bg-black text-white hover:bg-black/90 rounded-xl h-14 px-12 text-lg font-light transition-all disabled:opacity-30"
                 disabled={!selectedTier}
                 onClick={handleStartAssessment}
               >
