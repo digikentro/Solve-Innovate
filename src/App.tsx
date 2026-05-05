@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -22,7 +22,6 @@ import { RegisterPage } from '@/pages/RegisterPage';
 import ProjectEditPage from '@/pages/ProjectEditPage';
 import { EditProfilePage } from '@/pages/ProfilePage';
 import ProjectSlidePage from '@/pages/ProjectSlidePage';
-import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
 import { ChatPage } from '@/pages/ChatPage';
@@ -35,6 +34,8 @@ import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { WorkspaceProvider } from '@/contexts/WorkspaceContext';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+
+const ProjectCanvasPage = lazy(() => import('@/pages/ProjectCanvasPage'));
 
 // Dashboard component (protected route)
 const Dashboard = () => {
@@ -215,7 +216,14 @@ function App() {
               <Route path="projects/:id" element={<ProjectDetailPage />} />
               <Route path="projects/:id/edit" element={<ProjectEditPage />} />
               <Route path="projects/:id/slide" element={<ProjectSlidePage />} />
-              <Route path="projects/:id/canvas" element={<ProjectCanvasPage />} />
+              <Route
+                path="projects/:id/canvas"
+                element={
+                  <Suspense fallback={<div className="p-6">Loading canvas…</div>}>
+                    <ProjectCanvasPage />
+                  </Suspense>
+                }
+              />
               <Route path="projects/:id/deep_empathy" element={<UniversalDeepEmpathyPage />} />
               <Route path="projects/:id/chat" element={<ChatPage />} />
               <Route path="dashboard" element={<Navigate to="/workspace" replace />} />

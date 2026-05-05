@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Project } from '@/types/project';
 import { useAuth } from '@/contexts/AuthContext';
-import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
+import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { PresentableSlideCard } from '@/components/project/PresentableSlideCard';

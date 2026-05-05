@@ -297,19 +297,20 @@ export function SidebarLayout() {
 
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Persistent Global Plasma Background */}
-        <div className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 ${showPlasma ? 'opacity-100' : 'opacity-0'}`} style={{ willChange: 'opacity' }}>
-          <Plasma 
-            color="#ffffffff"
-            speed={0.25}
-            opacity={0.20}
-            scale={2.5}
-            iterations={30}
-            mouseInteractive={false}
-          />
-          {/* Subtle overlay to soften the plasma on light pages if needed */}
-          <div className="absolute inset-0 bg-indigo-50/10 pointer-events-none" />
-        </div>
+        {/* Plasma background: mount only while enabled so WebGL does not run when hidden. */}
+        {showPlasma ? (
+          <div className="fixed inset-0 z-0 pointer-events-none opacity-100 transition-opacity duration-1000" style={{ willChange: 'opacity' }}>
+            <Plasma 
+              color="#ffffffff"
+              speed={0.25}
+              opacity={0.20}
+              scale={2.5}
+              iterations={30}
+              mouseInteractive={false}
+            />
+            <div className="absolute inset-0 bg-indigo-50/10 pointer-events-none" />
+          </div>
+        ) : null}
 
         {/* Topbar */}
         <header className="h-16 flex-shrink-0 flex items-center justify-between px-4 lg:px-8 border-b border-gray-100 bg-white/50 backdrop-blur-sm z-10">

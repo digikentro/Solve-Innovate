@@ -23,24 +23,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and set the user
+    let cancelled = false;
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const timeoutMs = 12_000;
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timed out')), timeoutMs)
+        );
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        if (cancelled) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch {
+        if (cancelled) return;
+        setSession(null);
+        setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
     getSession();
 
-    // Listen for changes in auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => {
+      cancelled = true;
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -114,7 +129,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-background text-gray-900">
+          <p className="text-sm text-gray-600">Loading…</p>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };
