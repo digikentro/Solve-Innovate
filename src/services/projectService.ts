@@ -42,6 +42,8 @@ export class ProjectService {
             .from('projects')
             .insert([{
               ...sanitizedData,
+              // Always initialize sidebar display name to the HMW/title unless explicitly provided.
+              display_name: (sanitizedData as any)?.display_name ?? (sanitizedData as any)?.title,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()

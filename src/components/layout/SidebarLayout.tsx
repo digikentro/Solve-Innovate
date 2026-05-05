@@ -24,6 +24,7 @@ import {
 import { Plasma } from '@/components/ui/Plasma';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 import { toast } from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 export function SidebarLayout() {
   const { user, signOut } = useAuth();
@@ -81,6 +82,33 @@ export function SidebarLayout() {
   };
 
   const closeMobileMenu = () => setIsMobileOpen(false);
+
+  const handleRenameProject = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    const current = (project.display_name ?? project.title ?? '').trim();
+    const next = window.prompt('Project name (shown in sidebar)', current);
+    if (next === null) return; // cancelled
+    const trimmed = next.trim();
+    if (!trimmed) {
+      toast.error('Project name cannot be empty.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ display_name: trimmed })
+        .eq('id', project.id);
+      if (error) throw error;
+
+      setProjects((prev) =>
+        prev.map((p) => (p.id === project.id ? { ...p, display_name: trimmed } : p))
+      );
+      toast.success('Project name updated.');
+    } catch {
+      toast.error('Failed to update project name.');
+    }
+  };
 
   /** Navigate forward to project detail */
   const goForward = (path: string) => {
@@ -202,7 +230,7 @@ export function SidebarLayout() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="truncate text-sm text-gray-700 flex items-center gap-2">
-                            <span className="truncate">{project.title}</span>
+                            <span className="truncate">{project.display_name || project.title}</span>
                             {isNew && (
                               <span className="flex-shrink-0 text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
                                 New
@@ -244,6 +272,16 @@ export function SidebarLayout() {
                           >
                             <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
                             Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              setMenuOpenId(null);
+                              handleRenameProject(e, project);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-gray-500" />
+                            Rename
                           </button>
                           <button
                             onClick={(e) => handleDeleteProject(e, project.id)}

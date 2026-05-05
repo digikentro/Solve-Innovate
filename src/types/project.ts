@@ -1,6 +1,11 @@
 export interface Project {
   id: string;
   title: string;
+  /**
+   * User-editable sidebar/project label.
+   * Defaults to `title` when not customized.
+   */
+  display_name?: string | null;
   description: string;
   status: string;
   skills?: string[] | null;
