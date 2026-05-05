@@ -138,7 +138,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                 <Button
                   variant="outline"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-xl h-12 px-8 font-normal transition-all"
+                  className="border-black text-black hover:bg-black hover:text-white rounded-md h-12 px-8 font-normal transition-all"
                 >
                   <FiEdit3 className="mr-2 w-4 h-4" /> Edit Analysis
                 </Button>
@@ -146,7 +146,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
               {onGenerateNew && (
                 <Button
                   onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-8 font-normal transition-all"
+                  className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-8 font-normal transition-all"
                 >
                   <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
                 </Button>
@@ -157,7 +157,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
               <Button
                 variant="ghost"
                 onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-xl h-12 px-6 font-normal transition-all"
+                className="text-gray-400 hover:text-black rounded-md h-12 px-6 font-normal transition-all"
                 disabled={isSaving}
               >
                 <FiX className="mr-2 w-4 h-4" /> Discard
@@ -165,7 +165,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-10 font-normal transition-all"
+                className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-10 font-normal transition-all"
               >
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
               </Button>
@@ -326,7 +326,7 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                   <span className="text-sm font-bold tracking-widest uppercase">{cluster.cluster_name}</span>
                   <div className="flex items-center gap-4">
                     <span className={`text-[10px] uppercase tracking-[0.2em] ${expandedIdeaCards[cluster.rank] ? 'text-gray-400' : 'text-gray-500'}`}>Strategic Priority</span>
-                    <span className={`h-1 w-1 rounded-full ${expandedIdeaCards[cluster.rank] ? 'bg-white/20' : 'bg-black/10'}`} />
+                    <span className={`h-1 w-1 rounded-md ${expandedIdeaCards[cluster.rank] ? 'bg-white/20' : 'bg-black/10'}`} />
                     <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedIdeaCards[cluster.rank] ? 'text-white' : 'text-black'}`}>Final Score: {cluster.final_score}</span>
                   </div>
                 </div>

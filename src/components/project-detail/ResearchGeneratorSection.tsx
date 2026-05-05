@@ -2,8 +2,10 @@ import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiTerminal, FiChevronRight, FiDatabase, FiUsers } from 'react-icons/fi';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface FormField {
   id: string;
@@ -30,6 +32,7 @@ interface ResearchGeneratorSectionProps {
   gradientTo: string;
   iconBgFrom: string;
   iconBgTo: string;
+  variant?: 'default' | 'asIs';
   formFields: FormElement[];
   formData: any;
   setFormData: (data: any) => void;
@@ -54,6 +57,7 @@ export const ResearchGeneratorSection = ({
   gradientTo,
   iconBgFrom,
   iconBgTo,
+  variant = 'default',
   formFields,
   formData,
   setFormData,
@@ -72,6 +76,7 @@ export const ResearchGeneratorSection = ({
 }: ResearchGeneratorSectionProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const isAsIsStyle = variant === 'asIs';
 
   // COMPREHENSIVE DEBUG for transformation framework
   if (title === 'Transformation Framework') {
@@ -245,88 +250,100 @@ export const ResearchGeneratorSection = ({
   return (
     <>
       {!showReport ? (
-        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
-          <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
-                <FiTerminal className="w-5 h-5 text-gray-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-medium text-gray-900">{title}</CardTitle>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">{description.split('.')[0]}</p>
-              </div>
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+          <CardHeader className="flex flex-col items-start gap-4 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1.5 text-left">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                {isAsIsStyle ? (
+                  <FiUsers className="size-5 shrink-0 text-gray-400" />
+                ) : (
+                  <FiTerminal className="size-5 shrink-0 text-gray-400" />
+                )}
+                {title}
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                {description.split('.')[0]}
+              </CardDescription>
             </div>
             {onShowPainPointsModal && (
               <Button
+                type="button"
                 variant="outline"
-                className="border-black text-black hover:bg-black hover:text-white rounded-xl h-10 px-6 font-normal transition-colors"
                 onClick={onShowPainPointsModal}
+                className="w-full shrink-0 sm:w-auto"
               >
                 Choose Pain Point
               </Button>
             )}
           </CardHeader>
 
-          <CardContent className="p-8">
-            <div className="space-y-10">
-              <div className="border-l-2 border-gray-900 pl-6 py-2">
-                <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{description}</p>
-              </div>
+          <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+            <div className="border-l-2 border-gray-900 py-2 pl-4">
+              <p className="max-w-2xl text-sm leading-relaxed text-gray-600">{description}</p>
+            </div>
 
-              <div className="space-y-8">
+            <div className="flex flex-col gap-6">
                 {formFields.map((element, index) => {
                   if ('type' in element && element.type === 'inline') {
                     return (
-                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-8">
+                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
                         {element.fields.map((field) => {
-                          const widthClass = field.width === '1/3' ? 'col-span-4' :
-                            field.width === '2/3' ? 'col-span-8' :
-                              field.width === '1/2' ? 'col-span-6' : 'col-span-12';
+                          const widthClass = field.width === '1/3' ? 'col-span-12 md:col-span-4' :
+                            field.width === '2/3' ? 'col-span-12 md:col-span-8' :
+                              field.width === '1/2' ? 'col-span-12 md:col-span-6' : 'col-span-12';
 
                           return (
                             <div key={field.id} className={widthClass}>
-                              <div className="flex items-center justify-between mb-4">
-                                <label htmlFor={field.id} className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                              <div className="mb-2 flex items-center justify-between">
+                                <label htmlFor={field.id} className="text-xs font-medium uppercase tracking-wide text-gray-500">
                                   {field.label}
                                 </label>
                                 {field.id === 'selectedExtremeUser' && onShowUsersModal && (
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
+                                    className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
                                     onClick={onShowUsersModal}
                                   >
-                                    <FiUsers className="w-3 h-3" /> Choose User
+                                    <FiUsers className="mr-1 size-3" /> Choose User
                                   </Button>
                                 )}
                                 {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
+                                    className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
                                     onClick={onPopulateFromAsIsMap}
                                   >
-                                    <FiDatabase className="w-3 h-3" /> Use As-Is Map
+                                    <FiDatabase className="mr-1 size-3" /> Use As-Is Map
                                   </Button>
                                 )}
                               </div>
                               {field.type === 'textarea' ? (
-                                <textarea
+                                <Textarea
                                   id={field.id}
                                   value={formData[field.id] || ''}
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   rows={field.rows || 3}
                                   placeholder={field.placeholder}
-                                  className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black resize-none transition-colors"
+                                  className={isAsIsStyle
+                                    ? "min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    : "resize-none"
+                                  }
                                 />
                               ) : (
-                                <input
+                                <Input
                                   type={field.type || 'text'}
                                   id={field.id}
                                   value={formData[field.id] || ''}
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   placeholder={field.placeholder}
-                                  className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black transition-colors"
+                                  className={isAsIsStyle
+                                    ? "h-11 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:ring-primary/20"
+                                    : undefined
+                                  }
                                 />
                               )}
                             </div>
@@ -337,70 +354,86 @@ export const ResearchGeneratorSection = ({
                   } else {
                     const field = element as FormField;
                     return (
-                      <div key={field.id}>
-                        <div className="flex items-center justify-between mb-4">
-                          <label htmlFor={field.id} className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                      <div key={field.id} className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <label htmlFor={field.id} className="text-xs font-medium uppercase tracking-wide text-gray-500">
                             {field.label}
                           </label>
                           {field.id === 'selectedExtremeUser' && onShowUsersModal && (
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
+                              className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
                               onClick={onShowUsersModal}
                             >
-                              <FiUsers className="w-3 h-3" /> Choose User
+                              <FiUsers className="mr-1 size-3" /> Choose User
                             </Button>
                           )}
                           {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-gray-400 hover:text-black h-auto p-0 flex items-center gap-2"
+                              className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
                               onClick={onPopulateFromAsIsMap}
                             >
-                              <FiDatabase className="w-3 h-3" /> Use As-Is Map
+                              <FiDatabase className="mr-1 size-3" /> Use As-Is Map
                             </Button>
                           )}
                         </div>
                         {field.type === 'textarea' ? (
-                          <textarea
+                          <Textarea
                             id={field.id}
                             value={formData[field.id] || ''}
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             rows={field.rows || 3}
                             placeholder={field.placeholder}
-                            className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black resize-none transition-colors"
+                            className={isAsIsStyle
+                              ? "min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              : "resize-none"
+                            }
                           />
                         ) : (
-                          <input
+                          <Input
                             type={field.type || 'text'}
                             id={field.id}
                             value={formData[field.id] || ''}
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             placeholder={field.placeholder}
-                            className="w-full bg-white border border-gray-200 py-3 px-4 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black transition-colors"
+                            className={isAsIsStyle
+                              ? "h-11 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:ring-primary/20"
+                              : undefined
+                            }
                           />
                         )}
                       </div>
                     );
                   }
                 })}
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-start pt-2">
                   <Button
+                    type="button"
                     onClick={handleGenerate}
                     disabled={isLoading || isGenerating}
-                    className="bg-black text-white hover:bg-black/90 rounded-xl h-14 px-10 font-normal transition-all"
+                      className={isAsIsStyle
+                        ? "rounded-xl bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        : undefined
+                      }
                   >
-                    {isLoading || isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Generating...</> : (
+                    {isLoading || isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 inline size-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
                       <span className="flex items-center gap-2">
-                        Generate {title} <FiChevronRight className="w-4 h-4" />
+                        Generate {title} <FiChevronRight className="size-4" />
                       </span>
                     )}
                   </Button>
                 </div>
               </div>
-            </div>
           </CardContent>
         </Card>
       ) : (

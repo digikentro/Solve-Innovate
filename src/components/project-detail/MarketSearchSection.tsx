@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiSearch, FiLoader } from 'react-icons/fi';
+import { Loader2 } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { MarketResearchReportViewer } from './MarketResearchReportViewer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface MarketSearchSectionProps {
@@ -197,55 +198,54 @@ export const MarketSearchSection = ({
     // Show results if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-                <MarketResearchReportViewer
-                    data={marketSearchData}
-                    onGenerateNew={handleGenerateNew}
-                />
-            </div>
+            <Card className="animate-fadeIn overflow-hidden border border-gray-200 bg-white shadow-none">
+                <CardContent className="px-6 pb-6 pt-6">
+                    <MarketResearchReportViewer
+                        data={marketSearchData}
+                        onGenerateNew={handleGenerateNew}
+                    />
+                </CardContent>
+            </Card>
         );
     }
 
     // Show generate button only
     return (
-        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
-          <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
-                <FiSearch className="w-5 h-5 text-gray-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-medium text-gray-900">Market Search</CardTitle>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Comprehensive market research generation</p>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-8">
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project insights, testing scenarios, and prototype details.
-              </p>
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                size="lg"
-                className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
-              >
-                {isGenerating ? (
-                  <>
-                    <FiLoader className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FiSearch className="w-4 h-4 mr-2" />
-                    Generate Market Research
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <FiSearch className="size-5 shrink-0 text-gray-400" />
+                    Market Search
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Comprehensive market research generation
+                </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+                <p className="text-sm leading-relaxed text-gray-600">
+                    Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project insights, testing scenarios, and prototype details.
+                </p>
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <FiSearch className="mr-2 size-4" />
+                                Generate Market Research
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </CardContent>
         </Card>
     );
 };

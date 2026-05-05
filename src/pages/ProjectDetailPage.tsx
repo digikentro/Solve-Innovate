@@ -1,36 +1,35 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
-import { ProjectInfo, SecondaryResearchSection } from '@/components/project-detail/ProjectInfo';
-import { PresentableSlideSection } from '@/components/project-detail/PresentableSlideSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-
-import { ProjectAnalysisSection } from '@/components/project-detail/ProjectAnalysisSection';
-import { AsIsMapSection } from '@/components/project-detail/AsIsMapSection';
-import { ResearchGeneratorSection } from '@/components/project-detail/ResearchGeneratorSection';
-import { GenericReportViewer } from '@/components/project-detail/GenericReportViewer';
-import { AsIsMapReportViewer } from '@/components/project-detail/AsIsMapReportViewer';
-import { ExtremeUserReportViewer } from '@/components/project-detail/ExtremeUserReportViewer';
-import { DeepEmpathyReportViewer } from '@/components/project-detail/DeepEmpathyReportViewer';
-import { PsychologicalAnalysisReportViewer } from '@/components/project-detail/PsychologicalAnalysisReportViewer';
-
 import { PainPointSelectionModal } from '@/components/project-detail/PainPointSelectionModal';
 import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUserSelectionModal';
 
-import { OutcomeToBehaviorHMWReportViewer } from '@/components/project-detail/OutcomeToBehaviorHMWReportViewer';
-import { HMWIdeationFrameworkReportViewer } from '@/components/project-detail/HMWIdeationFrameworkReportViewer';
-import { IdeaClusteringReportViewer } from '@/components/project-detail/IdeaClusteringReportViewer';
-import { EmbeddedChatSection } from '@/components/project-detail/EmbeddedChatSection';
-import { PrototypingToolsSection } from '@/components/project-detail/PrototypingToolsSection';
-import { TestingSection } from '@/components/project-detail/TestingSection';
-import { MarketSearchSection } from '@/components/project-detail/MarketSearchSection';
-import { TransformationFrameworkSection } from '@/components/project-detail/TransformationFrameworkSection';
-import { PresentationSection } from '@/components/presentation/PresentationSection';
+const ProjectInfo = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.ProjectInfo })));
+const SecondaryResearchSection = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.SecondaryResearchSection })));
+const PresentableSlideSection = lazy(() => import('@/components/project-detail/PresentableSlideSection').then((mod) => ({ default: mod.PresentableSlideSection })));
+const ProjectAnalysisSection = lazy(() => import('@/components/project-detail/ProjectAnalysisSection').then((mod) => ({ default: mod.ProjectAnalysisSection })));
+const AsIsMapSection = lazy(() => import('@/components/project-detail/AsIsMapSection').then((mod) => ({ default: mod.AsIsMapSection })));
+const ResearchGeneratorSection = lazy(() => import('@/components/project-detail/ResearchGeneratorSection').then((mod) => ({ default: mod.ResearchGeneratorSection })));
+const GenericReportViewer = lazy(() => import('@/components/project-detail/GenericReportViewer').then((mod) => ({ default: mod.GenericReportViewer })));
+const AsIsMapReportViewer = lazy(() => import('@/components/project-detail/AsIsMapReportViewer').then((mod) => ({ default: mod.AsIsMapReportViewer })));
+const ExtremeUserReportViewer = lazy(() => import('@/components/project-detail/ExtremeUserReportViewer').then((mod) => ({ default: mod.ExtremeUserReportViewer })));
+const DeepEmpathyReportViewer = lazy(() => import('@/components/project-detail/DeepEmpathyReportViewer').then((mod) => ({ default: mod.DeepEmpathyReportViewer })));
+const PsychologicalAnalysisReportViewer = lazy(() => import('@/components/project-detail/PsychologicalAnalysisReportViewer').then((mod) => ({ default: mod.PsychologicalAnalysisReportViewer })));
+const OutcomeToBehaviorHMWReportViewer = lazy(() => import('@/components/project-detail/OutcomeToBehaviorHMWReportViewer').then((mod) => ({ default: mod.OutcomeToBehaviorHMWReportViewer })));
+const HMWIdeationFrameworkReportViewer = lazy(() => import('@/components/project-detail/HMWIdeationFrameworkReportViewer').then((mod) => ({ default: mod.HMWIdeationFrameworkReportViewer })));
+const IdeaClusteringReportViewer = lazy(() => import('@/components/project-detail/IdeaClusteringReportViewer').then((mod) => ({ default: mod.IdeaClusteringReportViewer })));
+const EmbeddedChatSection = lazy(() => import('@/components/project-detail/EmbeddedChatSection').then((mod) => ({ default: mod.EmbeddedChatSection })));
+const PrototypingToolsSection = lazy(() => import('@/components/project-detail/PrototypingToolsSection').then((mod) => ({ default: mod.PrototypingToolsSection })));
+const TestingSection = lazy(() => import('@/components/project-detail/TestingSection').then((mod) => ({ default: mod.TestingSection })));
+const MarketSearchSection = lazy(() => import('@/components/project-detail/MarketSearchSection').then((mod) => ({ default: mod.MarketSearchSection })));
+const TransformationFrameworkSection = lazy(() => import('@/components/project-detail/TransformationFrameworkSection').then((mod) => ({ default: mod.TransformationFrameworkSection })));
+const PresentationSection = lazy(() => import('@/components/presentation/PresentationSection').then((mod) => ({ default: mod.PresentationSection })));
 
 // Section navigation items
 const SECTIONS = [
@@ -370,7 +369,14 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="h-full flex bg-[#faf8f5] overflow-hidden font-sans">
+    <Suspense
+      fallback={
+        <div className="h-full flex items-center justify-center bg-[#faf8f5] text-sm text-gray-500">
+          Loading project details...
+        </div>
+      }
+    >
+      <div className="h-full flex bg-[#faf8f5] overflow-hidden font-sans">
       {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
       <aside className={`
         absolute lg:relative top-0 left-0 h-full w-64 flex-shrink-0
@@ -448,7 +454,7 @@ export const ProjectDetailPage = () => {
           <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
             {/* Project Information */}
             {activeSection === 'project-info' && (
-              <div className="space-y-8">
+              <div className="flex flex-col gap-10">
                 <ProjectInfo project={project} />
                 <SecondaryResearchSection
                   projectId={project.id}
@@ -456,15 +462,11 @@ export const ProjectDetailPage = () => {
                   secondaryresearch={project.secondaryresearch}
                   onRefreshProject={refetchProject}
                 />
-                <Card className="bg-white border border-gray-200 shadow-none rounded-none overflow-hidden">
-                  <CardContent className="p-8">
-                    <PresentableSlideSection
-                      project={project}
-                      presentableSlide={presentableSlide}
-                      setPresentableSlide={setPresentableSlide}
-                    />
-                  </CardContent>
-                </Card>
+                <PresentableSlideSection
+                  project={project}
+                  presentableSlide={presentableSlide}
+                  setPresentableSlide={setPresentableSlide}
+                />
                 <ProjectAnalysisSection project={project} setProject={setProject} />
               </div>
             )}
@@ -508,6 +510,7 @@ export const ProjectDetailPage = () => {
                   gradientTo="pink-50"
                   iconBgFrom="purple-500"
                   iconBgTo="pink-600"
+                  variant="asIs"
                   formFields={[
                     {
                       type: 'inline',
@@ -876,5 +879,6 @@ export const ProjectDetailPage = () => {
         extremeUserData={extremeUserData}
       />
     </div>
+    </Suspense>
   );
 };

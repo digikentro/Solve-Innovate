@@ -110,41 +110,41 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
   };
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       {/* Messages & Dialogs */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-black text-white px-6 py-4 border border-white/20 shadow-2xl animate-fadeIn">
-          <p className="text-[10px] font-bold uppercase tracking-widest">✓ Report saved successfully</p>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Report saved successfully</p>
         </div>
       )}
 
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-black text-white px-6 py-4 border border-red-500 shadow-2xl animate-fadeIn">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-red-500">✗ {errorText}</p>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText}</p>
         </div>
       )}
 
       {showSaveDialog && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-black shadow-2xl p-8 max-w-md w-full">
-            <h3 className="text-xl font-medium text-gray-900 mb-2">Save Changes?</h3>
-            <p className="text-sm text-gray-500 mb-8">Confirm permanent updates to the As-Is Map data structure.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Save Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Confirm permanent updates to the As-Is Map data structure.</p>
             <div className="flex gap-4">
-              <button onClick={() => setShowSaveDialog(false)} className="flex-1 px-4 py-3 border border-gray-200 text-xs font-bold uppercase tracking-widest hover:bg-gray-50">Go Back</button>
-              <button onClick={confirmSave} className="flex-1 px-4 py-3 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-black/90">Save Now</button>
+              <button onClick={() => setShowSaveDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Go Back</button>
+              <button onClick={confirmSave} className="flex-1 rounded-xl bg-primary px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-primary/90">Save Now</button>
             </div>
           </div>
         </div>
       )}
 
       {showCancelDialog && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-black shadow-2xl p-8 max-w-md w-full">
-            <h3 className="text-xl font-medium text-gray-900 mb-2">Discard Changes?</h3>
-            <p className="text-sm text-gray-500 mb-8">Unsaved modifications will be permanently lost.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Discard Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Unsaved modifications will be permanently lost.</p>
             <div className="flex gap-4">
-              <button onClick={() => setShowCancelDialog(false)} className="flex-1 px-4 py-3 border border-gray-200 text-xs font-bold uppercase tracking-widest hover:bg-gray-50">Keep Editing</button>
-              <button onClick={confirmCancel} className="flex-1 px-4 py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700">Discard</button>
+              <button onClick={() => setShowCancelDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Keep Editing</button>
+              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-red-700">Discard</button>
             </div>
           </div>
         </div>
@@ -152,79 +152,116 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Edit Mode Banner */}
       {isEditMode && (
-        <div className="bg-black text-white p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] uppercase tracking-widest opacity-60">Status</span>
-            <span className="text-sm font-medium">Edit Mode Active — Modification enabled</span>
+            <span className="text-xs uppercase tracking-widest text-gray-500">Status</span>
+            <span className="text-sm font-medium text-gray-900">Edit Mode Active — Modification enabled</span>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="pb-8 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-medium text-gray-900">As-Is Map</h1>
-          <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Operational landscape report</p>
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            As-Is Map
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Operational landscape report
+          </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           {projectId && onSave && (
             <>
               {!isEditMode ? (
-                <button onClick={handleEditToggle} className="px-8 h-10 border border-black text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all">Edit Report</button>
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
+                >
+                  Edit Report
+                </button>
               ) : (
-                <div className="flex gap-2">
-                  <button onClick={handleCancel} disabled={isSaving} className="px-6 h-10 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black disabled:opacity-50">Discard</button>
-                  <button onClick={handleSave} disabled={isSaving} className="px-8 h-10 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-black/90 disabled:opacity-50">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save Changes'}</button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-1.5 inline size-3 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
                 </div>
               )}
             </>
           )}
           {onGenerateNew && (
-            <button onClick={onGenerateNew} disabled={isEditMode} className="px-8 h-10 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed">Generate New</button>
+            <button
+              type="button"
+              onClick={onGenerateNew}
+              disabled={isEditMode}
+              className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Generate New
+            </button>
           )}
         </div>
       </div>
 
       {/* Executive Summary */}
       {reportData.hmw_statement_analysis && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Executive Summary</h2>
-          <div className="space-y-12">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Executive Summary</h2>
+          <div className="flex flex-col gap-10">
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Problem Statement</label>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Problem Statement</label>
               {isEditMode ? (
                 <textarea
                   value={Array.isArray(reportData.hmw_statement_analysis.hmw) ? reportData.hmw_statement_analysis.hmw[0] : reportData.hmw_statement_analysis.hmw || ''}
                   onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.hmw) ? ['hmw_statement_analysis', 'hmw', '0'] : ['hmw_statement_analysis', 'hmw'], e.target.value)}
-                  className="w-full bg-white border border-gray-200 py-3 px-4 text-sm focus:outline-none focus:border-black min-h-[100px] resize-none"
+                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               ) : (
-                <p className="text-base text-gray-900 leading-relaxed border-l border-black pl-6">{Array.isArray(reportData.hmw_statement_analysis.hmw) ? reportData.hmw_statement_analysis.hmw[0] : reportData.hmw_statement_analysis.hmw || 'N/A'}</p>
+                <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">{Array.isArray(reportData.hmw_statement_analysis.hmw) ? reportData.hmw_statement_analysis.hmw[0] : reportData.hmw_statement_analysis.hmw || 'N/A'}</p>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Target Users</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Users</label>
                 {isEditMode ? (
                   <textarea
                     value={Array.isArray(reportData.hmw_statement_analysis.target_users) ? reportData.hmw_statement_analysis.target_users[0] : reportData.hmw_statement_analysis.target_users || ''}
                     onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.target_users) ? ['hmw_statement_analysis', 'target_users', '0'] : ['hmw_statement_analysis', 'target_users'], e.target.value)}
-                    className="w-full bg-white border border-gray-200 py-3 px-4 text-sm focus:outline-none focus:border-black min-h-[80px] resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-6">{Array.isArray(reportData.hmw_statement_analysis.target_users) ? reportData.hmw_statement_analysis.target_users[0] : reportData.hmw_statement_analysis.target_users || 'N/A'}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{Array.isArray(reportData.hmw_statement_analysis.target_users) ? reportData.hmw_statement_analysis.target_users[0] : reportData.hmw_statement_analysis.target_users || 'N/A'}</p>
                 )}
               </div>
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Core Need</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Need</label>
                 {isEditMode ? (
                   <textarea
                     value={Array.isArray(reportData.hmw_statement_analysis.core_need) ? reportData.hmw_statement_analysis.core_need[0] : reportData.hmw_statement_analysis.core_need || ''}
                     onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.core_need) ? ['hmw_statement_analysis', 'core_need', '0'] : ['hmw_statement_analysis', 'core_need'], e.target.value)}
-                    className="w-full bg-white border border-gray-200 py-3 px-4 text-sm focus:outline-none focus:border-black min-h-[80px] resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-6">{Array.isArray(reportData.hmw_statement_analysis.core_need) ? reportData.hmw_statement_analysis.core_need[0] : reportData.hmw_statement_analysis.core_need || 'N/A'}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{Array.isArray(reportData.hmw_statement_analysis.core_need) ? reportData.hmw_statement_analysis.core_need[0] : reportData.hmw_statement_analysis.core_need || 'N/A'}</p>
                 )}
               </div>
             </div>
@@ -234,33 +271,33 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Journey Map */}
       {reportData.as_is_map?.stages && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Current State Journey Map</h2>
-          <div className="space-y-6">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Current State Journey Map</h2>
+          <div className="flex flex-col gap-4">
             {reportData.as_is_map.stages.map((stage: any, index: number) => (
-              <div key={stage.id} className="border border-gray-100">
+              <div key={stage.id} className="overflow-hidden rounded-xl border border-gray-200">
                 {isEditMode ? (
-                  <div className="w-full px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-4">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Stage {stage.id}</span>
-                    <input type="text" value={stage.stage_name} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'stage_name'], e.target.value)} className="flex-1 bg-white border border-gray-200 px-3 py-1 text-sm focus:outline-none focus:border-black" />
-                    <button onClick={() => toggleStage(stage.id)} className="text-sm font-bold uppercase tracking-widest px-2">{expandedStages[stage.id] ? 'CLOSE' : 'OPEN'}</button>
+                  <div className="flex w-full items-center gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4">
+                    <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Stage {stage.id}</span>
+                    <input type="text" value={stage.stage_name} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'stage_name'], e.target.value)} className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    <button onClick={() => toggleStage(stage.id)} className="px-3 text-xs font-medium uppercase tracking-wide text-gray-900">{expandedStages[stage.id] ? 'CLOSE' : 'OPEN'}</button>
                   </div>
                 ) : (
-                  <button onClick={() => toggleStage(stage.id)} className={`w-full px-6 py-4 text-left flex items-center justify-between transition-colors ${expandedStages[stage.id] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}>
+                  <button onClick={() => toggleStage(stage.id)} className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedStages[stage.id] ? 'bg-primary text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}>
                     <div className="flex items-center gap-4">
-                      <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedStages[stage.id] ? 'opacity-70' : 'text-gray-400'}`}>Stage 0{stage.id}</span>
+                      <span className={`text-xs font-medium uppercase tracking-wide ${expandedStages[stage.id] ? 'opacity-70' : 'text-gray-500'}`}>Stage 0{stage.id}</span>
                       <span className="text-sm font-medium">{stage.stage_name}</span>
                     </div>
                     <span className="text-xs">{expandedStages[stage.id] ? 'CLOSE' : 'EXPAND'}</span>
                   </button>
                 )}
                 {expandedStages[stage.id] && (
-                  <div className="p-6 space-y-4 bg-white">
+                  <div className="flex flex-col gap-4 bg-white p-6">
                     {stage.steps.map((step: any, stepIdx: number) => {
                       const currentNumber = (stepOffsets[index] || 0) + stepIdx + 1;
                       return (
-                        <div key={`${stage.id}-${step.id}-${currentNumber}`} className="flex items-start gap-4 p-4 border-l-2 border-gray-100 group hover:border-black">
-                          <span className="text-[10px] font-bold text-gray-300 mt-0.5 w-6 group-hover:text-black">{currentNumber.toString().padStart(2, '0')}</span>
+                        <div key={`${stage.id}-${step.id}-${currentNumber}`} className="group flex items-start gap-4 border-l-2 border-gray-200 p-4 hover:border-primary">
+                          <span className="mt-0.5 w-6 text-xs font-bold text-gray-400 group-hover:text-primary">{currentNumber.toString().padStart(2, '0')}</span>
                           {isEditMode ? (
                             <textarea value={step.description} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'steps', stepIdx.toString(), 'description'], e.target.value)} className="flex-1 bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]" />
                           ) : (
@@ -341,7 +378,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Evidence of Bottleneck</label>
                         <ul className="space-y-3 border-l border-gray-100 pl-6">
                           {bottleneck.bottleneck_evidence?.map((evidence: string, i: number) => (
-                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{evidence}</li>
+                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{evidence}</li>
                           ))}
                         </ul>
                       </div>
@@ -349,7 +386,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Why 80% Impact</label>
                         <ul className="space-y-3 border-l border-gray-100 pl-6">
                           {bottleneck.why_80_percent_impact?.map((impact: string, i: number) => (
-                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{impact}</li>
+                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{impact}</li>
                           ))}
                         </ul>
                       </div>
@@ -357,7 +394,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Ripple Effects</label>
                         <ul className="space-y-3 border-l border-gray-100 pl-6">
                           {bottleneck.ripple_effects?.map((effect: string, i: number) => (
-                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{effect}</li>
+                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{effect}</li>
                           ))}
                         </ul>
                       </div>
@@ -365,7 +402,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                         <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Current Solutions Gap</label>
                         <ul className="space-y-3 border-l border-gray-100 pl-6">
                           {bottleneck.current_solutions_gap?.map((gap: string, i: number) => (
-                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{gap}</li>
+                            <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{gap}</li>
                           ))}
                         </ul>
                       </div>
@@ -397,7 +434,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Mutually Exclusive</label>
               <ul className="space-y-3 border-l border-gray-100 pl-6">
                 {reportData.mece_validation.mutually_exclusive_check?.map((check: string, i: number) => (
-                  <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{check}</li>
+                  <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{check}</li>
                 ))}
               </ul>
             </div>
@@ -405,7 +442,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Collectively Exhaustive</label>
               <ul className="space-y-3 border-l border-gray-100 pl-6">
                 {reportData.mece_validation.collectively_exhaustive_check?.map((check: string, i: number) => (
-                  <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{check}</li>
+                  <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{check}</li>
                 ))}
               </ul>
             </div>
@@ -464,7 +501,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Methodology</label>
                 <ul className="space-y-3 border-l border-gray-100 pl-6">
                   {Array.isArray(reportData.prioritization_rationale.methodology) ? reportData.prioritization_rationale.methodology.map((method: string, i: number) => (
-                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{method}</li>
+                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{method}</li>
                   )) : <li className="text-sm text-gray-600 border-l border-gray-100 pl-6">{reportData.prioritization_rationale.methodology}</li>}
                 </ul>
               </div>
@@ -474,7 +511,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Impact Calculation</label>
                 <ul className="space-y-3 border-l border-gray-100 pl-6">
                   {Array.isArray(reportData.prioritization_rationale.impact_calculation) ? reportData.prioritization_rationale.impact_calculation.map((calc: string, i: number) => (
-                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />{calc}</li>
+                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2"><span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />{calc}</li>
                   )) : <li className="text-sm text-gray-600 border-l border-gray-100 pl-6">{reportData.prioritization_rationale.impact_calculation}</li>}
                 </ul>
               </div>

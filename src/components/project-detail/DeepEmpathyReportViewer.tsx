@@ -132,7 +132,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
                 />
               ) : (
                 <div className="flex items-start gap-3 py-1">
-                  <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                  <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
                   <p className="text-sm text-gray-600 leading-relaxed">{item}</p>
                 </div>
               )}
@@ -167,7 +167,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
                 <Button
                   variant="outline"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-xl h-12 px-8 font-normal transition-all"
+                  className="border-black text-black hover:bg-black hover:text-white rounded-md h-12 px-8 font-normal transition-all"
                 >
                   <FiEdit3 className="mr-2 w-4 h-4" /> Edit Report
                 </Button>
@@ -175,7 +175,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               {onGenerateNew && (
                 <Button
                   onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-8 font-normal transition-all"
+                  className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-8 font-normal transition-all"
                 >
                   <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
                 </Button>
@@ -186,7 +186,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               <Button
                 variant="ghost"
                 onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-xl h-12 px-6 font-normal transition-all"
+                className="text-gray-400 hover:text-black rounded-md h-12 px-6 font-normal transition-all"
                 disabled={isSaving}
               >
                 <FiX className="mr-2 w-4 h-4" /> Discard
@@ -194,7 +194,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-10 font-normal transition-all"
+                className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-10 font-normal transition-all"
               >
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
               </Button>

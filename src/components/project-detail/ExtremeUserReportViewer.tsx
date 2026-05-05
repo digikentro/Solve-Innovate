@@ -121,122 +121,107 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
   };
 
   return (
-    <div className="space-y-8">
-      {/* Confirmation Dialogs */}
+    <div className="flex flex-col gap-8">
+      {/* Messages & Dialogs */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Report saved successfully</p>
+        </div>
+      )}
+
+      {showErrorMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText || 'Failed to save changes'}</p>
+        </div>
+      )}
+
       {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Save Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to save these changes to the Extreme User Analysis report?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSave}
-                className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md transition-colors"
-                disabled={isSaving}
-              >
-                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save'}
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Save Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Confirm permanent updates to the Extreme User Analysis data.</p>
+            <div className="flex gap-4">
+              <button onClick={() => setShowSaveDialog(false)} disabled={isSaving} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors">Go Back</button>
+              <button onClick={confirmSave} disabled={isSaving} className="flex-1 rounded-xl bg-gray-900 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-gray-800 transition-colors">{isSaving ? 'Saving...' : 'Save Now'}</button>
             </div>
           </div>
         </div>
       )}
 
       {showCancelDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Discard Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to discard all changes? This action cannot be undone.</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCancelDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={confirmCancel}
-                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
-              >
-                Discard
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Discard Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Unsaved modifications will be permanently lost.</p>
+            <div className="flex gap-4">
+              <button onClick={() => setShowCancelDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors">Keep Editing</button>
+              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-red-700 transition-colors">Discard</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast Notifications */}
-      {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2 border border-white/20">
-          <span className="text-xs uppercase tracking-widest">Changes saved successfully</span>
+      {/* Edit Mode Banner */}
+      {isEditMode && (
+        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-6 py-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Status</span>
+            <span className="text-sm font-medium text-amber-900">Edit Mode Active — modification enabled</span>
+          </div>
         </div>
       )}
 
-      {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-black text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2 border border-red-500">
-          <span className="text-xs uppercase tracking-widest text-red-500">{errorText || 'Failed to save changes'}</span>
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Extreme User Analysis</h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">Primary research report</p>
         </div>
-      )}
-
-      {/* Header with Edit and Generate New Buttons */}
-      <div className="pb-8 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-medium text-gray-900">Extreme User Analysis</h1>
-          <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Primary research report</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {!isEditMode && projectId && onSave && (
-            <Button
-              variant="outline"
-              className="border-black text-black hover:bg-black hover:text-white rounded-xl h-10 px-8 font-normal transition-colors"
-              onClick={handleEditToggle}
-            >
-              Edit Report
-            </Button>
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          {projectId && onSave && (
+            <>
+              {!isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
+                >
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
           {onGenerateNew && (
-            <Button
-              className="bg-black text-white hover:bg-black/90 rounded-xl h-10 px-8 font-normal transition-colors"
+            <button
+              type="button"
               onClick={onGenerateNew}
+              disabled={isEditMode}
+              className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               Generate New
-            </Button>
+            </button>
           )}
         </div>
       </div>
-
-      {/* Edit Mode Banner */}
-      {isEditMode && (
-        <div className="bg-black text-white p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] uppercase tracking-widest opacity-70">Status</span>
-            <span className="text-sm font-medium">Edit Mode Active — Modification enabled</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              className="text-white hover:bg-white/10 rounded-xl h-10 px-6 font-normal transition-colors"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              Discard Changes
-            </Button>
-            <Button
-              className="bg-white text-black hover:bg-white/90 rounded-xl h-10 px-8 font-normal transition-colors"
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Pain Point Context */}
       {reportData.painPointAnalysis && (
@@ -607,7 +592,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                   <ul className="space-y-2 border-l border-gray-100 pl-4">
                     {reportData.researchStrategy.keyInsightsToExplore.map((insight: string, i: number) => (
                       <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                        <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
                         {insight}
                       </li>
                     ))}
@@ -625,7 +610,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                   <ul className="space-y-2 border-l border-gray-100 pl-4">
                     {reportData.researchStrategy.expectedBreakthroughAreas.map((area: string, i: number) => (
                       <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                        <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
                         {area}
                       </li>
                     ))}
@@ -684,7 +669,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                 <ul className="space-y-2 border-l border-gray-100 pl-4">
                   {reportData.designImplications.solutionOpportunities.map((opportunity: string, i: number) => (
                     <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                      <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                      <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
                       {opportunity}
                     </li>
                   ))}
@@ -699,7 +684,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                 <ul className="space-y-2 border-l border-gray-100 pl-4">
                   {reportData.designImplications.implementationConsiderations.map((consideration: string, i: number) => (
                     <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                      <span className="mt-1.5 w-1 h-1 bg-black rounded-full flex-shrink-0" />
+                      <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
                       {consideration}
                     </li>
                   ))}

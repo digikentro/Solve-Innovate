@@ -7,7 +7,7 @@ import { FiZap, FiCheckCircle } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { ProjectService } from '@/services/projectService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface PrototypingToolsSectionProps {
@@ -87,9 +87,15 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
 
   if (!clusters.length) {
     return (
-      <Card className="bg-white border border-gray-200 shadow-none rounded-lg">
-        <CardContent className="pt-8 text-center">
-          <p className="text-sm text-muted-foreground">Run the Idea Clustering and Idea Cards report to see top-ranked ideas for prototyping.</p>
+      <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+        <CardContent className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+          <div className="flex size-12 items-center justify-center rounded-md bg-gray-50">
+            <FiZap className="size-6 text-gray-300" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-medium text-gray-900">No Ideas Available</h3>
+            <p className="text-xs text-gray-500">Run the Idea Clustering and Idea Cards report to see top-ranked ideas for prototyping.</p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -270,49 +276,58 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Sketch Prototype Card */}
-      <Card className="bg-white border border-gray-200 shadow-none rounded-lg overflow-hidden">
-        <CardHeader className="px-6 py-4 border-b border-gray-100 flex flex-row items-center justify-between">
+      <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <FiZap className="w-4 h-4 text-white" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary">
+              <FiZap className="size-5 text-white" />
             </div>
-            <div>
-              <CardTitle className="text-sm font-semibold text-gray-900">Sketch Prototype</CardTitle>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-sm font-semibold leading-none text-gray-900">Sketch Prototype</CardTitle>
               {prototypeGeneratedAt && (
-                <p className="text-xs text-muted-foreground mt-1">Generated at {new Date(prototypeGeneratedAt).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Generated at {new Date(prototypeGeneratedAt).toLocaleString()}</p>
               )}
             </div>
           </div>
           <Button
+            type="button"
             onClick={handleGenerate}
             disabled={isSubmitting}
             size="sm"
+            className="shrink-0"
           >
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : (prototypeSketchUrl ? 'Generate Again' : 'Generate Sketch')}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              prototypeSketchUrl ? 'Generate Again' : 'Generate Sketch'
+            )}
           </Button>
         </CardHeader>
 
-        <CardContent className="p-6">
+        <CardContent className="px-6 pb-6 pt-6">
           {isGeneratingSketch && !prototypeSketchUrl && (
             <div className="flex flex-col items-center gap-3 py-12">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Creating your sketch prototype...</p>
+              <Loader2 className="size-10 animate-spin text-primary" />
+              <p className="text-sm text-gray-500">Creating your sketch prototype...</p>
             </div>
           )}
 
           {prototypeSketchUrl ? (
-            <div className="w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex justify-center">
+            <div className="flex w-full justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-100">
               <img
                 src={prototypeSketchUrl}
                 alt="Generated sketch prototype"
-                className="w-full max-w-2xl max-h-96 object-contain"
+                className="max-h-96 w-full max-w-2xl object-contain"
               />
             </div>
           ) : (
             !isGeneratingSketch && (
-              <div className="w-full bg-gray-50 rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-muted-foreground">
+              <div className="w-full rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
                 No sketch prototype yet. Click "Generate Sketch" to create one.
               </div>
             )
@@ -321,48 +336,57 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
       </Card>
 
       {/* Image Prototype Card */}
-      <Card className="bg-white border border-gray-200 shadow-none rounded-lg overflow-hidden">
-        <CardHeader className="px-6 py-4 border-b border-gray-100 flex flex-row items-center justify-between">
+      <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-              <FiZap className="w-4 h-4 text-secondary-foreground" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary">
+              <FiZap className="size-5 text-white" />
             </div>
-            <div>
-              <CardTitle className="text-sm font-semibold text-gray-900">Image Prototype</CardTitle>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="text-sm font-semibold leading-none text-gray-900">Image Prototype</CardTitle>
               {prototypeGeneratedAt && (
-                <p className="text-xs text-muted-foreground mt-1">Generated at {new Date(prototypeGeneratedAt).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Generated at {new Date(prototypeGeneratedAt).toLocaleString()}</p>
               )}
             </div>
           </div>
           <Button
+            type="button"
             onClick={handleGenerateImage}
             disabled={isSubmittingImage}
             size="sm"
-            variant="secondary"
+            variant="outline"
+            className="shrink-0"
           >
-            {isSubmittingImage ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : (prototypeImageUrl ? 'Generate Again' : 'Generate Image')}
+            {isSubmittingImage ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              prototypeImageUrl ? 'Generate Again' : 'Generate Image'
+            )}
           </Button>
         </CardHeader>
 
-        <CardContent className="p-6">
+        <CardContent className="px-6 pb-6 pt-6">
           {isGeneratingImage && !prototypeImageUrl && (
             <div className="flex flex-col items-center gap-3 py-12">
-              <div className="w-10 h-10 border-4 border-secondary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Creating your high-fidelity image...</p>
+              <Loader2 className="size-10 animate-spin text-primary" />
+              <p className="text-sm text-gray-500">Creating your high-fidelity image...</p>
             </div>
           )}
 
           {prototypeImageUrl ? (
-            <div className="w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex justify-center">
+            <div className="flex w-full justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-100">
               <img
                 src={prototypeImageUrl}
                 alt="Generated image prototype"
-                className="w-full max-w-2xl max-h-96 object-contain"
+                className="max-h-96 w-full max-w-2xl object-contain"
               />
             </div>
           ) : (
             !isGeneratingImage && (
-              <div className="w-full bg-gray-50 rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-muted-foreground">
+              <div className="w-full rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
                 No image prototype yet. Click "Generate Image" to create one.
               </div>
             )
@@ -375,7 +399,7 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-gray-900">Select an Idea to Prototype</h3>
           {clusters.map((cluster: any) => (
-            <Card key={cluster.rank} className="bg-white border border-gray-200 shadow-none rounded-lg overflow-hidden">
+            <Card key={cluster.rank} className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden">
               <div className="w-full flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-100">
                 <div className="flex items-center gap-4">
                   <input

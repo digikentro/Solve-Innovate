@@ -193,14 +193,14 @@ export const TransformationFrameworkReportViewer = ({ data, onGenerateNew, proje
 
             {/* Toast Notifications */}
             {showSuccessMessage && (
-                <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
+                <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5" />
                     <span className="text-sm">Changes saved successfully!</span>
                 </div>
             )}
 
             {showErrorMessage && (
-                <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
+                <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center gap-2">
                     <AlertCircle className="w-5 h-5" />
                     <span className="text-sm">{errorText || 'Failed to save changes'}</span>
                 </div>

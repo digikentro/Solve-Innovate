@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 import { Target, Loader2 } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { TransformationFrameworkReportViewer } from './TransformationFrameworkReportViewer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface TransformationFrameworkSectionProps {
@@ -87,8 +87,8 @@ export const TransformationFrameworkSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
-                <CardContent className="p-6">
+            <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+                <CardContent className="px-6 pb-6 pt-6">
                     <TransformationFrameworkReportViewer
                         data={transformationFrameworkData}
                         onGenerateNew={handleGenerateNew}
@@ -102,53 +102,43 @@ export const TransformationFrameworkSection = ({
 
     // Show generate button only
     return (
-        <div className="space-y-6">
-            {/* Header Card */}
-            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
-                <CardHeader className="px-8 py-6 border-b border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
-                            <Target className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-xl font-medium text-gray-900">Transformation Framework</CardTitle>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                                Psychological transformation insights
-                            </p>
-                        </div>
-                    </div>
-                </CardHeader>
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <Target className="size-5 shrink-0 text-gray-400" />
+                    Transformation Framework
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Psychological transformation insights
+                </CardDescription>
+            </CardHeader>
 
-                <CardContent className="p-8">
-                    <div className="space-y-6">
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                            Generate psychological transformation insights that bridge behavior patterns to actionable outcomes.
-                            This framework identifies irrationality clusters and provides outcome-driven solutions.
-                        </p>
+            <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+                <p className="text-sm leading-relaxed text-gray-600">
+                    Generate psychological transformation insights that bridge behavior patterns to actionable outcomes.
+                    This framework identifies irrationality clusters and provides outcome-driven solutions.
+                </p>
 
-                        <div className="flex justify-end">
-                            <Button
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                                size="lg"
-                                className="bg-primary text-white hover:bg-primary/90"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Generating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Target className="mr-2 h-4 w-4" />
-                                        Generate Framework
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Target className="mr-2 size-4" />
+                                Generate Framework
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 };

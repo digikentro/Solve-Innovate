@@ -10,42 +10,44 @@ import {
   validateSecondaryResearchFile,
   type SecondaryResearchFileRef,
 } from '@/services/secondaryResearchService';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 interface ProjectInfoProps {
   project: Project;
 }
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-
 export const ProjectInfo = ({ project }: ProjectInfoProps) => {
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
-      <CardHeader className="border-b border-gray-100 py-6">
-        <CardTitle className="text-xl font-medium text-gray-900 flex items-center gap-3">
-          <FiInfo className="w-5 h-5 text-gray-400" />
+    <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+      <CardHeader className="border-b border-gray-100">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+          <FiInfo className="size-5 shrink-0 text-gray-400" />
           Project Information
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="p-8">
-        <dl className="space-y-10">
-          <div className="group">
-            <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Description</dt>
-            <dd className="text-gray-600 leading-relaxed text-lg">
+      <CardContent className="px-6 pb-6 pt-6">
+        <dl className="flex flex-col gap-6">
+          <div>
+            <dt className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Description</dt>
+            <dd className="text-sm leading-relaxed text-gray-700">
               {project.description || 'No description provided'}
             </dd>
           </div>
 
           {project.skills && project.skills.length > 0 && (
-            <div className="group">
-              <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Skills & Technologies</dt>
-              <dd className="mt-1">
+            <div>
+              <dt className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Skills & Technologies</dt>
+              <dd>
                 <div className="flex flex-wrap gap-2">
                   {project.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-medium bg-white text-gray-600 border border-gray-200"
+                      className="inline-flex items-center rounded-md border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gray-700"
                     >
                       {skill}
                     </span>
@@ -56,14 +58,14 @@ export const ProjectInfo = ({ project }: ProjectInfoProps) => {
           )}
 
           {project.design_research?.generated_at && (
-            <div className="group pt-6 border-t border-gray-100">
-              <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Extreme User Analysis</dt>
-              <dd className="space-y-4">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="border-t border-gray-100 pt-6">
+              <dt className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Extreme User Analysis</dt>
+              <dd className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span className="font-medium">Generated on: {new Date(project.design_research.generated_at).toLocaleString()}</span>
                 </div>
                 {project.design_research.form && (
-                  <div className="space-y-4 text-sm text-gray-600">
+                  <div className="flex flex-col gap-3 text-sm text-gray-700">
                     <p><span className="font-semibold text-gray-900">Step:</span> {project.design_research.form.painPointStep}</p>
                     <p><span className="font-semibold text-gray-900">Description:</span> {project.design_research.form.painPointDescription}</p>
                     <p><span className="font-semibold text-gray-900">User Context:</span> {project.design_research.form.targetUserContext}</p>
@@ -74,14 +76,14 @@ export const ProjectInfo = ({ project }: ProjectInfoProps) => {
           )}
 
           {project.deep_empathy_data?.generated_at && (
-            <div className="group pt-6 border-t border-gray-100">
-              <dt className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Deep Empathy Research</dt>
-              <dd className="space-y-4">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="border-t border-gray-100 pt-6">
+              <dt className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Deep Empathy Research</dt>
+              <dd className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span className="font-medium">Generated on: {new Date(project.deep_empathy_data.generated_at).toLocaleString()}</span>
                 </div>
                 {project.deep_empathy_data.form && (
-                  <div className="space-y-4 text-sm text-gray-600">
+                  <div className="flex flex-col gap-3 text-sm text-gray-700">
                     <p><span className="font-semibold text-gray-900">Prioritized Pain Point:</span> {project.deep_empathy_data.form.prioritizedPainPoint}</p>
                     <p><span className="font-semibold text-gray-900">Description:</span> {project.deep_empathy_data.form.painPointDescription}</p>
                     <p><span className="font-semibold text-gray-900">Selected Extreme User:</span> {project.deep_empathy_data.form.selectedExtremeUser}</p>
@@ -240,55 +242,68 @@ export const SecondaryResearchSection = ({
   };
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
-      <CardHeader className="border-b border-gray-100 py-5 flex flex-row items-center justify-between gap-4 flex-wrap">
-        <div>
-          <CardTitle className="text-xl font-medium text-gray-900 flex items-center gap-3">
-            <FiFileText className="w-5 h-5 text-gray-400" />
+    <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+      <CardHeader className="flex flex-col items-start gap-4 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1.5 text-left">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+            <FiFileText className="size-5 shrink-0 text-gray-400" />
             Secondary Research
           </CardTitle>
-          <p className="mt-1 text-[10px] text-gray-400 uppercase tracking-widest">
-            Optional · MD, TXT, PDF, DOCX (Max 5MB)
-          </p>
+          <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+            Optional · MD, TXT, PDF, DOCX (max 5MB)
+          </CardDescription>
         </div>
 
         <Button
+          type="button"
           onClick={handleSaveAndUpload}
           disabled={isSaving}
-          className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-xl h-10 px-6 font-normal"
+          className="w-full shrink-0 sm:w-auto"
         >
-          {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</> : 'Save and Upload'}
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+              Saving...
+            </>
+          ) : (
+            'Save and Upload'
+          )}
         </Button>
       </CardHeader>
 
       {(errorMessage || successMessage) && (
-        <div className={`mx-6 mt-6 p-4 text-xs border ${errorMessage ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+        <div
+          className={cn(
+            'mx-6 mt-6 rounded-md border p-4 text-xs',
+            errorMessage ? 'border-red-100 bg-red-50 text-red-800' : 'border-gray-100 bg-gray-50 text-gray-800'
+          )}
+        >
           {errorMessage || successMessage}
         </div>
       )}
 
-      <CardContent className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <CardContent className="grid grid-cols-1 gap-8 px-6 pb-6 pt-6 lg:grid-cols-3">
         {/* Column 1: Files */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
-            <FiUpload className="w-3 h-3" /> Files
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <FiUpload className="size-3 shrink-0" /> Files
           </div>
           <div
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`
-              flex flex-col items-center justify-center gap-2 h-32 border border-dashed transition-all duration-200 cursor-pointer
-              ${isDragOver ? 'border-gray-900 bg-gray-50' : 'border-gray-200 bg-white hover:border-gray-400'}
-            `}
+            className={cn(
+              'flex min-h-32 cursor-pointer flex-row items-center gap-3 rounded-md border border-dashed px-4 py-4 transition-all duration-200',
+              isDragOver ? 'border-gray-900 bg-gray-50' : 'border-gray-200 bg-white hover:border-gray-400'
+            )}
           >
             <input ref={fileInputRef} type="file" multiple accept=".md,.txt,.pdf,.docx" className="hidden" onChange={(e) => onFilesSelected(e.target.files)} />
-            <FiPlus className="w-5 h-5 text-gray-300" />
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Upload or Drop</p>
+            <FiPlus className="size-5 shrink-0 text-gray-400" />
+            <p className="text-left text-xs font-medium uppercase tracking-wide text-gray-500">Upload or drop</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {draft.files.map((f, idx) => (
               <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 text-xs text-gray-600">
                 <span className="truncate flex-1">{f.name}</span>
@@ -307,24 +322,24 @@ export const SecondaryResearchSection = ({
         </div>
 
         {/* Column 2: Links */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
-            <FiLink className="w-3 h-3" /> Links
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <FiLink className="size-3 shrink-0" /> Links
           </div>
           <div className="flex gap-2">
-            <input
+            <Input
               type="url"
               placeholder="https://..."
               value={draft.linkDraft}
               onChange={(e) => setDraft(prev => ({ ...prev, linkDraft: e.target.value }))}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLinks(); } }}
-              className="flex-1 border-b border-gray-200 py-1 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black transition-colors"
+              className="flex-1"
             />
-            <button onClick={addLinks} className="text-gray-400 hover:text-black">
-              <FiPlus className="w-4 h-4" />
-            </button>
+            <Button type="button" variant="outline" size="icon" onClick={addLinks} aria-label="Add link">
+              <FiPlus className="size-4" />
+            </Button>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {draft.links.map((link, idx) => (
               <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 text-xs text-gray-600">
                 <span className="truncate flex-1">{link}</span>
@@ -343,12 +358,12 @@ export const SecondaryResearchSection = ({
         </div>
 
         {/* Column 3: Text */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
-            <FiFileText className="w-3 h-3" /> Text Context
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <FiFileText className="size-3 shrink-0" /> Text Context
           </div>
-          <textarea
-            className="w-full h-32 p-3 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-black resize-none"
+          <Textarea
+            className="min-h-32 resize-none"
             placeholder="Paste raw research here..."
             value={draft.quotesDraft}
             onChange={(e) => setDraft(prev => ({ ...prev, quotesDraft: e.target.value }))}

@@ -328,7 +328,7 @@ export const EmbeddedChatSection = ({
     return (
       <div className="space-y-6">
         {/* Header Card */}
-        <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
+        <Card className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden">
           <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
@@ -365,9 +365,9 @@ export const EmbeddedChatSection = ({
                         <button
                           key={key}
                           onClick={() => enterExtremeUserChat(key)}
-                          className="flex items-center gap-3 px-4 py-4 bg-white border border-gray-200 hover:border-gray-300 rounded-lg text-left transition-all duration-200 hover:shadow-sm group"
+                          className="flex items-center gap-3 px-4 py-4 bg-white border border-gray-200 hover:border-gray-300 rounded-md text-left transition-all duration-200 hover:shadow-sm group"
                         >
-                          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-9 h-9 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
                             <FiUser className="w-4 h-4 text-white" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -414,7 +414,7 @@ export const EmbeddedChatSection = ({
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 bg-secondary rounded-md flex items-center justify-center flex-shrink-0">
                           <FiUserPlus className="w-4 h-4 text-secondary-foreground" />
                         </div>
                         <div className="min-w-0">
@@ -464,7 +464,7 @@ export const EmbeddedChatSection = ({
         {/* ── Confirmation Dialog ── */}
         {confirmClear && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-sm bg-white border border-gray-200 shadow-lg rounded-lg">
+            <Card className="w-full max-w-sm bg-white border border-gray-200 shadow-lg rounded-md">
               <CardHeader className="border-b border-gray-100">
                 <CardTitle className="text-gray-900">Change user?</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">This will clear the saved user.</p>
@@ -491,7 +491,7 @@ export const EmbeddedChatSection = ({
         {/* ── Custom User Modal ── */}
         {isCustomUserModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md bg-white border border-gray-200 shadow-lg rounded-lg">
+            <Card className="w-full max-w-md bg-white border border-gray-200 shadow-lg rounded-md">
               <CardHeader className="border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
@@ -526,7 +526,7 @@ export const EmbeddedChatSection = ({
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe characteristics, behaviors, needs..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
                   />
                 </div>
               </CardContent>
@@ -562,7 +562,7 @@ export const EmbeddedChatSection = ({
   const isExtreme = chatMode === 'selected';
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-lg overflow-hidden h-[75vh] flex flex-col">
+    <Card className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden h-[75vh] flex flex-col">
       {/* ── HEADER ── */}
       <div className="relative px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center justify-between gap-4">
@@ -574,7 +574,7 @@ export const EmbeddedChatSection = ({
             >
               <FiArrowLeft className="w-4 h-4" />
             </Button>
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
               <FiMessageCircle className="w-4 h-4 text-white" />
             </div>
 
@@ -591,7 +591,7 @@ export const EmbeddedChatSection = ({
                 </Button>
 
                 {isUserSwitcherOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden z-50">
                     <div className="px-3 py-2 border-b border-gray-100">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Switch User</p>
                     </div>
@@ -605,14 +605,14 @@ export const EmbeddedChatSection = ({
                             onClick={() => switchUser(key)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-sm border-b border-gray-50 last:border-b-0 ${isActive ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
                           >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-100'}`}>
+                            <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-100'}`}>
                               <FiUser className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-gray-900'}`}>{entry.name}</p>
                               <p className="text-xs text-muted-foreground">{entry.messages?.length ?? 0} msg{(entry.messages?.length ?? 0) !== 1 ? 's' : ''}</p>
                             </div>
-                            {isActive && <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
+                            {isActive && <div className="w-2 h-2 bg-primary rounded-md flex-shrink-0" />}
                           </button>
                         );
                       })}
@@ -638,8 +638,8 @@ export const EmbeddedChatSection = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-200 flex-shrink-0">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-md border border-green-200 flex-shrink-0">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-md animate-pulse" />
             <span className="text-xs font-semibold text-green-700">Online</span>
           </div>
         </div>
@@ -650,7 +650,7 @@ export const EmbeddedChatSection = ({
         <div className="p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-12">
-              <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
+              <div className="mx-auto w-12 h-12 bg-primary rounded-md flex items-center justify-center mb-4">
                 <FiMessageCircle className="w-6 h-6 text-white" />
               </div>
               <h4 className="text-sm font-semibold text-gray-900 mb-1">Start Your Conversation</h4>
@@ -662,7 +662,7 @@ export const EmbeddedChatSection = ({
             messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex max-w-[80%] ${msg.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center shadow-sm ${
                     msg.isUser
                       ? 'bg-primary text-white ml-2'
                       : 'bg-gray-100 text-gray-600 mr-2 border border-gray-200'
@@ -670,7 +670,7 @@ export const EmbeddedChatSection = ({
                     {msg.isUser ? <FiUser className="w-4 h-4" /> : <FiMessageCircle className="w-4 h-4" />}
                   </div>
                   <div className="space-y-1">
-                    <div className={`px-4 py-2 rounded-lg text-sm leading-relaxed font-medium ${
+                    <div className={`px-4 py-2 rounded-md text-sm leading-relaxed font-medium ${
                       msg.isUser
                         ? 'bg-primary text-white'
                         : 'bg-gray-100 text-gray-900 border border-gray-200'
@@ -689,13 +689,13 @@ export const EmbeddedChatSection = ({
           {isTyping && (
             <div className="flex justify-start">
               <div className="flex max-w-[80%]">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 mr-2 flex items-center justify-center border border-gray-200">
+                <div className="w-8 h-8 rounded-md bg-gray-100 text-gray-600 mr-2 flex items-center justify-center border border-gray-200">
                   <FiMessageCircle className="w-4 h-4" />
                 </div>
-                <div className="bg-gray-100 px-4 py-2 rounded-lg border border-gray-200">
+                <div className="bg-gray-100 px-4 py-2 rounded-md border border-gray-200">
                   <div className="flex space-x-1 items-center">
                     {[0, 0.2, 0.4].map((delay, i) => (
-                      <div key={i} className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${delay}s`}} />
+                      <div key={i} className="w-2 h-2 bg-primary rounded-md animate-bounce" style={{ animationDelay: `${delay}s`}} />
                     ))}
                     <span className="text-xs text-muted-foreground ml-2">typing…</span>
                   </div>
@@ -728,7 +728,7 @@ export const EmbeddedChatSection = ({
             {isTyping ? (
               <div className="flex space-x-1">
                 {[0, 0.1, 0.2].map((d, i) => (
-                  <div key={i} className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: `${d}s` }} />
+                  <div key={i} className="w-1.5 h-1.5 bg-white rounded-md animate-bounce" style={{ animationDelay: `${d}s` }} />
                 ))}
               </div>
             ) : (

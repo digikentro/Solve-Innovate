@@ -115,12 +115,12 @@ export const PainPointSelectionModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-md max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="px-8 py-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-md flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -130,7 +130,7 @@ export const PainPointSelectionModal = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/50 rounded-xl transition-colors"
+              className="p-2 hover:bg-white/50 rounded-md transition-colors"
             >
               <FiX className="w-6 h-6 text-gray-500" />
             </button>
@@ -146,7 +146,7 @@ export const PainPointSelectionModal = ({
               <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-lg font-medium">No Pain Points Available</p>
               <p className="text-sm mt-2">Please generate an As-Is Map first to see pain points here.</p>
-              <p className="text-xs mt-4 bg-blue-50 text-blue-700 p-3 rounded-lg">
+              <p className="text-xs mt-4 bg-blue-50 text-blue-700 p-3 rounded-md">
                 💡 <strong>Tip:</strong> Go to the "As-Is Map" section first, generate your map, and then come back here to select from the identified pain points.
               </p>
             </div>
@@ -155,16 +155,16 @@ export const PainPointSelectionModal = ({
               {displayPainPoints.map((painPoint, index) => (
                 <div
                   key={`${painPoint.stage_id}-${painPoint.step_id}`}
-                  className="border border-gray-200 rounded-2xl p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                  className="border border-gray-200 rounded-md p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                   onClick={() => handleSelectPainPoint(painPoint)}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                      <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-md">
                         Stage {painPoint.stage_id}, Step {painPoint.step_id}
                       </div>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getPainLevelColor(painPoint.pain_level)}`}>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium ${getPainLevelColor(painPoint.pain_level)}`}>
                       {getPainLevelIcon(painPoint.pain_level)}
                       Pain Level: {painPoint.pain_level}/10
                     </div>
@@ -206,7 +206,7 @@ export const PainPointSelectionModal = ({
                     }
                     onClose();
                   }}
-                  className="px-6 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold shadow hover:bg-purple-700 transition-colors"
+                  className="px-6 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold shadow hover:bg-purple-700 transition-colors"
                 >
                   Select All
                 </button>

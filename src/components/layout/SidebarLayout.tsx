@@ -19,6 +19,7 @@ import {
   Info,
   Edit2,
   Trash2,
+  Share,
 } from 'lucide-react';
 import { Plasma } from '@/components/ui/Plasma';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
@@ -297,12 +298,14 @@ export function SidebarLayout() {
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Persistent Global Plasma Background */}
-        <div className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 ${showPlasma ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 ${showPlasma ? 'opacity-100' : 'opacity-0'}`} style={{ willChange: 'opacity' }}>
           <Plasma 
             color="#ffffffff"
             speed={0.25}
             opacity={0.20}
             scale={2.5}
+            iterations={30}
+            mouseInteractive={false}
           />
           {/* Subtle overlay to soften the plasma on light pages if needed */}
           <div className="absolute inset-0 bg-indigo-50/10 pointer-events-none" />
@@ -328,10 +331,6 @@ export function SidebarLayout() {
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-
-            <Button variant="outline" size="sm" className="hidden sm:flex bg-white text-gray-700">
-              Share
-            </Button>
           </div>
 
           <div className="flex-[2] flex justify-center items-center gap-3">
@@ -356,6 +355,16 @@ export function SidebarLayout() {
           </div>
 
           <div className="flex items-center justify-end gap-3 flex-1">
+            {/* Share button — visible only in projects */}
+            {isProjectPage && (
+              <button
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                title="Share project"
+              >
+                <Share className="w-4 h-4" />
+              </button>
+            )}
+
             {/* Profile Dropdown */}
             <div className="relative group">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white cursor-pointer overflow-hidden">

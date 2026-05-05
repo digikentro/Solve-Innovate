@@ -4,9 +4,10 @@ import { toast } from 'react-hot-toast';
 import { FiActivity, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { TestingReportViewer } from './TestingReportViewer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TestingSectionProps {
     project: Project;
@@ -219,40 +220,38 @@ export const TestingSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-                <TestingReportViewer
-                    data={testingData}
-                    onGenerateNew={handleGenerateNew}
-                    projectId={project.id}
-                />
-            </div>
+            <Card className="animate-fadeIn overflow-hidden border border-gray-200 bg-white shadow-none">
+                <CardContent className="px-6 pb-6 pt-6">
+                    <TestingReportViewer
+                        data={testingData}
+                        onGenerateNew={handleGenerateNew}
+                        projectId={project.id}
+                    />
+                </CardContent>
+            </Card>
         );
     }
 
     // Show form if no data
     return (
-        <div className="space-y-6">
-            {/* Header Card */}
-            <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden">
-              <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
-                    <FiActivity className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl font-medium text-gray-900">Testing</CardTitle>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Generate comprehensive testing scenarios</p>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-8 space-y-8">
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <FiActivity className="size-5 shrink-0 text-gray-400" />
+                    Testing
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Generate comprehensive testing scenarios
+                </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="flex flex-col gap-8 px-6 pb-6 pt-6">
                 {/* User Input Section */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Your Input</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label htmlFor="productName" className="text-sm font-semibold text-gray-900">
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-sm font-medium text-gray-900">Your Input</h3>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="productName" className="text-sm font-medium text-gray-900">
                         Product Name <span className="text-red-500">*</span>
                       </label>
                       <Input
@@ -263,113 +262,113 @@ export const TestingSection = ({
                         placeholder="Enter your product name..."
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="specificFocus" className="text-sm font-semibold text-gray-900">
-                        Specific Focus Areas <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="specificFocus" className="text-sm font-medium text-gray-900">
+                        Specific Focus Areas <span className="text-xs font-normal text-gray-500">(Optional)</span>
                       </label>
-                      <textarea
+                      <Textarea
                         id="specificFocus"
                         value={specificFocus}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpecificFocus(e.target.value)}
                         placeholder="Any specific concerns, edge cases, or areas to focus on during testing..."
                         rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
+                        className="resize-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Auto-Populated Data Preview */}
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Auto-Populated from Project Data</h3>
-                    <p className="text-xs text-muted-foreground mt-1">(Read-only)</p>
+                    <h3 className="text-sm font-medium text-gray-900">Auto-Populated from Project Data</h3>
+                    <p className="mt-1 text-xs text-gray-500">(Read-only)</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
                           {autoPopulatedData.problemStatement ? (
-                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
                           ) : (
-                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                           )}
-                          <h4 className="text-xs font-semibold text-gray-700">Problem Statement</h4>
+                          <h4 className="text-xs font-medium text-gray-700">Problem Statement</h4>
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-3">
-                          {autoPopulatedData.problemStatement || <span className="italic text-muted-foreground">No data available</span>}
+                        <p className="line-clamp-3 text-xs text-gray-600">
+                          {autoPopulatedData.problemStatement || <span className="italic text-gray-500">No data available</span>}
                         </p>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
                           {autoPopulatedData.targetUsers ? (
-                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
                           ) : (
-                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                           )}
-                          <h4 className="text-xs font-semibold text-gray-700">Target Users</h4>
+                          <h4 className="text-xs font-medium text-gray-700">Target Users</h4>
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-3">
-                          {autoPopulatedData.targetUsers || <span className="italic text-muted-foreground">No data available</span>}
+                        <p className="line-clamp-3 text-xs text-gray-600">
+                          {autoPopulatedData.targetUsers || <span className="italic text-gray-500">No data available</span>}
                         </p>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
                           {autoPopulatedData.keyFeatures.length > 0 ? (
-                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
                           ) : (
-                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                           )}
-                          <h4 className="text-xs font-semibold text-gray-700">Key Features</h4>
+                          <h4 className="text-xs font-medium text-gray-700">Key Features</h4>
                         </div>
                         {autoPopulatedData.keyFeatures.length > 0 ? (
-                          <ul className="list-disc list-inside space-y-1">
+                          <ul className="flex flex-col gap-1">
                             {autoPopulatedData.keyFeatures.slice(0, 3).map((f, i) => (
-                              <li key={i} className="text-xs text-gray-600 line-clamp-1">{f}</li>
+                              <li key={i} className="line-clamp-1 text-xs text-gray-600">• {f}</li>
                             ))}
                           </ul>
                         ) : (
-                          <span className="text-xs italic text-muted-foreground">No data available</span>
+                          <span className="text-xs italic text-gray-500">No data available</span>
                         )}
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
                           {autoPopulatedData.userScenarios.length > 0 ? (
-                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
                           ) : (
-                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                           )}
-                          <h4 className="text-xs font-semibold text-gray-700">User Scenarios</h4>
+                          <h4 className="text-xs font-medium text-gray-700">User Scenarios</h4>
                         </div>
                         {autoPopulatedData.userScenarios.length > 0 ? (
-                          <ul className="list-disc list-inside space-y-1">
+                          <ul className="flex flex-col gap-1">
                             {autoPopulatedData.userScenarios.slice(0, 3).map((s, i) => (
-                              <li key={i} className="text-xs text-gray-600 line-clamp-1">{s}</li>
+                              <li key={i} className="line-clamp-1 text-xs text-gray-600">• {s}</li>
                             ))}
                           </ul>
                         ) : (
-                          <span className="text-xs italic text-muted-foreground">No data available</span>
+                          <span className="text-xs italic text-gray-500">No data available</span>
                         )}
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
-                          <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <h4 className="text-xs font-semibold text-gray-700">Design Stage</h4>
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          <h4 className="text-xs font-medium text-gray-700">Design Stage</h4>
                         </div>
-                        <span className={`inline-flex text-xs font-medium px-2 py-1 rounded ${autoPopulatedData.designStage === 'Refined Prototype'
+                        <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${autoPopulatedData.designStage === 'Refined Prototype'
                           ? 'bg-green-100 text-green-700'
                           : autoPopulatedData.designStage === 'Rough Prototype'
                             ? 'bg-yellow-100 text-yellow-700'
@@ -380,25 +379,25 @@ export const TestingSection = ({
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-2 mb-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
                           {autoPopulatedData.prototypeArtifacts.sketch || autoPopulatedData.prototypeArtifacts.image ? (
-                            <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
                           ) : (
-                            <FiAlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                           )}
-                          <h4 className="text-xs font-semibold text-gray-700">Prototype Artifacts</h4>
+                          <h4 className="text-xs font-medium text-gray-700">Prototype Artifacts</h4>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {autoPopulatedData.prototypeArtifacts.sketch && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Sketch ✓</span>
+                            <span className="rounded-md bg-purple-100 px-2 py-1 text-xs text-purple-700">Sketch ✓</span>
                           )}
                           {autoPopulatedData.prototypeArtifacts.image && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Image ✓</span>
+                            <span className="rounded-md bg-blue-100 px-2 py-1 text-xs text-blue-700">Image ✓</span>
                           )}
                           {!autoPopulatedData.prototypeArtifacts.sketch && !autoPopulatedData.prototypeArtifacts.image && (
-                            <span className="text-xs text-muted-foreground italic">None generated yet</span>
+                            <span className="text-xs italic text-gray-500">None generated yet</span>
                           )}
                         </div>
                       </CardContent>
@@ -406,32 +405,36 @@ export const TestingSection = ({
                   </div>
 
                   {autoPopulatedData.featureDescriptions.length > 0 && (
-                    <Card className="bg-gray-50 border border-gray-200 shadow-none">
-                      <CardContent className="pt-4">
-                        <h4 className="text-xs font-semibold text-gray-700 mb-3">Feature Descriptions</h4>
-                        <ul className="space-y-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-3 px-4 py-3">
+                        <h4 className="text-xs font-medium text-gray-700">Feature Descriptions</h4>
+                        <ul className="flex flex-col gap-2">
                           {autoPopulatedData.featureDescriptions.map((desc, i) => (
-                            <li key={i} className="text-xs text-gray-600">{desc}</li>
+                            <li key={i} className="text-xs text-gray-600">• {desc}</li>
                           ))}
                         </ul>
                       </CardContent>
                     </Card>
                   )}
                 </div>
+
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating || !productName.trim()}
+                    >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Testing Scenarios'
+                        )}
+                    </Button>
+                </div>
               </CardContent>
             </Card>
-
-            {/* Generate Button */}
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !productName.trim()}
-                    size="lg"
-                    className="bg-primary text-white hover:bg-primary/90"
-                >
-                    {isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate Testing Scenarios'}
-                </Button>
-            </div>
-        </div>
     );
 };

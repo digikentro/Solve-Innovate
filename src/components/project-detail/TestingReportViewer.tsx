@@ -165,7 +165,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                             {reportData['SECTION A: Priority Issues & Pain Points'].Critical && (
                                 <div>
                                     <h3 className="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                        <span className="w-2 h-2 bg-red-500 rounded-md"></span>
                                         Critical Issues ({reportData['SECTION A: Priority Issues & Pain Points'].Critical.length})
                                     </h3>
                                     <div className="space-y-3">
@@ -179,7 +179,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                             {reportData['SECTION A: Priority Issues & Pain Points'].Important && (
                                 <div>
                                     <h3 className="text-sm font-semibold text-yellow-700 mb-3 flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                        <span className="w-2 h-2 bg-yellow-500 rounded-md"></span>
                                         Important Issues ({reportData['SECTION A: Priority Issues & Pain Points'].Important.length})
                                     </h3>
                                     <div className="space-y-3">
@@ -193,7 +193,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                             {reportData['SECTION A: Priority Issues & Pain Points'].Minor && (
                                 <div>
                                     <h3 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <span className="w-2 h-2 bg-green-500 rounded-md"></span>
                                         Minor Issues ({reportData['SECTION A: Priority Issues & Pain Points'].Minor.length})
                                     </h3>
                                     <div className="space-y-3">
@@ -233,7 +233,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     {expandedSections.sectionC && (
                         <CardContent className="space-y-4 pt-0">
                             {Object.entries(reportData['SECTION C: Design Recommendations by Category']).map(([category, items]) => (
-                                <div key={category} className="bg-gray-50 rounded-lg p-4">
+                                <div key={category} className="bg-gray-50 rounded-md p-4">
                                     <h4 className="text-sm font-semibold text-gray-900 mb-2">{category}</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-gray-600">
                                         {(items as string[]).map((item, i) => (
@@ -256,7 +256,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     {expandedSections.sectionD && (
                         <CardContent className="grid md:grid-cols-3 gap-4 pt-0">
                             {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Quick Wins'] && (
-                                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                                <div className="bg-green-50 rounded-md p-4 border border-green-100">
                                     <h4 className="text-sm font-semibold text-green-800 mb-2">Quick Wins</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-green-700">
                                         {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Quick Wins'].map((item: string, i: number) => (
@@ -266,7 +266,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                                 </div>
                             )}
                             {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Strategic Improvements'] && (
-                                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                                <div className="bg-blue-50 rounded-md p-4 border border-blue-100">
                                     <h4 className="text-sm font-semibold text-blue-800 mb-2">Strategic Improvements</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-blue-700">
                                         {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Strategic Improvements'].map((item: string, i: number) => (
@@ -276,7 +276,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                                 </div>
                             )}
                             {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Future Enhancements'] && (
-                                <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                                <div className="bg-purple-50 rounded-md p-4 border border-purple-100">
                                     <h4 className="text-sm font-semibold text-purple-800 mb-2">Future Enhancements</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-purple-700">
                                         {reportData['SECTION D: Quick Wins vs Strategic Improvements']['Future Enhancements'].map((item: string, i: number) => (
@@ -301,7 +301,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                             {Object.entries(reportData['SECTION E: Implementation Roadmap']).map(([phase, items], idx) => (
                                 <div key={phase} className="flex gap-4">
                                     <div className="flex flex-col items-center">
-                                        <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
+                                        <div className="w-8 h-8 rounded-md bg-primary text-white flex items-center justify-center font-bold text-sm">
                                             {idx + 1}
                                         </div>
                                         {idx < Object.keys(reportData['SECTION E: Implementation Roadmap']).length - 1 && (
@@ -332,7 +332,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     {expandedSections.sectionF && (
                         <CardContent className="grid md:grid-cols-2 gap-4 pt-0">
                             {reportData['SECTION F: Cross-Persona Insights & Themes']['Recurring patterns'] && (
-                                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                                <div className="bg-indigo-50 rounded-md p-4 border border-indigo-100">
                                     <h4 className="text-sm font-semibold text-indigo-800 mb-2">Recurring Patterns</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-indigo-700">
                                         {reportData['SECTION F: Cross-Persona Insights & Themes']['Recurring patterns'].map((item: string, i: number) => (
@@ -342,7 +342,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                                 </div>
                             )}
                             {reportData['SECTION F: Cross-Persona Insights & Themes']['Design implications'] && (
-                                <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                <div className="bg-amber-50 rounded-md p-4 border border-amber-100">
                                     <h4 className="text-sm font-semibold text-amber-800 mb-2">Design Implications</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-amber-700">
                                         {reportData['SECTION F: Cross-Persona Insights & Themes']['Design implications'].map((item: string, i: number) => (
@@ -383,7 +383,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     {expandedSections.sectionH && (
                         <CardContent className="space-y-4 pt-0">
                             {reportData['SECTION H: Final Recommendations for Next Iteration']['Top 3 priority actions'] && (
-                                <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                                <div className="bg-red-50 rounded-md p-4 border border-red-100">
                                     <h4 className="text-sm font-semibold text-red-800 mb-2">Top 3 Priority Actions</h4>
                                     <ol className="list-decimal list-inside space-y-1 text-xs text-red-700">
                                         {reportData['SECTION H: Final Recommendations for Next Iteration']['Top 3 priority actions'].map((item: string, i: number) => (
@@ -393,7 +393,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                                 </div>
                             )}
                             {reportData['SECTION H: Final Recommendations for Next Iteration']['Success criteria'] && (
-                                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                                <div className="bg-green-50 rounded-md p-4 border border-green-100">
                                     <h4 className="text-sm font-semibold text-green-800 mb-2">Success Criteria</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-green-700">
                                         {reportData['SECTION H: Final Recommendations for Next Iteration']['Success criteria'].map((item: string, i: number) => (
@@ -403,7 +403,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                                 </div>
                             )}
                             {reportData['SECTION H: Final Recommendations for Next Iteration']['Validation plan'] && (
-                                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                                <div className="bg-blue-50 rounded-md p-4 border border-blue-100">
                                     <h4 className="text-sm font-semibold text-blue-800 mb-2">Validation Plan</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs text-blue-700">
                                         {reportData['SECTION H: Final Recommendations for Next Iteration']['Validation plan'].map((item: string, i: number) => (

@@ -4,7 +4,7 @@ import { HorizontalModal } from '@/components/ui/Modal';
 import { ResourceFrameworkSelector } from '@/components/assessment/ResourceFrameworkSelector';
 import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 import type { Project } from '@/types/project';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface ProjectAnalysisSectionProps {
@@ -44,26 +44,29 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
 
   return (
     <>
-      <Card className="bg-white border border-gray-200 shadow-none rounded-xl overflow-hidden mb-8">
-        <CardHeader className="border-b border-gray-100 py-6 flex flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <FiActivity className="w-5 h-5 text-gray-400" />
-            <div>
-              <CardTitle className="text-xl font-medium text-gray-900">Project Analysis</CardTitle>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Assessments and insights</p>
-            </div>
+      <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+        <CardHeader className="flex flex-col items-start gap-4 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1.5 text-left">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+              <FiActivity className="size-5 shrink-0 text-gray-400" />
+              Project Analysis
+            </CardTitle>
+            <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+              Assessments and insights
+            </CardDescription>
           </div>
           <Button
+            type="button"
             onClick={() => setShowAssessmentModal(true)}
-            className="bg-[#0f121f] text-white hover:bg-[#0f121f]/90 rounded-xl h-10 px-6 font-normal"
+            className="w-full shrink-0 sm:w-auto"
           >
             Analyse Project
           </Button>
         </CardHeader>
         
-        <CardContent className="p-8">
+        <CardContent className="px-6 pb-6 pt-6">
           {analysis.length > 0 ? (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-3">
               {[...analysis]
                 .map((a, idx) => ({ a, idx }))
                 .sort((x, y) => {
@@ -83,33 +86,41 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
                   }
                   
                   return (
-                    <div key={idx} className="group border border-gray-100 p-6 flex items-center justify-between transition-colors hover:border-gray-300">
-                      <div className="flex items-center gap-6">
-                        <FiSearch className="w-5 h-5 text-gray-300" />
+                    <div key={idx} className="group flex items-center justify-between gap-4 rounded-md border border-gray-200 p-4 transition-colors hover:border-gray-300 hover:bg-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white">
+                          <FiSearch className="size-4 text-gray-400" />
+                        </div>
                         <div>
-                          <h4 className="text-base font-medium text-gray-900">{name}</h4>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 uppercase tracking-widest">
-                            <FiCalendar className="w-3 h-3" />
+                          <h4 className="text-sm font-medium text-gray-900">{name}</h4>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
+                            <FiCalendar className="size-3" />
                             {a.createdAt ? new Date(a.createdAt).toLocaleString() : a.updatedAt ? new Date(a.updatedAt).toLocaleString() : 'Unknown'}
                           </div>
                         </div>
                       </div>
                       <Button
+                        type="button"
                         variant="ghost"
-                        className="text-gray-400 hover:text-black group-hover:bg-gray-50 rounded-xl"
+                        size="sm"
                         onClick={() => setViewAssessmentIdx(idx)}
+                        className="shrink-0"
                       >
-                        View Analysis <FiArrowRight className="ml-2 w-3 h-3" />
+                        View Analysis <FiArrowRight className="ml-2 size-3" />
                       </Button>
                     </div>
                   );
                 })}
             </div>
           ) : (
-            <div className="text-center py-16 border border-dashed border-gray-100">
-              <FiSearch className="w-8 h-8 text-gray-200 mx-auto mb-4" />
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-2">No Analysis Available</h3>
-              <p className="text-xs text-gray-400">Start by analyzing your project to get insights.</p>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-gray-200 py-12 text-center">
+              <div className="flex size-12 items-center justify-center rounded-md bg-gray-50">
+                <FiSearch className="size-6 text-gray-300" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-sm font-medium text-gray-900">No Analysis Available</h3>
+                <p className="text-xs text-gray-500">Start by analyzing your project to get insights.</p>
+              </div>
             </div>
           )}
         </CardContent>
@@ -133,7 +144,7 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
             
             <div className="flex justify-start">
               <Button
-                className="bg-black text-white hover:bg-black/90 rounded-xl h-14 px-12 text-lg font-light transition-all disabled:opacity-30"
+                className="bg-black text-white hover:bg-black/90 rounded-md h-14 px-12 text-lg font-light transition-all disabled:opacity-30"
                 disabled={!selectedTier}
                 onClick={handleStartAssessment}
               >
