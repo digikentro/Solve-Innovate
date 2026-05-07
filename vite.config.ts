@@ -24,10 +24,8 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          // Core framework
-          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
-            return 'react';
-          }
+          // Keep React in main bundle - don't separate it
+          // Everything depends on React, so separating it causes loading issues
 
           // Routing
           if (id.includes('/react-router-dom/')) return 'router';
