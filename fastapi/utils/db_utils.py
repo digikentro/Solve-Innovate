@@ -59,6 +59,10 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
                 # prepared-statement cache avoids DuplicatePreparedStatementError
                 # during startup and normal request handling on pooled Postgres URLs.
                 rewritten_query_params.append(("prepared_statement_cache_size", "0"))
+            
+            # Also set statement_cache_size=0 directly in connect_args for asyncpg
+            # This ensures the cache is disabled at the asyncpg connection level
+            connect_args["statement_cache_size"] = 0
 
         for k, v in query_params:
             key_lower = k.lower()
