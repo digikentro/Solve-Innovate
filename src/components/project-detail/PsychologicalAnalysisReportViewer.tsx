@@ -96,9 +96,9 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
 
   if (!reportData) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-100">
-        <FiAlertCircle className="w-8 h-8 text-gray-200 mb-4" />
-        <p className="text-xs text-gray-400 uppercase tracking-widest">No Psychological Analysis Data</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white py-24">
+        <FiAlertCircle className="w-8 h-8 text-gray-400 mb-4" />
+        <p className="text-xs text-gray-500 uppercase tracking-widest">No Psychological Analysis Data</p>
       </div>
     );
   }
@@ -111,9 +111,9 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
     if (!items || items.length === 0) return null;
     
     return (
-      <div className="space-y-4">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">{label}</label>
-        <div className="space-y-3 pl-4 border-l border-gray-100">
+      <div className="flex flex-col gap-4">
+        <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">{label}</label>
+        <div className="flex flex-col gap-3 pl-4 border-l border-gray-200">
           {items.map((item: string, i: number) => (
             <div key={i} className="group relative">
               {isEditMode ? (
@@ -121,11 +121,11 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
                   value={item || ''}
                   onChange={(e) => updateArrayItemAtPath(path, i, e.target.value)}
                   rows={2}
-                  className="w-full bg-white border border-gray-200 p-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                  className="w-full bg-white border border-gray-200 p-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                 />
               ) : (
                 <div className="flex items-start gap-3 py-1">
-                  <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
+                  <span className="mt-1.5 w-1 h-1 bg-gray-400 rounded-md flex-shrink-0" />
                   <p className="text-sm text-gray-600 leading-relaxed">{item}</p>
                 </div>
               )}
@@ -137,75 +137,92 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
   };
 
   return (
-    <div className="space-y-12 max-w-5xl mx-auto pb-24">
+    <div className="flex flex-col gap-8 pb-24">
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-8 right-8 bg-black text-white px-6 py-4 z-50 flex items-center gap-3 shadow-2xl border border-white/10 animate-in fade-in slide-in-from-top-4">
-          <FiCheckCircle className="w-4 h-4 text-white" />
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Analysis Synchronized</span>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Analysis saved successfully</p>
+        </div>
+      )}
+
+      {showErrorMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText}</p>
         </div>
       )}
 
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12 border-b border-gray-100">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-light tracking-tight text-gray-900">Psychological Analysis</h1>
-          <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Phase 03 · Behavioral Pattern Synthesis</p>
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Psychological Analysis
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Behavioral pattern synthesis report
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {!isEditMode ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          {projectId && onSave && (
             <>
-              {onSave && (
-                <Button
-                  variant="outline"
+              {!isEditMode ? (
+                <button
+                  type="button"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-md h-12 px-8 font-normal transition-all"
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
                 >
-                  <FiEdit3 className="mr-2 w-4 h-4" /> Edit Analysis
-                </Button>
-              )}
-              {onGenerateNew && (
-                <Button
-                  onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-8 font-normal transition-all"
-                >
-                  <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
-                </Button>
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-1.5 inline size-3 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
               )}
             </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-md h-12 px-6 font-normal transition-all"
-                disabled={isSaving}
-              >
-                <FiX className="mr-2 w-4 h-4" /> Discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-10 font-normal transition-all"
-              >
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
-              </Button>
-            </>
+          )}
+          {onGenerateNew && (
+            <button
+              type="button"
+              onClick={onGenerateNew}
+              disabled={isEditMode}
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Generate New
+            </button>
           )}
         </div>
       </div>
 
       {/* Meta Analysis Overview */}
       {reportData.comprehensiveMetaAnalysis && (
-        <section className="p-10 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-12">Comprehensive Meta Analysis</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Comprehensive Meta Analysis</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-            <div className="space-y-12">
-              <div className="space-y-4">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Clusters Identified</label>
-                <p className="text-5xl font-light text-gray-900 border-l-2 border-black pl-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-10">
+            <div className="flex flex-col gap-12">
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Clusters Identified</label>
+                <p className="text-5xl font-light text-gray-900 border-l-2 border-gray-200 pl-6">
                   {reportData.comprehensiveMetaAnalysis.totalClustersIdentified || '0'}
                 </p>
               </div>
@@ -213,36 +230,36 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
               {renderEditableList(reportData.comprehensiveMetaAnalysis.behavioralPatternThemes, ['comprehensiveMetaAnalysis', 'behavioralPatternThemes'], 'Emergent Themes')}
             </div>
 
-            <div className="md:col-span-2 space-y-12">
-              <div className="space-y-6">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Human Psychology Insights</label>
+            <div className="md:col-span-2 flex flex-col gap-12">
+              <div className="flex flex-col gap-6">
+                <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Human Psychology Insights</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.comprehensiveMetaAnalysis.humanPsychologyInsights || ''}
                     onChange={(e) => updateTextAtPath(['comprehensiveMetaAnalysis', 'humanPsychologyInsights'], e.target.value)}
                     rows={4}
-                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">
+                  <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-200">
                     {reportData.comprehensiveMetaAnalysis.humanPsychologyInsights}
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                 {renderEditableList(reportData.comprehensiveMetaAnalysis.cognitiveBiasPatterns, ['comprehensiveMetaAnalysis', 'cognitiveBiasPatterns'], 'Cognitive Biases')}
-                <div className="space-y-6">
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Emotional Drivers</label>
+                <div className="flex flex-col gap-6">
+                  <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Emotional Drivers</label>
                   {isEditMode ? (
                     <textarea
                       value={reportData.comprehensiveMetaAnalysis.emotionalDriverAnalysis || ''}
                       onChange={(e) => updateTextAtPath(['comprehensiveMetaAnalysis', 'emotionalDriverAnalysis'], e.target.value)}
                       rows={4}
-                      className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                      className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">
+                    <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-200">
                       {reportData.comprehensiveMetaAnalysis.emotionalDriverAnalysis}
                     </p>
                   )}
@@ -254,57 +271,56 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
       )}
 
       {/* Behavioral Clusters */}
-      <div className="space-y-6">
-        <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] pl-2 mb-8">Behavioral Cluster Catalog</h2>
+      <div className="flex flex-col gap-6">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Behavioral Cluster Catalog</h2>
         
         {reportData.clusters?.map((cluster: any, idx: number) => (
-          <div key={idx} className="border border-gray-100 group">
+          <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
             <button
               onClick={() => toggleCluster(idx)}
-              className={`w-full p-8 text-left flex items-center justify-between transition-all ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
             >
-              <div className="flex items-center gap-6">
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-400'}`}>Cluster 0{idx + 1}</span>
-                <span className="text-sm font-medium tracking-wide uppercase">{cluster.irrationalBehavior || 'Behavioral Pattern'}</span>
+              <div className="flex items-center gap-4">
+                <span className={`text-xs font-medium uppercase tracking-wide ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-500'}`}>Cluster 0{idx + 1}</span>
+                <span className="text-sm font-medium">{cluster.irrationalBehavior || 'Behavioral Pattern'}</span>
               </div>
-              {expandedClusters[idx] ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
+              <span className="text-xs">{expandedClusters[idx] ? 'CLOSE' : 'EXPAND'}</span>
             </button>
-            
             {expandedClusters[idx] && (
-              <div className="p-10 bg-white border-t border-gray-100 space-y-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                  <div className="space-y-6">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Rational Counterpart</label>
+              <div className="flex flex-col gap-12 bg-white p-8 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                  <div className="flex flex-col gap-6">
+                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Rational Counterpart</label>
                     {isEditMode ? (
                       <textarea
                         value={cluster.rationalCounterpart || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx, 'rationalCounterpart'], e.target.value)}
+                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'rationalCounterpart'], e.target.value)}
                         rows={3}
-                        className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                        className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                       />
                     ) : (
-                      <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">{cluster.rationalCounterpart}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-200">{cluster.rationalCounterpart}</p>
                     )}
                   </div>
                   
-                  {renderEditableList(cluster.rawEvidenceFromStudentData, ['clusters', idx, 'rawEvidenceFromStudentData'], 'Raw Evidence')}
+                  {renderEditableList(cluster.rawEvidenceFromStudentData, ['clusters', idx.toString(), 'rawEvidenceFromStudentData'], 'Raw Evidence')}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-10 border-t border-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-10 border-t border-gray-100">
                   {[
-                    { label: 'Cognitive Biases', path: ['clusters', idx, 'psychologicalAnalysis', 'cognitiveBiases'], value: cluster.psychologicalAnalysis?.cognitiveBiases },
-                    { label: 'Emotional Drivers', path: ['clusters', idx, 'psychologicalAnalysis', 'emotionalDrivers'], value: cluster.psychologicalAnalysis?.emotionalDrivers },
-                    { label: 'Psychological Needs', path: ['clusters', idx, 'psychologicalAnalysis', 'psychologicalNeeds'], value: cluster.psychologicalAnalysis?.psychologicalNeeds },
-                    { label: 'Continuity Factor', path: ['clusters', idx, 'psychologicalAnalysis', 'whyItPersists'], value: cluster.psychologicalAnalysis?.whyItPersists }
+                    { label: 'Cognitive Biases', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'cognitiveBiases'], value: cluster.psychologicalAnalysis?.cognitiveBiases },
+                    { label: 'Emotional Drivers', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'emotionalDrivers'], value: cluster.psychologicalAnalysis?.emotionalDrivers },
+                    { label: 'Psychological Needs', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'psychologicalNeeds'], value: cluster.psychologicalAnalysis?.psychologicalNeeds },
+                    { label: 'Continuity Factor', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'whyItPersists'], value: cluster.psychologicalAnalysis?.whyItPersists }
                   ].map((field, fIdx) => (
-                    <div key={fIdx} className="space-y-3">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{field.label}</label>
+                    <div key={fIdx} className="flex flex-col gap-3">
+                      <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">{field.label}</label>
                       {isEditMode ? (
                         <textarea
                           value={field.value || ''}
-                          onChange={(e) => updateTextAtPath(field.path, e.target.value)}
+                          onChange={(e) => updateTextAtPath(field.path as string[], e.target.value)}
                           rows={3}
-                          className="w-full bg-white border border-gray-100 p-3 text-xs focus:outline-none focus:border-black transition-colors resize-none"
+                          className="w-full bg-white border border-gray-200 p-3 text-xs focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                         />
                       ) : (
                         <p className="text-xs text-gray-600 leading-relaxed">{field.value}</p>
@@ -313,31 +329,31 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pt-10 border-t border-gray-50">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block">Behavioral Science Basis</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pt-10 border-t border-gray-200">
+                  <div className="flex flex-col gap-6">
+                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Behavioral Science Basis</label>
                     {isEditMode ? (
                       <textarea
                         value={cluster.behavioralScienceExplanation || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx, 'behavioralScienceExplanation'], e.target.value)}
+                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'behavioralScienceExplanation'], e.target.value)}
                         rows={4}
-                        className="w-full bg-white border border-black p-4 text-sm focus:outline-none transition-colors resize-none"
+                        className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                       />
                     ) : (
-                      <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-6 border-l-2 border-black italic">"{cluster.behavioralScienceExplanation}"</p>
+                      <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l-2 border-gray-200 italic">"{cluster.behavioralScienceExplanation}"</p>
                     )}
                   </div>
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block">Strategic Innovation Insight</label>
+                  <div className="flex flex-col gap-6">
+                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Strategic Innovation Insight</label>
                     {isEditMode ? (
                       <textarea
                         value={cluster.innovationInsight || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx, 'innovationInsight'], e.target.value)}
+                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'innovationInsight'], e.target.value)}
                         rows={4}
-                        className="w-full bg-white border border-black p-4 text-sm font-medium focus:outline-none transition-colors resize-none"
+                        className="w-full bg-white border border-gray-200 p-4 text-sm font-medium focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                       />
                     ) : (
-                      <div className="p-6 border border-gray-900 bg-white">
+                      <div className="rounded-lg border border-gray-200 bg-white p-6">
                         <p className="text-sm font-medium text-gray-900 leading-relaxed">{cluster.innovationInsight}</p>
                       </div>
                     )}
@@ -351,18 +367,18 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
 
       {/* Critical Requirements */}
       {reportData.criticalRequirements && (
-        <section className="p-10 border border-black bg-white">
-          <h2 className="text-[10px] font-bold text-gray-900 uppercase tracking-[0.3em] mb-12">Core Design Requirements</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Core Design Requirements</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
             {reportData.criticalRequirements.map((req: string, idx: number) => (
               <div key={idx} className="flex gap-6 group">
-                <span className="text-2xl font-light text-gray-200 group-hover:text-black transition-colors tabular-nums">{(idx + 1).toString().padStart(2, '0')}</span>
+                <span className="text-2xl font-light text-gray-200 group-hover:text-gray-400 transition-colors tabular-nums">{(idx + 1).toString().padStart(2, '0')}</span>
                 {isEditMode ? (
                   <textarea
                     value={req || ''}
                     onChange={(e) => updateArrayItemAtPath(['criticalRequirements'], idx, e.target.value)}
                     rows={2}
-                    className="flex-1 bg-white border border-gray-200 p-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="flex-1 bg-white border border-gray-200 p-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                   />
                 ) : (
                   <p className="text-sm text-gray-900 font-medium leading-relaxed pt-1.5">{req}</p>
@@ -375,27 +391,28 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
 
       {/* System Level Implications */}
       {reportData.comprehensiveMetaAnalysis?.systemLevelImplications && (
-        <section className="p-10 border border-gray-100">
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] block mb-8">System Level Implications</label>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <label className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500 block">System Level Implications</label>
           {isEditMode ? (
             <textarea
               value={reportData.comprehensiveMetaAnalysis.systemLevelImplications || ''}
               onChange={(e) => updateTextAtPath(['comprehensiveMetaAnalysis', 'systemLevelImplications'], e.target.value)}
               rows={4}
-              className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+              className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
             />
           ) : (
-            <p className="text-sm text-gray-600 leading-relaxed max-w-4xl">{reportData.comprehensiveMetaAnalysis.systemLevelImplications}</p>
+            <p className="text-sm text-gray-600 leading-relaxed">{reportData.comprehensiveMetaAnalysis.systemLevelImplications}</p>
           )}
         </section>
       )}
 
       {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-[10px] text-gray-400 text-center pt-12 border-t border-gray-100 uppercase tracking-[0.3em]">
-          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()} — Behavioral Science Engine
+        <div className="border-t border-gray-100 pt-12 text-center text-[10px] uppercase tracking-widest text-gray-500">
+          Analysis synchronized on {new Date(data.generated_at).toLocaleString()} — Behavioral Science Engine
         </div>
       )}
     </div>
   );
 };
+

@@ -1,7 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { FiChevronDown, FiChevronUp, FiEdit3, FiRefreshCw, FiSave, FiX, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 interface DeepEmpathyReportViewerProps {
   data: any;
@@ -104,7 +103,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
   if (!reportData) {
     return (
       <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-100">
-        <FiAlertCircle className="w-8 h-8 text-gray-200 mb-4" />
+        <div className="w-8 h-8 text-gray-200 mb-4">⚠</div>
         <p className="text-xs text-gray-400 uppercase tracking-widest">No Deep Empathy Research Data</p>
       </div>
     );
@@ -118,143 +117,150 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
     if (!items || items.length === 0) return null;
     
     return (
-      <div className="space-y-4">
-        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">{label}</label>
-        <div className="space-y-3 pl-4 border-l border-gray-100">
+      <div>
+        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">{label}</label>
+        <ul className="space-y-3 border-l border-gray-200 pl-4">
           {items.map((item: string, i: number) => (
-            <div key={i} className="group relative">
+            <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
               {isEditMode ? (
                 <textarea
                   value={item || ''}
                   onChange={(e) => updateArrayItemAtPath(path, i, e.target.value)}
                   rows={2}
-                  className="w-full bg-white border border-gray-200 p-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                  className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-900 transition-colors resize-none rounded-lg"
                 />
               ) : (
-                <div className="flex items-start gap-3 py-1">
-                  <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
-                  <p className="text-sm text-gray-600 leading-relaxed">{item}</p>
-                </div>
+                <>
+                  <span className="mt-1.5 w-1 h-1 bg-gray-900 rounded-md flex-shrink-0" />
+                  <span className="leading-relaxed">{item}</span>
+                </>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     );
   };
 
   return (
-    <div className="space-y-12 max-w-5xl mx-auto pb-24">
+    <div className="flex flex-col gap-8">
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-8 right-8 bg-black text-white px-6 py-4 z-50 flex items-center gap-3 shadow-2xl border border-white/10 animate-in fade-in slide-in-from-top-4">
-          <FiCheckCircle className="w-4 h-4 text-white" />
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Changes Synchronized</span>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Report saved successfully</p>
+        </div>
+      )}
+
+      {showErrorMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText || 'Failed to save changes'}</p>
         </div>
       )}
 
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12 border-b border-gray-100">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-light tracking-tight text-gray-900">Deep Empathy Research</h1>
-          <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Phase 02 · Qualitative Exploration Guide</p>
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Deep Empathy Research</h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">Phase 02 · Qualitative Exploration Guide</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          {!isEditMode ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          {projectId && onSave && (
             <>
-              {onSave && (
-                <Button
-                  variant="outline"
+              {!isEditMode ? (
+                <button
+                  type="button"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-md h-12 px-8 font-normal transition-all"
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
                 >
-                  <FiEdit3 className="mr-2 w-4 h-4" /> Edit Report
-                </Button>
-              )}
-              {onGenerateNew && (
-                <Button
-                  onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-8 font-normal transition-all"
-                >
-                  <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
-                </Button>
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-1.5 inline size-3 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
               )}
             </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-md h-12 px-6 font-normal transition-all"
-                disabled={isSaving}
-              >
-                <FiX className="mr-2 w-4 h-4" /> Discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-10 font-normal transition-all"
-              >
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
-              </Button>
-            </>
+          )}
+          {onGenerateNew && (
+            <button
+              type="button"
+              onClick={onGenerateNew}
+              disabled={isEditMode}
+              className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            >
+              Generate New
+            </button>
           )}
         </div>
       </div>
 
       {/* Research Context */}
       {reportData.researchContextAnalysis && (
-        <section className="p-10 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-12">Research Context</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Research Context</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-            <div className="space-y-6">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Core Pain Point</label>
+          <div className="flex flex-col gap-10">
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Pain Point</label>
               {isEditMode ? (
                 <textarea
                   value={reportData.researchContextAnalysis.painPoint || ''}
                   onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'painPoint'], e.target.value)}
-                  className="w-full bg-white border border-gray-200 p-4 text-sm font-medium focus:outline-none focus:border-black transition-colors resize-none"
+                  className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                   rows={3}
                 />
               ) : (
-                <p className="text-xl font-light text-gray-900 border-l-2 border-black pl-6 leading-tight">
-                  {reportData.researchContextAnalysis.painPoint}
-                </p>
+                <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.painPoint}</p>
               )}
             </div>
 
-            <div className="md:col-span-2 space-y-12">
-              <div className="space-y-6">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Contextual Description</label>
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Contextual Description</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchContextAnalysis.description || ''}
                     onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'description'], e.target.value)}
                     rows={4}
-                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">
-                    {reportData.researchContextAnalysis.description}
-                  </p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.description}</p>
                 )}
               </div>
-
-              <div className="space-y-6">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Target Extreme User</label>
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Extreme User</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchContextAnalysis.extremeUser || ''}
                     onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'extremeUser'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                   />
                 ) : (
-                  <p className="text-sm font-medium text-gray-900 leading-relaxed pl-6 border-l border-gray-100">
-                    {reportData.researchContextAnalysis.extremeUser}
-                  </p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.extremeUser}</p>
                 )}
               </div>
             </div>
@@ -263,8 +269,8 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
       )}
 
       {/* Empathy Techniques */}
-      <div className="space-y-6">
-        <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] pl-2 mb-8">Empathy Methodologies</h2>
+      <div className="flex flex-col gap-4">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Empathy Methodologies</h2>
         
         {/* Methodology Sections */}
         {[
@@ -297,22 +303,25 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
             ]
           }
         ].map((section) => section.data && (
-          <div key={section.key} className="border border-gray-100 group">
+          <div key={section.key} className="overflow-hidden rounded-xl border border-gray-200">
             <button
               onClick={() => toggleSection(section.key)}
-              className={`w-full p-8 text-left flex items-center justify-between transition-all ${expandedSections[section.key] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections[section.key] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
             >
-              <span className="text-sm font-medium tracking-wide uppercase">{section.label}</span>
-              {expandedSections[section.key] ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
+              <div className="flex items-center gap-4">
+                <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections[section.key] ? 'opacity-70' : 'text-gray-500'}`}>{section.label}</span>
+              </div>
+              <span className="text-xs">{expandedSections[section.key] ? 'CLOSE' : 'EXPAND'}</span>
             </button>
-            
             {expandedSections[section.key] && (
-              <div className="p-10 bg-white grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-gray-100">
-                {section.fields.map((field, fIdx) => (
-                  <div key={fIdx}>
-                    {renderEditableList(field.items, field.path, field.label)}
-                  </div>
-                ))}
+              <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                  {section.fields.map((field, fIdx) => (
+                    <div key={fIdx}>
+                      {renderEditableList(field.items, field.path, field.label)}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -320,17 +329,19 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
 
         {/* Technique 5: Deep Conversation - Specialized Layout */}
         {reportData.empathyTechnique5Conversation?.deepInterviewQuestions && (
-          <div className="border border-gray-100">
+          <div className="overflow-hidden rounded-xl border border-gray-200">
             <button
               onClick={() => toggleSection('conversation')}
-              className={`w-full p-8 text-left flex items-center justify-between transition-all ${expandedSections['conversation'] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections['conversation'] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
             >
-              <span className="text-sm font-medium tracking-wide uppercase">Technique 05: Deep Conversation</span>
-              {expandedSections['conversation'] ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
+              <div className="flex items-center gap-4">
+                <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections['conversation'] ? 'opacity-70' : 'text-gray-500'}`}>Technique 05: Deep Conversation</span>
+              </div>
+              <span className="text-xs">{expandedSections['conversation'] ? 'CLOSE' : 'EXPAND'}</span>
             </button>
 
             {expandedSections['conversation'] && (
-              <div className="p-10 bg-white border-t border-gray-100">
+              <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                   {[
                     { label: 'Opening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'openingQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions },
@@ -353,10 +364,10 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Insight Synthesis Framework */}
       {reportData.insightSynthesisFramework && (
-        <section className="p-10 border border-black">
-          <h2 className="text-[10px] font-bold text-gray-900 uppercase tracking-[0.3em] mb-12">Synthesis Framework</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Synthesis Framework</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
             {renderEditableList(reportData.insightSynthesisFramework.beliefInsights, ['insightSynthesisFramework', 'beliefInsights'], 'Expected Belief Insights')}
             {renderEditableList(reportData.insightSynthesisFramework.behavioralInsights, ['insightSynthesisFramework', 'behavioralInsights'], 'Expected Behavioral Insights')}
             {renderEditableList(reportData.insightSynthesisFramework.innovationOpportunities, ['insightSynthesisFramework', 'innovationOpportunities'], 'Innovation Opportunities')}
@@ -367,7 +378,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-[10px] text-gray-400 text-center pt-12 border-t border-gray-100 uppercase tracking-[0.3em]">
+        <div className="text-[10px] text-gray-400 text-center pt-8 border-t border-gray-100 uppercase tracking-[0.3em]">
           Analysis Synchronized on {new Date(data.generated_at).toLocaleString()} — Advanced Research Logic
         </div>
       )}

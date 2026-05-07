@@ -220,15 +220,11 @@ export const TestingSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <Card className="animate-fadeIn overflow-hidden border border-gray-200 bg-white shadow-none">
-                <CardContent className="px-6 pb-6 pt-6">
-                    <TestingReportViewer
-                        data={testingData}
-                        onGenerateNew={handleGenerateNew}
-                        projectId={project.id}
-                    />
-                </CardContent>
-            </Card>
+            <TestingReportViewer
+                data={testingData}
+                onGenerateNew={handleGenerateNew}
+                projectId={project.id}
+            />
         );
     }
 

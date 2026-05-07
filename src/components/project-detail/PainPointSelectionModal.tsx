@@ -114,23 +114,23 @@ export const PainPointSelectionModal = ({
   const displayPainPoints = allPainPoints;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-md max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl border border-gray-200">
         {/* Header */}
-        <div className="px-8 py-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+        <div className="px-8 py-6 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-md flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
+                <AlertTriangle className="h-5 w-5 text-gray-900" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">Select Pain Point</h3>
-                <p className="text-sm text-gray-600">Choose a pain point from your As-Is Map analysis</p>
+                <h3 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Select Pain Point</h3>
+                <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">Choose a pain point from your As-Is Map analysis</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/50 rounded-md transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <FiX className="w-6 h-6 text-gray-500" />
             </button>
@@ -140,42 +140,42 @@ export const PainPointSelectionModal = ({
 
 
         {/* Content */}
-        <div className="p-8 max-h-[50vh] overflow-y-auto">
+        <div className="p-8 max-h-[55vh] overflow-y-auto">
           {!allPainPoints.length ? (
-            <div className="text-center py-12 text-gray-500">
-              <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-lg font-medium">No Pain Points Available</p>
-              <p className="text-sm mt-2">Please generate an As-Is Map first to see pain points here.</p>
-              <p className="text-xs mt-4 bg-blue-50 text-blue-700 p-3 rounded-md">
+            <div className="text-center py-12">
+              <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-lg font-semibold text-gray-900">No Pain Points Available</p>
+              <p className="mt-2 text-sm text-gray-600">Please generate an As-Is Map first to see pain points here.</p>
+              <p className="mt-4 text-xs bg-gray-50 text-gray-700 p-3 rounded-xl border border-gray-200">
                 💡 <strong>Tip:</strong> Go to the "As-Is Map" section first, generate your map, and then come back here to select from the identified pain points.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {displayPainPoints.map((painPoint, index) => (
                 <div
                   key={`${painPoint.stage_id}-${painPoint.step_id}`}
-                  className="border border-gray-200 rounded-md p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                  className="border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-md transition-all duration-200 cursor-pointer group bg-white"
                   onClick={() => handleSelectPainPoint(painPoint)}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-md">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1.5 rounded-lg uppercase tracking-wide">
                         Stage {painPoint.stage_id}, Step {painPoint.step_id}
                       </div>
                     </div>
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium ${getPainLevelColor(painPoint.pain_level)}`}>
+                    <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${getPainLevelColor(painPoint.pain_level)} uppercase tracking-wide`}>
                       {getPainLevelIcon(painPoint.pain_level)}
-                      Pain Level: {painPoint.pain_level}/10
+                      Level: {painPoint.pain_level}/10
                     </div>
                   </div>
                   
-                  <p className="text-gray-700 leading-relaxed group-hover:text-gray-900 transition-colors mb-3">
+                  <p className="text-sm text-gray-700 leading-relaxed group-hover:text-gray-900 transition-colors mb-2">
                     {painPoint.description}
                   </p>
                   
-                  <div className="mt-4 text-sm text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to select this pain point →
+                  <div className="mt-3 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Click to select this pain point
                   </div>
                 </div>
               ))}
@@ -184,10 +184,10 @@ export const PainPointSelectionModal = ({
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              Select a pain point to automatically populate the Extreme User Generator form
+        <div className="px-8 py-6 bg-white border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-600 uppercase tracking-wide">
+              Select a pain point to populate the Extreme User Generator
             </p>
             <div className="flex items-center gap-3">
               {allPainPoints.length > 0 && (
@@ -206,14 +206,14 @@ export const PainPointSelectionModal = ({
                     }
                     onClose();
                   }}
-                  className="px-6 py-2 rounded-md bg-purple-600 text-white text-sm font-semibold shadow hover:bg-purple-700 transition-colors"
+                  className="rounded-lg bg-black px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white shadow hover:bg-black/90 transition-colors"
                 >
                   Select All
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="rounded-lg border border-gray-200 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>

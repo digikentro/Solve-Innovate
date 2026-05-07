@@ -118,111 +118,122 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
     <div className="space-y-12 max-w-6xl mx-auto pb-24">
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-8 right-8 bg-black text-white px-6 py-4 z-50 flex items-center gap-3 shadow-2xl border border-white/10 animate-in fade-in slide-in-from-top-4">
-          <FiCheckCircle className="w-4 h-4 text-white" />
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Portfolio Synchronized</span>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Clustering Analysis Saved Successfully</p>
+        </div>
+      )}
+      
+      {showErrorMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText}</p>
         </div>
       )}
 
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12 border-b border-gray-100">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-light tracking-tight text-gray-900">Idea Clustering</h1>
-          <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Phase 06 · Strategic Synthesis & Ranking</p>
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Idea Clustering
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Strategic Synthesis & Ranking
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {!isEditMode ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          {projectId && onSave && (
             <>
-              {onSave && (
-                <Button
-                  variant="outline"
+              {!isEditMode ? (
+                <button
+                  type="button"
                   onClick={handleEditToggle}
-                  className="border-black text-black hover:bg-black hover:text-white rounded-md h-12 px-8 font-normal transition-all"
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
                 >
-                  <FiEdit3 className="mr-2 w-4 h-4" /> Edit Analysis
-                </Button>
-              )}
-              {onGenerateNew && (
-                <Button
-                  onClick={onGenerateNew}
-                  className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-8 font-normal transition-all"
-                >
-                  <FiRefreshCw className="mr-2 w-4 h-4" /> Regenerate
-                </Button>
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
               )}
             </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                onClick={handleEditToggle}
-                className="text-gray-400 hover:text-black rounded-md h-12 px-6 font-normal transition-all"
-                disabled={isSaving}
-              >
-                <FiX className="mr-2 w-4 h-4" /> Discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-black text-white hover:bg-black/90 rounded-md h-12 px-10 font-normal transition-all"
-              >
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : <FiSave className="mr-2 w-4 h-4 inline" />} {isSaving ? 'Saving...' : 'Commit Changes'}
-              </Button>
-            </>
+          )}
+          {onGenerateNew && (
+            <button
+              type="button"
+              onClick={onGenerateNew}
+              disabled={isEditMode}
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Generate New
+            </button>
           )}
         </div>
       </div>
 
       {/* Foundation Context */}
       {reportData.project_context && (
-        <section className="p-10 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-12">Foundation Analysis</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Foundation Analysis</h2>
           
-          <div className="space-y-12">
-            <div className="space-y-6">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Prioritized Pain Point</label>
+          <div className="flex flex-col gap-10">
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Prioritized Pain Point</label>
               {isEditMode ? (
                 <textarea
                   value={reportData.project_context.prioritized_pain_point || ''}
                   onChange={(e) => updateTextAtPath(['project_context', 'prioritized_pain_point'], e.target.value)}
-                  className="w-full bg-white border border-gray-200 p-4 text-sm font-medium focus:outline-none focus:border-black transition-colors resize-none"
+                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   rows={3}
                 />
               ) : (
-                <p className="text-xl font-light text-gray-900 border-l-2 border-black pl-6 leading-tight">
+                <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">
                   {reportData.project_context.prioritized_pain_point}
                 </p>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-              <div className="space-y-6">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Target Extreme User</label>
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Extreme User</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.project_context.target_extreme_user || ''}
                     onChange={(e) => updateTextAtPath(['project_context', 'target_extreme_user'], e.target.value)}
-                    rows={2}
-                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm font-medium text-gray-900 leading-relaxed pl-6 border-l border-gray-100">
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">
                     {reportData.project_context.target_extreme_user}
                   </p>
                 )}
               </div>
-              <div className="space-y-6">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Geographic Focus</label>
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Geographic Focus</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.project_context.geographic_focus || ''}
                     onChange={(e) => updateTextAtPath(['project_context', 'geographic_focus'], e.target.value)}
-                    rows={2}
-                    className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">
+                  <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">
                     {reportData.project_context.geographic_focus}
                   </p>
                 )}
@@ -234,46 +245,43 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
 
       {/* Idea Clusters */}
       <div className="space-y-6">
-        <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] pl-2 mb-8">Emergent Solution Clusters</h2>
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Solution Ideation Catalog</h2>
         
         {reportData.clusters?.map((cluster: any, idx: number) => (
-          <div key={cluster.cluster_id} className="border border-gray-100 group">
+          <div key={cluster.cluster_id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <button
               onClick={() => toggleCluster(cluster.cluster_id)}
-              className={`w-full p-8 text-left flex items-center justify-between transition-all ${expandedClusters[cluster.cluster_id] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
             >
-              <div className="flex items-center gap-6">
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedClusters[cluster.cluster_id] ? 'opacity-70' : 'text-gray-400'}`}>Cluster 0{cluster.cluster_id}</span>
-                <span className="text-sm font-medium tracking-wide uppercase">{cluster.cluster_name || 'Innovation Cluster'}</span>
-                <span className={`text-[10px] px-3 py-1 border ${expandedClusters[cluster.cluster_id] ? 'border-white/30 text-white' : 'border-black/10 text-gray-400'} uppercase tracking-widest`}>
-                  Score: {cluster.weighted_innovation_score}
-                </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">CLUSTER 0{cluster.cluster_id}</span>
+                <span className="text-sm font-medium">{cluster.cluster_name || 'Innovation Cluster'}</span>
               </div>
-              {expandedClusters[cluster.cluster_id] ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
+              <span className="text-xs">{expandedClusters[cluster.cluster_id] ? 'CLOSE' : 'EXPAND'}</span>
             </button>
             
             {expandedClusters[cluster.cluster_id] && (
-              <div className="p-10 bg-white border-t border-gray-100 space-y-12">
-                <div className="space-y-6">
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Core Strategic Function</label>
+              <div className="border-t border-gray-100 bg-white p-6 space-y-6">
+                <div>
+                  <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Strategic Function</label>
                   {isEditMode ? (
                     <textarea
                       value={cluster.core_function || ''}
                       onChange={(e) => updateTextAtPath(['clusters', idx, 'core_function'], e.target.value)}
                       rows={2}
-                      className="w-full bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                      className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                     />
                   ) : (
-                    <p className="text-sm text-gray-900 font-medium pl-6 border-l-2 border-black leading-relaxed">{cluster.core_function}</p>
+                    <p className="text-sm font-medium text-gray-900 pl-4 border-l-2 border-gray-900 leading-relaxed">{cluster.core_function}</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Included Concepts ({cluster.included_ideas?.length})</label>
-                    <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-50 md:grid-cols-2 md:gap-6 md:border-t-0 md:pt-0">
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Included Concepts ({cluster.included_ideas?.length})</label>
+                    <div className="space-y-2">
                       {cluster.included_ideas?.map((idea: any, i: number) => (
-                        <div key={i} className="p-4 border border-gray-50 bg-gray-50/30 flex gap-4">
+                        <div key={i} className="flex gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
                           <span className="text-[10px] font-bold text-gray-400 pt-1">#{idea.idea_id}</span>
                           <div className="space-y-1">
                             <p className="text-xs font-bold text-gray-900 uppercase tracking-tight">{idea.idea_name}</p>
@@ -284,8 +292,8 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
                     </div>
                   </div>
 
-                  <div className="space-y-8">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block">Innovation Assessment</label>
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Innovation Assessment</label>
                     <div className="grid grid-cols-1 gap-6">
                       {Object.entries(cluster.innovation_assessment || {}).map(([key, assessment]: [string, any], j: number) => (
                         key !== 'score' && (
@@ -311,124 +319,108 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
       </div>
 
       {/* Top Ranked Idea Cards */}
-      <div className="space-y-8">
-        <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] pl-2 mb-8">Strategic Concept Cards (Top Ranked)</h2>
+      <div className="space-y-6">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Strategic Concept Cards</h2>
         
         {reportData.top_5_clusters?.map((cluster: any, idx: number) => (
-          <div key={cluster.rank} className="border border-black group">
+          <div key={cluster.rank} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <button
               onClick={() => toggleIdeaCard(cluster.rank)}
-              className={`w-full p-10 text-left flex items-center justify-between transition-all ${expandedIdeaCards[cluster.rank] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
             >
-              <div className="flex items-center gap-8">
-                <span className="text-4xl font-light italic">0{cluster.rank}</span>
+              <div className="flex items-center gap-4">
+                <span className="text-4xl font-light italic text-gray-300">0{cluster.rank}</span>
                 <div className="space-y-1">
-                  <span className="text-sm font-bold tracking-widest uppercase">{cluster.cluster_name}</span>
-                  <div className="flex items-center gap-4">
-                    <span className={`text-[10px] uppercase tracking-[0.2em] ${expandedIdeaCards[cluster.rank] ? 'text-gray-400' : 'text-gray-500'}`}>Strategic Priority</span>
-                    <span className={`h-1 w-1 rounded-md ${expandedIdeaCards[cluster.rank] ? 'bg-white/20' : 'bg-black/10'}`} />
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedIdeaCards[cluster.rank] ? 'text-white' : 'text-black'}`}>Final Score: {cluster.final_score}</span>
+                  <span className="text-sm font-medium text-gray-900">{cluster.cluster_name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-500">Final Score</span>
+                    <span className="text-[10px] font-semibold text-gray-900">{cluster.final_score}</span>
                   </div>
                 </div>
               </div>
-              {expandedIdeaCards[cluster.rank] ? <FiChevronUp className="w-8 h-8" /> : <FiChevronDown className="w-8 h-8" />}
+              <span className="text-xs text-gray-500">{expandedIdeaCards[cluster.rank] ? 'CLOSE' : 'EXPAND'}</span>
             </button>
 
             {expandedIdeaCards[cluster.rank] && cluster.idea_card && (
-              <div className="p-12 bg-white space-y-16 animate-in fade-in duration-700">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-                  <div className="md:col-span-2 space-y-12">
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Need State Definition</label>
-                      <p className="text-2xl font-light text-gray-900 italic leading-snug">"{cluster.idea_card.need_state}"</p>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Key Features & Functional Requirements</label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {cluster.idea_card.features?.map((feature: string, i: number) => (
-                          <div key={i} className="p-4 border border-gray-100 flex gap-4 items-start">
-                            <span className="text-[10px] font-bold text-gray-900 pt-0.5">{(i+1).toString().padStart(2, '0')}</span>
-                            <p className="text-xs text-gray-600 font-medium leading-relaxed">{feature}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+              <div className="border-t border-gray-100 bg-white p-8 space-y-8">
+                <div className="space-y-6">
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Need State Definition</label>
+                    <p className="text-base font-medium text-gray-900 italic leading-relaxed border-l-2 border-gray-900 pl-4">"{cluster.idea_card.need_state}"</p>
                   </div>
-
-                  <div className="space-y-12">
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Innovation Vectors</label>
-                      <div className="space-y-8">
-                        <div className="space-y-2">
-                          <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                            <FiTarget className="w-3 h-3" /> Primary Innovation
-                          </span>
-                          <p className="text-xs text-gray-600 pl-5 border-l border-gray-100">{cluster.idea_card.primary_innovation}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                            <FiTrendingUp className="w-3 h-3" /> Secondary Innovation
-                          </span>
-                          <p className="text-xs text-gray-600 pl-5 border-l border-gray-100">{cluster.idea_card.secondary_innovation}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Market Opportunity</label>
-                      <div className="space-y-4">
-                        {[
-                          { label: 'Target Segment', value: cluster.idea_card.market_opportunity?.target_market },
-                          { label: 'Market Readiness', value: cluster.idea_card.market_opportunity?.market_readiness },
-                          { label: 'Competitive Edge', value: cluster.idea_card.market_opportunity?.competitive_advantage }
-                        ].map((m, mi) => (
-                          <div key={mi} className="space-y-1">
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">{m.label}</span>
-                            <p className="text-xs text-gray-900 font-medium">{m.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pt-12 border-t border-gray-100">
-                  <div className="space-y-8">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Implementation Pathway</label>
-                    <div className="space-y-6">
-                      {[
-                        { phase: '01', label: 'Initial Integration', value: cluster.idea_card.implementation_pathway?.phase_1 },
-                        { phase: '02', label: 'Expansion & Scale', value: cluster.idea_card.implementation_pathway?.phase_2 },
-                        { phase: '03', label: 'System Maturity', value: cluster.idea_card.implementation_pathway?.phase_3 }
-                      ].map((p, pi) => (
-                        <div key={pi} className="flex gap-6 items-start group">
-                          <span className="text-xs font-bold text-gray-300 group-hover:text-black transition-colors">{p.phase}</span>
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight">{p.label}</span>
-                            <p className="text-xs text-gray-600 leading-relaxed">{p.value}</p>
-                          </div>
+                  
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Key Features</label>
+                    <div className="space-y-2">
+                      {cluster.idea_card.features?.map((feature: string, i: number) => (
+                        <div key={i} className="flex gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                          <span className="text-[10px] font-bold text-gray-400 pt-1">#{i+1}</span>
+                          <p className="text-xs text-gray-600 leading-relaxed">{feature}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="p-8 border border-black bg-gray-50/30 space-y-8">
-                    <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block flex items-center gap-2">
-                      <FiShield className="w-4 h-4" /> Strategic Risk Assessment
-                    </label>
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Primary Exposure</span>
-                        <p className="text-xs text-gray-900 font-medium">{cluster.idea_card.risk_assessment?.primary_risk}</p>
+                  <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-50 md:grid-cols-2 md:gap-6 md:border-t-0 md:pt-0">
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Primary Innovation</label>
+                      <p className="text-sm text-gray-600 pl-4 border-l border-gray-200 leading-relaxed">{cluster.idea_card.primary_innovation}</p>
+                    </div>
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Secondary Innovation</label>
+                      <p className="text-sm text-gray-600 pl-4 border-l border-gray-200 leading-relaxed">{cluster.idea_card.secondary_innovation}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {[
+                      { label: 'Target Segment', value: cluster.idea_card.market_opportunity?.target_market },
+                      { label: 'Market Readiness', value: cluster.idea_card.market_opportunity?.market_readiness },
+                      { label: 'Competitive Edge', value: cluster.idea_card.market_opportunity?.competitive_advantage }
+                    ].map((m, mi) => (
+                      <div key={mi} className="space-y-2">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">{m.label}</span>
+                        <p className="text-xs text-gray-600 leading-relaxed">{m.value}</p>
                       </div>
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Mitigation Framework</span>
-                        <p className="text-xs text-gray-600 italic leading-relaxed">{cluster.idea_card.risk_assessment?.mitigation_strategy}</p>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6 pt-4 border-t border-gray-50 md:grid-cols-2 md:border-t-0 md:pt-0">
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Pathway</label>
+                      <div className="space-y-3">
+                        {[
+                          { phase: '01', label: 'Initial Integration', value: cluster.idea_card.implementation_pathway?.phase_1 },
+                          { phase: '02', label: 'Expansion & Scale', value: cluster.idea_card.implementation_pathway?.phase_2 },
+                          { phase: '03', label: 'System Maturity', value: cluster.idea_card.implementation_pathway?.phase_3 }
+                        ].map((p, pi) => (
+                          <div key={pi} className="space-y-1">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">{p.phase} — {p.label}</span>
+                            <p className="text-xs text-gray-600 leading-relaxed pl-4 border-l border-gray-100">{p.value}</p>
+                          </div>
+                        ))}
                       </div>
-                      <div className="pt-4 flex items-center justify-between border-t border-black/10">
-                        <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">Success Probability</span>
-                        <span className="text-2xl font-light tabular-nums">{cluster.idea_card.risk_assessment?.success_probability}%</span>
+                    </div>
+
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500 flex items-center gap-2">
+                        <FiShield className="w-3 h-3" /> Risk Assessment
+                      </label>
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Primary Risk</span>
+                          <p className="text-xs text-gray-600 pl-4 border-l border-gray-100 leading-relaxed">{cluster.idea_card.risk_assessment?.primary_risk}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Mitigation</span>
+                          <p className="text-xs text-gray-600 pl-4 border-l border-gray-100 leading-relaxed">{cluster.idea_card.risk_assessment?.mitigation_strategy}</p>
+                        </div>
+                        <div className="pt-2 border-t border-gray-100 mt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Success Probability</span>
+                            <span className="text-sm font-medium text-gray-900">{cluster.idea_card.risk_assessment?.success_probability}%</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -441,29 +433,25 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
 
       {/* Portfolio Analysis */}
       {reportData.portfolio_analysis && (
-        <section className="p-10 border border-black">
-          <h2 className="text-[10px] font-bold text-gray-900 uppercase tracking-[0.3em] mb-12">Portfolio Strategic Synthesis</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Portfolio Strategic Synthesis</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-16">
-            <div className="space-y-4">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Portfolio Balance</label>
-              <p className="text-sm text-gray-900 font-medium leading-relaxed pl-6 border-l border-gray-100">{reportData.portfolio_analysis.portfolio_balance}</p>
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Portfolio Balance</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.portfolio_balance}</p>
             </div>
-            <div className="space-y-4">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Risk Distribution</label>
-              <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">{reportData.portfolio_analysis.risk_distribution}</p>
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Risk Distribution</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.risk_distribution}</p>
             </div>
-            <div className="space-y-4">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Implementation Sequence</label>
-              <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-100">{reportData.portfolio_analysis.implementation_sequence}</p>
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Sequence</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.implementation_sequence}</p>
             </div>
-            <div className="space-y-4">
-              <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block flex items-center gap-2">
-                <FiAward className="w-4 h-4" /> Primary Prototype Recommendation
-              </label>
-              <div className="p-6 border border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.05)]">
-                <p className="text-sm text-gray-900 font-bold leading-relaxed">{reportData.portfolio_analysis.primary_prototype_recommendation}</p>
-              </div>
+            <div>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Primary Prototype Recommendation</label>
+              <p className="text-sm font-medium text-gray-900 leading-relaxed pl-4 border-l-2 border-gray-900">{reportData.portfolio_analysis.primary_prototype_recommendation}</p>
             </div>
           </div>
         </section>
@@ -471,8 +459,8 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
 
       {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-[10px] text-gray-400 text-center pt-12 border-t border-gray-100 uppercase tracking-[0.3em]">
-          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()} — Strategic Intelligence Engine
+        <div className="text-xs text-gray-500 text-center pt-8 border-t border-gray-100 uppercase tracking-widest">
+          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()}
         </div>
       )}
     </div>

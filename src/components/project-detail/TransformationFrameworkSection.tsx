@@ -87,16 +87,12 @@ export const TransformationFrameworkSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
-                <CardContent className="px-6 pb-6 pt-6">
-                    <TransformationFrameworkReportViewer
-                        data={transformationFrameworkData}
-                        onGenerateNew={handleGenerateNew}
-                        projectId={project.id}
-                        onSave={onSaveData}
-                    />
-                </CardContent>
-            </Card>
+            <TransformationFrameworkReportViewer
+                data={transformationFrameworkData}
+                onGenerateNew={handleGenerateNew}
+                projectId={project.id}
+                onSave={onSaveData}
+            />
         );
     }
 

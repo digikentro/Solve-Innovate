@@ -131,7 +131,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
             <p className="mb-8 text-sm text-gray-600">Confirm permanent updates to the As-Is Map data structure.</p>
             <div className="flex gap-4">
               <button onClick={() => setShowSaveDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Go Back</button>
-              <button onClick={confirmSave} className="flex-1 rounded-xl bg-primary px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-primary/90">Save Now</button>
+              <button onClick={confirmSave} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90">Save Now</button>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
             <p className="mb-8 text-sm text-gray-600">Unsaved modifications will be permanently lost.</p>
             <div className="flex gap-4">
               <button onClick={() => setShowCancelDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Keep Editing</button>
-              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-red-700">Discard</button>
+              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90">Discard</button>
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     type="button"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-primary/90 disabled:opacity-50"
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -214,7 +214,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
               type="button"
               onClick={onGenerateNew}
               disabled={isEditMode}
-              className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Generate New
             </button>
@@ -233,7 +233,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 <textarea
                   value={Array.isArray(reportData.hmw_statement_analysis.hmw) ? reportData.hmw_statement_analysis.hmw[0] : reportData.hmw_statement_analysis.hmw || ''}
                   onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.hmw) ? ['hmw_statement_analysis', 'hmw', '0'] : ['hmw_statement_analysis', 'hmw'], e.target.value)}
-                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                 />
               ) : (
                 <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">{Array.isArray(reportData.hmw_statement_analysis.hmw) ? reportData.hmw_statement_analysis.hmw[0] : reportData.hmw_statement_analysis.hmw || 'N/A'}</p>
@@ -246,7 +246,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                   <textarea
                     value={Array.isArray(reportData.hmw_statement_analysis.target_users) ? reportData.hmw_statement_analysis.target_users[0] : reportData.hmw_statement_analysis.target_users || ''}
                     onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.target_users) ? ['hmw_statement_analysis', 'target_users', '0'] : ['hmw_statement_analysis', 'target_users'], e.target.value)}
-                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
                   <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{Array.isArray(reportData.hmw_statement_analysis.target_users) ? reportData.hmw_statement_analysis.target_users[0] : reportData.hmw_statement_analysis.target_users || 'N/A'}</p>
@@ -258,7 +258,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                   <textarea
                     value={Array.isArray(reportData.hmw_statement_analysis.core_need) ? reportData.hmw_statement_analysis.core_need[0] : reportData.hmw_statement_analysis.core_need || ''}
                     onChange={(e) => updateTextAtPath(Array.isArray(reportData.hmw_statement_analysis.core_need) ? ['hmw_statement_analysis', 'core_need', '0'] : ['hmw_statement_analysis', 'core_need'], e.target.value)}
-                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
                   <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{Array.isArray(reportData.hmw_statement_analysis.core_need) ? reportData.hmw_statement_analysis.core_need[0] : reportData.hmw_statement_analysis.core_need || 'N/A'}</p>
@@ -279,11 +279,11 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 {isEditMode ? (
                   <div className="flex w-full items-center gap-4 border-b border-gray-200 bg-gray-50 px-6 py-4">
                     <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Stage {stage.id}</span>
-                    <input type="text" value={stage.stage_name} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'stage_name'], e.target.value)} className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    <input type="text" value={stage.stage_name} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'stage_name'], e.target.value)} className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20" />
                     <button onClick={() => toggleStage(stage.id)} className="px-3 text-xs font-medium uppercase tracking-wide text-gray-900">{expandedStages[stage.id] ? 'CLOSE' : 'OPEN'}</button>
                   </div>
                 ) : (
-                  <button onClick={() => toggleStage(stage.id)} className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedStages[stage.id] ? 'bg-primary text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}>
+                  <button onClick={() => toggleStage(stage.id)} className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedStages[stage.id] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}>
                     <div className="flex items-center gap-4">
                       <span className={`text-xs font-medium uppercase tracking-wide ${expandedStages[stage.id] ? 'opacity-70' : 'text-gray-500'}`}>Stage 0{stage.id}</span>
                       <span className="text-sm font-medium">{stage.stage_name}</span>
@@ -296,8 +296,8 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                     {stage.steps.map((step: any, stepIdx: number) => {
                       const currentNumber = (stepOffsets[index] || 0) + stepIdx + 1;
                       return (
-                        <div key={`${stage.id}-${step.id}-${currentNumber}`} className="group flex items-start gap-4 border-l-2 border-gray-200 p-4 hover:border-primary">
-                          <span className="mt-0.5 w-6 text-xs font-bold text-gray-400 group-hover:text-primary">{currentNumber.toString().padStart(2, '0')}</span>
+                        <div key={`${stage.id}-${step.id}-${currentNumber}`} className="group flex items-start gap-4 border-l-2 border-gray-200 p-4 hover:border-black">
+                          <span className="mt-0.5 w-6 text-xs font-bold text-gray-400 group-hover:text-black">{currentNumber.toString().padStart(2, '0')}</span>
                           {isEditMode ? (
                             <textarea value={step.description} onChange={(e) => updateTextAtPath(['as_is_map', 'stages', index.toString(), 'steps', stepIdx.toString(), 'description'], e.target.value)} className="flex-1 bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]" />
                           ) : (
@@ -556,3 +556,4 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
     </div>
   );
 };
+
