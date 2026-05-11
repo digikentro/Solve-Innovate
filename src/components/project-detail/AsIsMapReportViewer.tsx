@@ -316,9 +316,9 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Pain Point Analysis */}
       {reportData.pain_point_analysis?.steps && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Pain Point Analysis</h2>
-          <div className="overflow-x-auto border border-gray-100">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
@@ -358,11 +358,11 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Priority Bottlenecks */}
       {reportData.pareto_prioritization?.top_bottlenecks && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Priority Bottlenecks (Pareto Analysis)</h2>
           <div className="space-y-4">
             {reportData.pareto_prioritization.top_bottlenecks.map((bottleneck: any, index: number) => (
-              <div key={index} className="border border-gray-100">
+              <div key={index} className="rounded-xl border border-gray-200 overflow-hidden">
                 <button onClick={() => toggleBottleneck(index)} className={`w-full px-6 py-4 text-left flex items-center justify-between transition-colors ${expandedBottlenecks[index] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}>
                   <div className="flex items-center gap-6">
                     <span className={`text-[10px] font-bold uppercase tracking-widest ${expandedBottlenecks[index] ? 'opacity-70' : 'text-gray-400'}`}>Rank 0{index + 1}</span>
@@ -427,7 +427,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* MECE Validation */}
       {reportData.mece_validation && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">MECE Validation</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
@@ -452,7 +452,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Exploration Recommendations */}
       {reportData.exploration_recommendations && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Exploration Recommendations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
             <div>
@@ -493,7 +493,7 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Prioritization Rationale */}
       {reportData.prioritization_rationale && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Prioritization Rationale</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
             {reportData.prioritization_rationale.methodology && (
@@ -528,11 +528,11 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
 
       {/* Credible Sources */}
       {reportData.credible_sources && reportData.credible_sources.length > 0 && (
-        <section className="p-8 border border-gray-100">
+        <section className="rounded-2xl p-8 border border-gray-200 bg-white">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Credible Sources</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {reportData.credible_sources.map((source: any, index: number) => (
-              <div key={index} className="p-6 border border-gray-50 hover:border-black group">
+              <div key={index} className="rounded-xl p-6 border border-gray-50 hover:border-black group">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="text-sm font-medium text-gray-900 mb-2">{source.title}</h3>
@@ -553,6 +553,14 @@ export const AsIsMapReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
           Generated on {new Date(data.generated_at).toLocaleString()} — Solver Labs Research Engine
         </div>
       )}
+
+      {/* Floating Next Section Button */}
+      <button
+        onClick={onGenerateNew}
+        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300 px-6 py-3 text-sm font-semibold text-black shadow-lg transition-all hover:bg-white/90 hover:shadow-xl"
+      >
+        Next Section
+      </button>
     </div>
   );
 };

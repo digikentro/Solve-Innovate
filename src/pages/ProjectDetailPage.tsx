@@ -2,9 +2,10 @@ import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
-import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor, FiFileText } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
+import { ProjectService } from '@/services/projectService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PainPointSelectionModal } from '@/components/project-detail/PainPointSelectionModal';
@@ -12,7 +13,6 @@ import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUs
 
 const ProjectInfo = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.ProjectInfo })));
 const SecondaryResearchSection = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.SecondaryResearchSection })));
-const PresentableSlideSection = lazy(() => import('@/components/project-detail/PresentableSlideSection').then((mod) => ({ default: mod.PresentableSlideSection })));
 const ProjectAnalysisSection = lazy(() => import('@/components/project-detail/ProjectAnalysisSection').then((mod) => ({ default: mod.ProjectAnalysisSection })));
 const AsIsMapSection = lazy(() => import('@/components/project-detail/AsIsMapSection').then((mod) => ({ default: mod.AsIsMapSection })));
 const ResearchGeneratorSection = lazy(() => import('@/components/project-detail/ResearchGeneratorSection').then((mod) => ({ default: mod.ResearchGeneratorSection })));
@@ -34,6 +34,7 @@ const PresentationSection = lazy(() => import('@/components/presentation/Present
 // Section navigation items
 const SECTIONS = [
   { id: 'project-info', label: 'Project Information', icon: FiInfo },
+  { id: 'secondary-research', label: 'Secondary Research', icon: FiFileText },
   { id: 'as-is-map', label: 'As-Is Map', icon: FiMap },
   { id: 'extreme-user', label: 'Extreme User Generator', icon: FiUsers },
   { id: 'deep-empathy', label: 'Deep Empathy Research', icon: FiHeart },
@@ -74,9 +75,6 @@ export const ProjectDetailPage = () => {
       localStorage.setItem(`visitedSections_${id}`, JSON.stringify(Array.from(visitedSections)));
     }
   }, [visitedSections, id]);
-
-  // State for presentable slide
-  const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
 
   // Pain Point Modal state
   const [isPainPointModalOpen, setIsPainPointModalOpen] = useState(false);
@@ -305,6 +303,7 @@ export const ProjectDetailPage = () => {
       typeof d === 'object' && Object.keys(d).length > 0;
     switch (sectionId) {
       case 'project-info':             return true; // info only, always complete
+      case 'secondary-research':       return true; // always complete to prevent hiding other sections
       case 'as-is-map':                return hasData(asIsMapData);
       case 'extreme-user':             return hasData(extremeUserData);
       case 'deep-empathy':             return hasData(deepEmpathyData);
@@ -456,19 +455,18 @@ export const ProjectDetailPage = () => {
             {activeSection === 'project-info' && (
               <div className="flex flex-col gap-10">
                 <ProjectInfo project={project} />
-                <SecondaryResearchSection
-                  projectId={project.id}
-                  userId={user.id}
-                  secondaryresearch={project.secondaryresearch}
-                  onRefreshProject={refetchProject}
-                />
-                <PresentableSlideSection
-                  project={project}
-                  presentableSlide={presentableSlide}
-                  setPresentableSlide={setPresentableSlide}
-                />
                 <ProjectAnalysisSection project={project} setProject={setProject} />
               </div>
+            )}
+
+            {/* Secondary Research */}
+            {activeSection === 'secondary-research' && (
+              <SecondaryResearchSection
+                projectId={project.id}
+                userId={user.id}
+                secondaryresearch={project.secondaryresearch}
+                onRefreshProject={refetchProject}
+              />
             )}
 
             {/* As-Is Map */}
@@ -485,7 +483,6 @@ export const ProjectDetailPage = () => {
                       onGenerateNew={onGenerateNew}
                       projectId={project?.id}
                       onSave={async (updatedData) => {
-                        const { ProjectService } = await import('@/services/projectService');
                         await ProjectService.updateProject(
                           project!.id,
                           { as_is_map: updatedData },
@@ -563,7 +560,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { extreme_user_data: updatedData }, user?.id);
                       setExtremeUserData(updatedData);
                       refetchProject();
@@ -625,7 +621,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { deep_empathy_data: updatedData }, user?.id);
                       setDeepEmpathyData(updatedData);
                       refetchProject();
@@ -666,7 +661,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { psychological_analysis: updatedData }, user?.id);
                       setPsychologicalAnalysisData(updatedData);
                       refetchProject();
@@ -685,7 +679,6 @@ export const ProjectDetailPage = () => {
                   setTransformationFrameworkData={setTransformationFrameworkData}
                   onRefreshProject={refetchProject}
                   onSaveData={async (updatedData) => {
-                    const { ProjectService } = await import('@/services/projectService');
                     await ProjectService.updateProject(project!.id, { transformation_framework: updatedData }, user?.id);
                     setTransformationFrameworkData(updatedData);
                     refetchProject();
@@ -718,7 +711,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { Behaviour_Framework: updatedData }, user?.id);
                       setHmwFrameworkData(updatedData);
                       refetchProject();
@@ -757,7 +749,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { HMW_Ideation_Framework: updatedData }, user?.id);
                       setHmwIdeationData(updatedData);
                       refetchProject();
@@ -794,7 +785,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { Idea_Clustering_and_Idea_Cards: updatedData }, user?.id);
                       setIdeaClusteringData(updatedData);
                       refetchProject();

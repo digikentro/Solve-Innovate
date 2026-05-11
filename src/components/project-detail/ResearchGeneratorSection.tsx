@@ -78,6 +78,9 @@ export const ResearchGeneratorSection = ({
   const [showReport, setShowReport] = useState(false);
   const isAsIsStyle = variant === 'asIs';
 
+  // Check if user has been selected for Deep Empathy workflow
+  const isUserSelected = formData?.selectedExtremeUser?.trim() ? true : false;
+
   // COMPREHENSIVE DEBUG for transformation framework
   if (title === 'Transformation Framework') {
     console.log('=== RESEARCH GENERATOR SECTION DEBUG ===');
@@ -250,39 +253,20 @@ export const ResearchGeneratorSection = ({
   return (
     <>
       {!showReport ? (
-        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
-          <CardHeader className="flex flex-col items-start gap-4 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1.5 text-left">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
-                {isAsIsStyle ? (
-                  <FiUsers className="size-5 shrink-0 text-gray-400" />
-                ) : (
-                  <FiTerminal className="size-5 shrink-0 text-gray-400" />
-                )}
-                {title}
-              </CardTitle>
-              <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
-                {description.split('.')[0]}
-              </CardDescription>
+        <div className="flex flex-col gap-8">
+          {/* Header Section */}
+          <div className="flex flex-col gap-3 border-b border-gray-100 pb-6">
+            <div className="text-left">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">{title}</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">{description}</p>
             </div>
-            {onShowPainPointsModal && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onShowPainPointsModal}
-                className="w-full shrink-0 sm:w-auto"
-              >
-                Choose Pain Point
-              </Button>
-            )}
-          </CardHeader>
+          </div>
 
-          <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
-            <div className="border-l-2 border-gray-900 py-2 pl-4">
-              <p className="max-w-2xl text-sm leading-relaxed text-gray-600">{description}</p>
-            </div>
-
-            <div className="flex flex-col gap-6">
+          {/* Form Section */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="flex flex-col gap-8">
+              {/* Render Form Fields */}
+              <div className="flex flex-col gap-7">
                 {formFields.map((element, index) => {
                   if ('type' in element && element.type === 'inline') {
                     return (
@@ -295,31 +279,9 @@ export const ResearchGeneratorSection = ({
                           return (
                             <div key={field.id} className={widthClass}>
                               <div className="mb-2 flex items-center justify-between">
-                                <label htmlFor={field.id} className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
                                   {field.label}
                                 </label>
-                                {field.id === 'selectedExtremeUser' && onShowUsersModal && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
-                                    onClick={onShowUsersModal}
-                                  >
-                                    <FiUsers className="mr-1 size-3" /> Choose User
-                                  </Button>
-                                )}
-                                {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
-                                    onClick={onPopulateFromAsIsMap}
-                                  >
-                                    <FiDatabase className="mr-1 size-3" /> Use As-Is Map
-                                  </Button>
-                                )}
                               </div>
                               {field.type === 'textarea' ? (
                                 <Textarea
@@ -328,10 +290,7 @@ export const ResearchGeneratorSection = ({
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   rows={field.rows || 3}
                                   placeholder={field.placeholder}
-                                  className={isAsIsStyle
-                                    ? "min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    : "resize-none"
-                                  }
+                                  className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                                 />
                               ) : (
                                 <Input
@@ -340,10 +299,7 @@ export const ResearchGeneratorSection = ({
                                   value={formData[field.id] || ''}
                                   onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                                   placeholder={field.placeholder}
-                                  className={isAsIsStyle
-                                    ? "h-11 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:ring-primary/20"
-                                    : undefined
-                                  }
+                                  className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                                 />
                               )}
                             </div>
@@ -353,35 +309,17 @@ export const ResearchGeneratorSection = ({
                     );
                   } else {
                     const field = element as FormField;
+                    
+                    // Special formatting for pain point fields
+                    const isPainPointField = field.id === 'prioritizedPainPoint' || field.id === 'painPointDescription';
+                    const isSelectedUserField = field.id === 'selectedExtremeUser';
+
                     return (
                       <div key={field.id} className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <label htmlFor={field.id} className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {field.label}
-                          </label>
-                          {field.id === 'selectedExtremeUser' && onShowUsersModal && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
-                              onClick={onShowUsersModal}
-                            >
-                              <FiUsers className="mr-1 size-3" /> Choose User
-                            </Button>
-                          )}
-                          {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-0 text-xs text-gray-500 hover:text-gray-900"
-                              onClick={onPopulateFromAsIsMap}
-                            >
-                              <FiDatabase className="mr-1 size-3" /> Use As-Is Map
-                            </Button>
-                          )}
-                        </div>
+                        <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
+                          {field.label}
+                        </label>
+                        
                         {field.type === 'textarea' ? (
                           <Textarea
                             id={field.id}
@@ -389,10 +327,7 @@ export const ResearchGeneratorSection = ({
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             rows={field.rows || 3}
                             placeholder={field.placeholder}
-                            className={isAsIsStyle
-                              ? "min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              : "resize-none"
-                            }
+                            className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                           />
                         ) : (
                           <Input
@@ -401,41 +336,61 @@ export const ResearchGeneratorSection = ({
                             value={formData[field.id] || ''}
                             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                             placeholder={field.placeholder}
-                            className={isAsIsStyle
-                              ? "h-11 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:ring-primary/20"
-                              : undefined
-                            }
+                            className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                           />
+                        )}
+
+                        {/* Show Choose User button below selectedExtremeUser field */}
+                        {isSelectedUserField && onShowUsersModal && (
+                          <div className="mt-3 flex justify-center">
+                            <Button
+                              type="button"
+                              onClick={onShowUsersModal}
+                              className="rounded-lg bg-gray-900 px-4 py-2 text-[12px] font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                            >
+                              Choose User
+                            </Button>
+                          </div>
+                        )}
+
+                        {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            onClick={onPopulateFromAsIsMap}
+                          >
+                            Use As-Is Map
+                          </Button>
                         )}
                       </div>
                     );
                   }
                 })}
-                <div className="flex justify-start pt-2">
-                  <Button
-                    type="button"
-                    onClick={handleGenerate}
-                    disabled={isLoading || isGenerating}
-                      className={isAsIsStyle
-                        ? "rounded-xl bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                        : undefined
-                      }
-                  >
-                    {isLoading || isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 inline size-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        Generate {title} <FiChevronRight className="size-4" />
-                      </span>
-                    )}
-                  </Button>
-                </div>
               </div>
-          </CardContent>
-        </Card>
+
+              {/* Generate Button - Centered and Floating */}
+              <div className="flex justify-center pt-8">
+                <Button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isLoading || isGenerating || (title === 'Deep Empathy Research Generator' && !isUserSelected)}
+                  className="rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isLoading || isGenerating ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="inline size-4 animate-spin" />
+                      Generating...
+                    </span>
+                  ) : (
+                    `Generate ${title.split(' ').slice(0, -1).join(' ').toLowerCase()}`
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="animate-fadeIn">
           {renderReport && renderReport(data, handleReset)}

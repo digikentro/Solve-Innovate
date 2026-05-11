@@ -55,13 +55,6 @@ export const ProjectAnalysisSection = ({ project, setProject }: ProjectAnalysisS
               Assessments and insights
             </CardDescription>
           </div>
-          <Button
-            type="button"
-            onClick={() => setShowAssessmentModal(true)}
-            className="w-full shrink-0 sm:w-auto"
-          >
-            Analyse Project
-          </Button>
         </CardHeader>
         
         <CardContent className="px-6 pb-6 pt-6">

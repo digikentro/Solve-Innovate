@@ -392,19 +392,21 @@ export function WorkspacePage() {
               </div>
 
               {/* Suggestions */}
-              <div className="flex flex-wrap justify-center gap-2 pt-4">
-                {sectors.map((sector) => (
-                  <button
-                    key={sector.id}
-                    onClick={() => {
-                      setPrompt(`I want to build something in ${sector.name}`);
-                      handleGenerate(`I want to build something in ${sector.name}`);
-                    }}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors shadow-sm"
-                  >
-                    {sector.name}
-                  </button>
-                ))}
+              <div className="pt-4">
+                <p className="text-xs text-gray-500 text-center mb-3">Or, use our pre-written prompts</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {sectors.map((sector) => (
+                    <button
+                      key={sector.id}
+                      onClick={() => {
+                        setPrompt(`I want to build something in ${sector.name}`);
+                      }}
+                      className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors shadow-sm"
+                    >
+                      {sector.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
             </div>
