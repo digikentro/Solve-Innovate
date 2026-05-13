@@ -7,6 +7,7 @@ import { useNavDirection } from '@/contexts/NavigationContext';
 import { ProblemStatement, IOSFrameworkService } from '@/services/iosFramework';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Loader2, ArrowUp, ChevronDown, ChevronUp, User, Paperclip, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProjectService } from '@/services/projectService';
@@ -22,22 +23,70 @@ type ProblemStatementWithGeneratedAt = ProblemStatement & { generatedAt?: string
 
 const BUSINESS_SECTORS = [
   { id: 'technology', name: 'Technology' },
+  { id: 'hardware_electronics', name: 'Hardware and Electronics' },
+  { id: 'digital_services', name: 'Digital Services' },
   { id: 'healthcare', name: 'Healthcare' },
+  { id: 'pharmaceuticals_biotechnology', name: 'Pharmaceuticals and Biotechnology' },
+  { id: 'medical_devices', name: 'Medical Devices and Equipment' },
   { id: 'finance', name: 'Financial Services' },
-  { id: 'education', name: 'Education' },
+  { id: 'banking_credit', name: 'Banking and Credit' },
+  { id: 'investment_asset_management', name: 'Investment and Asset Management' },
+  { id: 'insurance', name: 'Insurance' },
   { id: 'retail', name: 'Retail Trade' },
-  { id: 'manufacturing', name: 'Manufacturing' },
-  { id: 'energy', name: 'Energy & Utilities' },
-  { id: 'transportation', name: 'Transportation' },
+  { id: 'consumer_products', name: 'Consumer Products' },
+  { id: 'manufacturing', name: 'Manufacturing and Industrial' },
+  { id: 'heavy_manufacturing', name: 'Heavy Manufacturing' },
+  { id: 'light_manufacturing', name: 'Light Manufacturing' },
+  { id: 'energy', name: 'Energy and Utilities' },
+  { id: 'traditional_energy', name: 'Traditional Energy' },
+  { id: 'renewable_energy', name: 'Renewable Energy' },
+  { id: 'transportation', name: 'Transportation and Logistics' },
+  { id: 'transportation_services', name: 'Transportation Services' },
+  { id: 'automotive', name: 'Automotive Industry' },
+  { id: 'real_estate', name: 'Real Estate' },
+  { id: 'construction', name: 'Construction' },
+  { id: 'media', name: 'Media and Entertainment' },
+  { id: 'traditional_media', name: 'Traditional Media' },
+  { id: 'digital_media', name: 'Digital Media' },
+  { id: 'education', name: 'Education' },
+  { id: 'traditional_education', name: 'Traditional Education' },
+  { id: 'edtech', name: 'Educational Technology (EdTech)' },
+  { id: 'agriculture', name: 'Agriculture and Food' },
+  { id: 'agriculture_farming', name: 'Agriculture' },
+  { id: 'food_industry', name: 'Food Industry' },
+  { id: 'professional_services', name: 'Professional Services' },
+  { id: 'business_services', name: 'Business Services' },
+  { id: 'technical_services', name: 'Technical Services' },
+  { id: 'government', name: 'Government and Public Sector' },
+  { id: 'government_services', name: 'Government Services' },
+  { id: 'public_infrastructure', name: 'Public Infrastructure' },
+  { id: 'nonprofit', name: 'Non-Profit and Social Sector' },
+  { id: 'nonprofit_organizations', name: 'Non-Profit Organizations' },
+  { id: 'social_services', name: 'Social Services' },
+  { id: 'emerging_cross_sector', name: 'Emerging and Cross-Sector Industries' },
+  { id: 'sustainability_green_economy', name: 'Sustainability and Green Economy' },
+  { id: 'digital_transformation', name: 'Digital Transformation' },
+  { id: 'health_wellness', name: 'Health and Wellness' },
 ];
 
 const SDG_GOALS = [
   { id: 'sdg-1', name: 'No Poverty', number: 1 },
   { id: 'sdg-2', name: 'Zero Hunger', number: 2 },
-  { id: 'sdg-3', name: 'Good Health & Well-being', number: 3 },
+  { id: 'sdg-3', name: 'Good Health and Well-being', number: 3 },
   { id: 'sdg-4', name: 'Quality Education', number: 4 },
   { id: 'sdg-5', name: 'Gender Equality', number: 5 },
+  { id: 'sdg-6', name: 'Clean Water and Sanitation', number: 6 },
+  { id: 'sdg-7', name: 'Affordable and Clean Energy', number: 7 },
+  { id: 'sdg-8', name: 'Decent Work and Economic Growth', number: 8 },
+  { id: 'sdg-9', name: 'Industry, Innovation and Infrastructure', number: 9 },
+  { id: 'sdg-10', name: 'Reduced Inequalities', number: 10 },
+  { id: 'sdg-11', name: 'Sustainable Cities and Communities', number: 11 },
+  { id: 'sdg-12', name: 'Responsible Consumption and Production', number: 12 },
   { id: 'sdg-13', name: 'Climate Action', number: 13 },
+  { id: 'sdg-14', name: 'Life Below Water', number: 14 },
+  { id: 'sdg-15', name: 'Life on Land', number: 15 },
+  { id: 'sdg-16', name: 'Peace, Justice and Strong Institutions', number: 16 },
+  { id: 'sdg-17', name: 'Partnerships for the Goals', number: 17 }
 ];
 
 
@@ -329,87 +378,92 @@ export function WorkspacePage() {
           
           {/* Input Area (only visible if projectType is selected) */}
           {projectType && (
-            <div className="w-full relative max-w-3xl space-y-4">
-              
-              {/* PDF Preview */}
-              {uploadedPdfs.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {uploadedPdfs.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700">
-                      <Paperclip className="w-3.5 h-3.5" />
-                      <span className="truncate max-w-[150px]">{file.name}</span>
-                      <button onClick={() => removePdf(idx)} className="ml-1 hover:text-red-500">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+            <>
+              <div className="w-full relative max-w-3xl space-y-4">
+                {/* PDF Preview */}
+                {uploadedPdfs.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {uploadedPdfs.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span className="truncate max-w-[150px]">{file.name}</span>
+                        <button onClick={() => removePdf(idx)} className="ml-1 hover:text-red-500">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => {
+                      setPrompt(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                    }}
+                    placeholder="Describe your idea or choose a sector below..."
+                    className="w-full bg-white border border-gray-200 rounded-2xl p-4 pl-12 pr-16 text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none min-h-[60px] max-h-[200px] shadow-sm transition-shadow"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleGenerate();
+                      }
+                    }}
+                  />
+                  
+                  {/* Paperclip Button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute left-3 bottom-3 w-10 h-10 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                    disabled={isProcessingPdf}
+                  >
+                    {isProcessingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePdfUpload}
+                    className="hidden"
+                    accept="application/pdf"
+                    multiple
+                  />
+
+                  {/* Submit Arrow */}
+                  <button
+                    onClick={() => handleGenerate()}
+                    disabled={!prompt.trim() && uploadedPdfs.length === 0}
+                    className="absolute right-3 bottom-3 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#1f2438] transition-colors"
+                  >
+                    <ArrowUp className="w-5 h-5" />
+                  </button>
                 </div>
-              )}
-
-              <div className="relative">
-                <textarea
-                  value={prompt}
-                  onChange={(e) => {
-                    setPrompt(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-                  }}
-                  placeholder="Describe your idea or choose a sector below..."
-                  className="w-full bg-white border border-gray-200 rounded-2xl p-4 pl-12 pr-16 text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none min-h-[60px] max-h-[200px] shadow-sm transition-shadow"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                />
-                
-                {/* Paperclip Button */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute left-3 bottom-3 w-10 h-10 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors"
-                  disabled={isProcessingPdf}
-                >
-                  {isProcessingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePdfUpload}
-                  className="hidden"
-                  accept="application/pdf"
-                  multiple
-                />
-
-                {/* Submit Arrow */}
-                <button
-                  onClick={() => handleGenerate()}
-                  disabled={!prompt.trim() && uploadedPdfs.length === 0}
-                  className="absolute right-3 bottom-3 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#1f2438] transition-colors"
-                >
-                  <ArrowUp className="w-5 h-5" />
-                </button>
               </div>
 
-              {/* Suggestions */}
-              <div className="pt-4">
+              {/* Content Separation */}
+              <div className="w-full max-w-3xl my-2">
+                <Separator />
+              </div>
+
+              {/* Suggestions - Separate div centered and widened to parent container boundaries perfectly */}
+              <div className="w-full pt-1">
                 <p className="text-xs text-gray-500 text-center mb-3">Or, use our pre-written prompts</p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-1.5 px-2">
                   {sectors.map((sector) => (
                     <button
                       key={sector.id}
                       onClick={() => {
                         setPrompt(`I want to build something in ${sector.name}`);
                       }}
-                      className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors shadow-sm"
+                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors shadow-sm"
                     >
                       {sector.name}
                     </button>
                   ))}
                 </div>
               </div>
-
-            </div>
+            </>
           )}
 
           {isProfileIncomplete && (

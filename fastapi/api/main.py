@@ -25,6 +25,8 @@ def _cors_allow_origins() -> list[str]:
         "http://127.0.0.1:3001",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
         "https://solve-innovate.onrender.com",
         "https://solve-innovate-v3.onrender.com",
     ]

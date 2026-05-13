@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { FiPlus, FiTerminal, FiChevronRight, FiDatabase, FiUsers } from 'react-icons/fi';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -80,6 +81,15 @@ export const ResearchGeneratorSection = ({
 
   // Check if user has been selected for Deep Empathy workflow
   const isUserSelected = formData?.selectedExtremeUser?.trim() ? true : false;
+
+  // For Extreme User (asIs variant): both sections must be filled before showing form / enabling Generate
+  const isPainPointFilled = isAsIsStyle
+    ? !!(formData?.painPointStep?.trim() && formData?.painPointDescription?.trim())
+    : true;
+  const isTargetUserFilled = isAsIsStyle
+    ? !!formData?.targetUserContext?.trim()
+    : true;
+  const isExtremeUserReady = isPainPointFilled && isTargetUserFilled;
 
   // COMPREHENSIVE DEBUG for transformation framework
   if (title === 'Transformation Framework') {
@@ -262,134 +272,257 @@ export const ResearchGeneratorSection = ({
             </div>
           </div>
 
-          {/* Form Section */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="flex flex-col gap-8">
-              {/* Render Form Fields */}
-              <div className="flex flex-col gap-7">
-                {formFields.map((element, index) => {
-                  if ('type' in element && element.type === 'inline') {
-                    return (
-                      <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
-                        {element.fields.map((field) => {
-                          const widthClass = field.width === '1/3' ? 'col-span-12 md:col-span-4' :
-                            field.width === '2/3' ? 'col-span-12 md:col-span-8' :
-                              field.width === '1/2' ? 'col-span-12 md:col-span-6' : 'col-span-12';
+          {/* Extreme User (asIs) variant: show selection buttons first */}
+          {isAsIsStyle ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <div className="flex flex-col gap-8">
 
-                          return (
-                            <div key={field.id} className={widthClass}>
-                              <div className="mb-2 flex items-center justify-between">
-                                <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
-                                  {field.label}
-                                </label>
-                              </div>
-                              {field.type === 'textarea' ? (
-                                <Textarea
-                                  id={field.id}
-                                  value={formData[field.id] || ''}
-                                  onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                                  rows={field.rows || 3}
-                                  placeholder={field.placeholder}
-                                  className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                                />
-                              ) : (
-                                <Input
-                                  type={field.type || 'text'}
-                                  id={field.id}
-                                  value={formData[field.id] || ''}
-                                  onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                                  placeholder={field.placeholder}
-                                  className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  } else {
-                    const field = element as FormField;
-                    
-                    // Special formatting for pain point fields
-                    const isPainPointField = field.id === 'prioritizedPainPoint' || field.id === 'painPointDescription';
-                    const isSelectedUserField = field.id === 'selectedExtremeUser';
+                {/* Step 1 — Pain Point */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-foreground">Step 1 — Pain Point</p>
+                      <p className="text-sm text-muted-foreground">Select a pain point from your As-Is Map analysis.</p>
+                    </div>
+                    {isPainPointFilled && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 bg-white rounded-full px-2.5 py-1">
+                        ✓ Selected
+                      </span>
+                    )}
+                  </div>
 
-                    return (
-                      <div key={field.id} className="flex flex-col gap-2">
-                        <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
-                          {field.label}
-                        </label>
-                        
-                        {field.type === 'textarea' ? (
-                          <Textarea
-                            id={field.id}
-                            value={formData[field.id] || ''}
-                            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                            rows={field.rows || 3}
-                            placeholder={field.placeholder}
-                            className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                          />
-                        ) : (
-                          <Input
-                            type={field.type || 'text'}
-                            id={field.id}
-                            value={formData[field.id] || ''}
-                            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-                            placeholder={field.placeholder}
-                            className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                          />
-                        )}
-
-                        {/* Show Choose User button below selectedExtremeUser field */}
-                        {isSelectedUserField && onShowUsersModal && (
-                          <div className="mt-3 flex justify-center">
-                            <Button
-                              type="button"
-                              onClick={onShowUsersModal}
-                              className="rounded-lg bg-gray-900 px-4 py-2 text-[12px] font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
-                            >
-                              Choose User
-                            </Button>
-                          </div>
-                        )}
-
-                        {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                            onClick={onPopulateFromAsIsMap}
-                          >
-                            Use As-Is Map
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  }
-                })}
-              </div>
-
-              {/* Generate Button - Centered and Floating */}
-              <div className="flex justify-center pt-8">
-                <Button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={isLoading || isGenerating || (title === 'Deep Empathy Research Generator' && !isUserSelected)}
-                  className="rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {isLoading || isGenerating ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="inline size-4 animate-spin" />
-                      Generating...
-                    </span>
+                  {isPainPointFilled ? (
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-700">{formData.painPointStep}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">{formData.painPointDescription}</p>
+                      {onShowPainPointsModal && (
+                        <button
+                          type="button"
+                          onClick={onShowPainPointsModal}
+                          className="self-start text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+                        >
+                          Change selection
+                        </button>
+                      )}
+                    </div>
                   ) : (
-                    `Generate ${title.split(' ').slice(0, -1).join(' ').toLowerCase()}`
+                    onShowPainPointsModal && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onShowPainPointsModal}
+                        className="w-full h-11 border-dashed text-sm font-medium"
+                      >
+                        Choose Pain Point
+                      </Button>
+                    )
                   )}
-                </Button>
+                </div>
+
+                <Separator />
+
+                {/* Step 2 — Target User Context */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-foreground">Step 2 — Target User Context</p>
+                      <p className="text-sm text-muted-foreground">Populate from your As-Is Map or enter manually.</p>
+                    </div>
+                    {isTargetUserFilled && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 border border-gray-200 bg-white rounded-full px-2.5 py-1">
+                        ✓ Filled
+                      </span>
+                    )}
+                  </div>
+
+                  {isTargetUserFilled ? (
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-2">
+                      <p className="text-sm text-gray-600 leading-relaxed">{formData.targetUserContext}</p>
+                      {onPopulateFromAsIsMap && (
+                        <button
+                          type="button"
+                          onClick={onPopulateFromAsIsMap}
+                          className="self-start text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+                        >
+                          Re-populate from As-Is Map
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {onPopulateFromAsIsMap && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={onPopulateFromAsIsMap}
+                          className="w-full h-11 border-dashed text-sm font-medium"
+                        >
+                          Use As-Is Map
+                        </Button>
+                      )}
+                      <Textarea
+                        id="targetUserContext"
+                        value={formData.targetUserContext || ''}
+                        onChange={(e) => setFormData({ ...formData, targetUserContext: e.target.value })}
+                        rows={3}
+                        placeholder="Or describe the user's context, constraints, and environment manually..."
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Generate Button */}
+                <div className="flex flex-col items-center gap-2 pt-2">
+                  <Button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={isLoading || isGenerating || !isExtremeUserReady}
+                    className="rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isLoading || isGenerating ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="inline size-4 animate-spin" />
+                        Generating...
+                      </span>
+                    ) : (
+                      'Generate Extreme User'
+                    )}
+                  </Button>
+                  {!isExtremeUserReady && (
+                    <p className="text-xs text-muted-foreground">
+                      Complete both steps above to enable generation.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Default variant: show all form fields normally */
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <div className="flex flex-col gap-8">
+                {/* Render Form Fields */}
+                <div className="flex flex-col gap-7">
+                  {formFields.map((element, index) => {
+                    if ('type' in element && element.type === 'inline') {
+                      return (
+                        <div key={`inline-${index}`} className="grid grid-cols-12 gap-4">
+                          {element.fields.map((field) => {
+                            const widthClass = field.width === '1/3' ? 'col-span-12 md:col-span-4' :
+                              field.width === '2/3' ? 'col-span-12 md:col-span-8' :
+                                field.width === '1/2' ? 'col-span-12 md:col-span-6' : 'col-span-12';
+
+                            return (
+                              <div key={field.id} className={widthClass}>
+                                <div className="mb-2 flex items-center justify-between">
+                                  <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
+                                    {field.label}
+                                  </label>
+                                </div>
+                                {field.type === 'textarea' ? (
+                                  <Textarea
+                                    id={field.id}
+                                    value={formData[field.id] || ''}
+                                    onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                                    rows={field.rows || 3}
+                                    placeholder={field.placeholder}
+                                    className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                  />
+                                ) : (
+                                  <Input
+                                    type={field.type || 'text'}
+                                    id={field.id}
+                                    value={formData[field.id] || ''}
+                                    onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                                    placeholder={field.placeholder}
+                                    className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    } else {
+                      const field = element as FormField;
+                      const isSelectedUserField = field.id === 'selectedExtremeUser';
+
+                      return (
+                        <div key={field.id} className="flex flex-col gap-2">
+                          <label htmlFor={field.id} className="text-xs font-semibold uppercase tracking-widest text-gray-700">
+                            {field.label}
+                          </label>
+
+                          {field.type === 'textarea' ? (
+                            <Textarea
+                              id={field.id}
+                              value={formData[field.id] || ''}
+                              onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                              rows={field.rows || 3}
+                              placeholder={field.placeholder}
+                              className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                            />
+                          ) : (
+                            <Input
+                              type={field.type || 'text'}
+                              id={field.id}
+                              value={formData[field.id] || ''}
+                              onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                              placeholder={field.placeholder}
+                              className="h-10 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                            />
+                          )}
+
+                          {/* Show Choose User button below selectedExtremeUser field */}
+                          {isSelectedUserField && onShowUsersModal && (
+                            <div className="mt-3 flex justify-center">
+                              <Button
+                                type="button"
+                                onClick={onShowUsersModal}
+                                className="rounded-lg bg-gray-900 px-4 py-2 text-[12px] font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                              >
+                                Choose User
+                              </Button>
+                            </div>
+                          )}
+
+                          {field.id === 'targetUserContext' && onPopulateFromAsIsMap && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              onClick={onPopulateFromAsIsMap}
+                            >
+                              Use As-Is Map
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+
+                {/* Generate Button - Centered and Floating */}
+                <div className="flex justify-center pt-8">
+                  <Button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={isLoading || isGenerating || (title === 'Deep Empathy Research Generator' && !isUserSelected)}
+                    className="rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isLoading || isGenerating ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="inline size-4 animate-spin" />
+                        Generating...
+                      </span>
+                    ) : (
+                      `Generate ${title.split(' ').slice(0, -1).join(' ').toLowerCase()}`
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="animate-fadeIn">

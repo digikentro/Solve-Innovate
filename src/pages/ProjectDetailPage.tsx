@@ -1,5 +1,6 @@
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor, FiFileText } from 'react-icons/fi';
@@ -10,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PainPointSelectionModal } from '@/components/project-detail/PainPointSelectionModal';
 import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUserSelectionModal';
+import { HorizontalModal } from '@/components/ui/Modal';
+import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 
 const ProjectInfo = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.ProjectInfo })));
 const SecondaryResearchSection = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.SecondaryResearchSection })));
@@ -59,6 +62,16 @@ export const ProjectDetailPage = () => {
   // Active section state
   const [activeSection, setActiveSection] = useState('project-info');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
+  const [headerActionsNode, setHeaderActionsNode] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // We delay slightly to ensure the node is rendered by SidebarLayout
+    const timer = setTimeout(() => {
+      setHeaderActionsNode(document.getElementById('project-header-actions'));
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   // Track sections with no generate button (chat, prototyping-tools) — visiting completes them
   const [visitedSections, setVisitedSections] = useState<Set<string>>(() => {
@@ -447,6 +460,39 @@ export const ProjectDetailPage = () => {
         />
       )}
 
+      {/* Sources Button Portal */}
+      {headerActionsNode && createPortal(
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsSourcesModalOpen(true)}
+          className="flex items-center gap-2 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 border-gray-200"
+        >
+          <FiFileText className="w-4 h-4" />
+          Sources
+        </Button>,
+        headerActionsNode
+      )}
+
+      {/* Sources Modal */}
+      {isSourcesModalOpen && (
+        <AssessmentProblemDetailedView
+          open={isSourcesModalOpen}
+          onClose={() => setIsSourcesModalOpen(false)}
+          assessment={
+            project?.analysis && project.analysis.length > 0 
+              ? [...project.analysis].sort((x, y) => {
+                  const d1 = new Date(x.createdAt || x.updatedAt || 0).getTime();
+                  const d2 = new Date(y.createdAt || y.updatedAt || 0).getTime();
+                  return d2 - d1;
+                })[0] 
+              : undefined
+          }
+          problemTitle={project?.title || 'Project'}
+          viewType="assessment"
+        />
+      )}
+
       {/* Right Side - Content area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar">
         <main className="flex-1">
@@ -455,7 +501,6 @@ export const ProjectDetailPage = () => {
             {activeSection === 'project-info' && (
               <div className="flex flex-col gap-10">
                 <ProjectInfo project={project} />
-                <ProjectAnalysisSection project={project} setProject={setProject} />
               </div>
             )}
 

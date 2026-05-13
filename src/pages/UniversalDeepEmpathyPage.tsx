@@ -74,13 +74,13 @@ export default function UniversalDeepEmpathyPage() {
   useEffect(() => {
     // Scroll to top when page loads
     window.scrollTo(0, 0);
-    
+
     const fetchDeepEmpathyData = async () => {
       if (!projectId) return;
 
       try {
         setLoading(true);
-        
+
         // Get the project data including deep_empathy_data
         const { data: projectData, error: projectError } = await supabase
           .from('projects')
@@ -94,9 +94,9 @@ export default function UniversalDeepEmpathyPage() {
         // Check if deep_empathy_data exists and has content (following As-Is Map pattern)
         console.log('Project data received:', projectData);
         console.log('deep_empathy_data value:', projectData.deep_empathy_data);
-        
+
         let deepEmpathyData = projectData.deep_empathy_data;
-        
+
         // Handle case where deep_empathy_data might be stored as a JSON string
         if (typeof deepEmpathyData === 'string') {
           try {
@@ -106,11 +106,11 @@ export default function UniversalDeepEmpathyPage() {
             console.error('Failed to parse deep_empathy_data string:', error);
           }
         }
-        
-        if (deepEmpathyData && 
-            typeof deepEmpathyData === 'object' && 
-            deepEmpathyData.content && 
-            Object.keys(deepEmpathyData.content).length > 0) {
+
+        if (deepEmpathyData &&
+          typeof deepEmpathyData === 'object' &&
+          deepEmpathyData.content &&
+          Object.keys(deepEmpathyData.content).length > 0) {
           console.log('Setting deep empathy data:', deepEmpathyData);
           setDeepEmpathyData(deepEmpathyData as DeepEmpathyData);
         } else {
@@ -163,14 +163,14 @@ export default function UniversalDeepEmpathyPage() {
             The deep empathy research analysis is still being generated. This process typically takes a few minutes.
           </p>
           <div className="space-y-4">
-            <Button 
-              onClick={() => window.location.reload()} 
+            <Button
+              onClick={() => window.location.reload()}
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
             >
               Refresh Page
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate(`/projects/${projectId}`)}
               className="w-full border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-3 rounded-xl transition-all duration-200"
             >
@@ -219,7 +219,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600 text-lg">Understanding the research foundation</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               <div className="group bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border border-purple-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-3 text-lg">
@@ -264,7 +264,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Watch and learn from user behavior</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               <div className="group bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
@@ -330,7 +330,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Step into the user's world</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="group bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -396,7 +396,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Act out different user perspectives</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="group bg-gradient-to-br from-violet-50 to-purple-50 p-6 rounded-xl border border-violet-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -462,7 +462,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Follow users in their natural environment</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="group bg-gradient-to-br from-sky-50 to-blue-50 p-6 rounded-xl border border-sky-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -528,7 +528,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Engage in meaningful conversations</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="group bg-gradient-to-br from-amber-50 to-yellow-50 p-6 rounded-xl border border-amber-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -616,7 +616,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Best practices for conducting research</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               <div className="group bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-3 text-lg">
@@ -682,7 +682,7 @@ export default function UniversalDeepEmpathyPage() {
                 <p className="text-slate-600">Transform research into actionable insights</p>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="group bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-emerald-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -737,35 +737,35 @@ export default function UniversalDeepEmpathyPage() {
         )}
 
         {/* Fallback - Show raw data if structure doesn't match expected format */}
-        {(!deepEmpathyData.content.researchContextAnalysis && 
-          !deepEmpathyData.content.empathyTechnique1Observation && 
+        {(!deepEmpathyData.content.researchContextAnalysis &&
+          !deepEmpathyData.content.empathyTechnique1Observation &&
           !deepEmpathyData.content.empathyTechnique2Immersion &&
           !deepEmpathyData.content.empathyTechnique3RolePlaying &&
           !deepEmpathyData.content.empathyTechnique4Shadowing &&
           !deepEmpathyData.content.empathyTechnique5Conversation &&
           !deepEmpathyData.content.researchExecutionGuidance &&
           !deepEmpathyData.content.insightSynthesisFramework) && (
-          <Card className="p-8 mb-10 bg-gradient-to-br from-amber-50 to-yellow-100 border-0 shadow-xl rounded-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <AlertTriangle className="w-7 h-7 text-white" />
+            <Card className="p-8 mb-10 bg-gradient-to-br from-amber-50 to-yellow-100 border-0 shadow-xl rounded-2xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <AlertTriangle className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-amber-800 mb-1">Raw Data Structure</h2>
+                  <p className="text-amber-700">The data structure doesn't match the expected format</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-amber-800 mb-1">Raw Data Structure</h2>
-                <p className="text-amber-700">The data structure doesn't match the expected format</p>
+              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl border border-amber-200">
+                {typeof deepEmpathyData.content === 'string' ? (
+                  <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-mono text-sm">{deepEmpathyData.content}</div>
+                ) : (
+                  <pre className="text-xs text-slate-700 overflow-auto max-h-96 font-mono bg-slate-50 p-4 rounded-lg">
+                    {JSON.stringify(deepEmpathyData.content, null, 2)}
+                  </pre>
+                )}
               </div>
-            </div>
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl border border-amber-200">
-              {typeof deepEmpathyData.content === 'string' ? (
-                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-mono text-sm">{deepEmpathyData.content}</div>
-              ) : (
-                <pre className="text-xs text-slate-700 overflow-auto max-h-96 font-mono bg-slate-50 p-4 rounded-lg">
-                  {JSON.stringify(deepEmpathyData.content, null, 2)}
-                </pre>
-              )}
-            </div>
-          </Card>
-        )}
+            </Card>
+          )}
 
         {/* Footer */}
         <div className="text-center py-8">

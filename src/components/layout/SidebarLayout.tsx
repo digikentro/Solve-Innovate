@@ -396,12 +396,15 @@ export function SidebarLayout() {
           <div className="flex items-center justify-end gap-3 flex-1">
             {/* Share button — visible only in projects */}
             {isProjectPage && (
-              <button
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                title="Share project"
-              >
-                <Share className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <div id="project-header-actions" className="flex items-center gap-2"></div>
+                <button
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                  title="Share project"
+                >
+                  <Share className="w-4 h-4" />
+                </button>
+              </div>
             )}
 
             {/* Profile Dropdown */}

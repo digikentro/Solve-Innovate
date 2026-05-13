@@ -142,7 +142,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             <p className="mb-8 text-sm text-gray-600">Confirm permanent updates to the Extreme User Analysis data.</p>
             <div className="flex gap-4">
               <button onClick={() => setShowSaveDialog(false)} disabled={isSaving} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors">Go Back</button>
-              <button onClick={confirmSave} disabled={isSaving} className="flex-1 rounded-xl bg-gray-900 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-gray-800 transition-colors">{isSaving ? 'Saving...' : 'Save Now'}</button>
+              <button onClick={confirmSave} disabled={isSaving} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90 transition-colors">{isSaving ? 'Saving...' : 'Save Now'}</button>
             </div>
           </div>
         </div>
@@ -155,7 +155,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             <p className="mb-8 text-sm text-gray-600">Unsaved modifications will be permanently lost.</p>
             <div className="flex gap-4">
               <button onClick={() => setShowCancelDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors">Keep Editing</button>
-              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-red-700 transition-colors">Discard</button>
+              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90 transition-colors">Discard</button>
             </div>
           </div>
         </div>
@@ -163,10 +163,10 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Edit Mode Banner */}
       {isEditMode && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-6 py-3 shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Status</span>
-            <span className="text-sm font-medium text-amber-900">Edit Mode Active — modification enabled</span>
+            <span className="text-xs uppercase tracking-widest text-gray-500">Status</span>
+            <span className="text-sm font-medium text-gray-900">Edit Mode Active — Modification enabled</span>
           </div>
         </div>
       )}
@@ -202,7 +202,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                     type="button"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50 transition-colors"
                   >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -215,7 +215,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
               type="button"
               onClick={onGenerateNew}
               disabled={isEditMode}
-              className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               Generate New
             </button>
@@ -225,50 +225,50 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Pain Point Context */}
       {reportData.painPointAnalysis && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Pain Point Context</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Pain Point Context</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Step Analyzed</label>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Step Analyzed</label>
               {isEditMode ? (
                 <input
                   type="text"
                   value={reportData.painPointAnalysis.step || ''}
                   onChange={(e) => updateTextAtPath(['painPointAnalysis', 'step'], e.target.value)}
-                  className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                 />
               ) : (
-                <p className="text-sm font-medium text-gray-900 border-l border-black pl-4">{reportData.painPointAnalysis.step}</p>
+                <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">{reportData.painPointAnalysis.step}</p>
               )}
             </div>
 
             <div className="md:col-span-2 space-y-8">
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Description</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Description</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.painPointAnalysis.description || ''}
                     onChange={(e) => updateTextAtPath(['painPointAnalysis', 'description'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.painPointAnalysis.description}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.painPointAnalysis.description}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">User Context</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">User Context</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.painPointAnalysis.userContext || ''}
                     onChange={(e) => updateTextAtPath(['painPointAnalysis', 'userContext'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.painPointAnalysis.userContext}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.painPointAnalysis.userContext}</p>
                 )}
               </div>
             </div>
@@ -279,15 +279,15 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
       {/* Power Users (High-Need Extreme) */}
       {reportData.extremeUserProfiles?.powerUsersHighNeedExtreme && 
        reportData.extremeUserProfiles.powerUsersHighNeedExtreme.length > 0 && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Power Users (High-Need Extreme)</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Power Users (High-Need Extreme)</h2>
           <p className="text-xs text-gray-400 mb-8 max-w-xl italic">
             Users who push the boundaries and have amplified needs - Select to expand profile
           </p>
 
           <div className="space-y-4">
             {reportData.extremeUserProfiles.powerUsersHighNeedExtreme.map((user: any, index: number) => (
-              <div key={index} className="border border-gray-100">
+              <div key={index} className="overflow-hidden rounded-xl border border-gray-200">
                 {/* User Header */}
                 <button
                   onClick={() => toggleUser(index)}
@@ -303,100 +303,100 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                 {/* User Details */}
                 {expandedUsers[index] && (
                   <div className="p-8 space-y-10 border-t border-gray-100 bg-white">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Demographics</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Demographics</label>
                         {isEditMode ? (
                           <textarea
                             value={user.demographics || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'demographics'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.demographics}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.demographics}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Amplified Needs</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Amplified Needs</label>
                         {isEditMode ? (
                           <textarea
                             value={user.amplifiedNeeds || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'amplifiedNeeds'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.amplifiedNeeds}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.amplifiedNeeds}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Pain Point Experience</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Pain Point Experience</label>
                         {isEditMode ? (
                           <textarea
                             value={user.painPointExperience || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'painPointExperience'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.painPointExperience}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.painPointExperience}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Current Workarounds</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Current Workarounds</label>
                         {isEditMode ? (
                           <textarea
                             value={user.currentWorkarounds || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'currentWorkarounds'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.currentWorkarounds}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.currentWorkarounds}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Unique Challenges</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Unique Challenges</label>
                         {isEditMode ? (
                           <textarea
                             value={user.uniqueChallenges || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'uniqueChallenges'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.uniqueChallenges}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.uniqueChallenges}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Focus Areas</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Interview Focus Areas</label>
                         {isEditMode ? (
                           <textarea
                             value={user.interviewFocus || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'interviewFocus'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.interviewFocus}</p>
+                          <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.interviewFocus}</p>
                         )}
                       </div>
                     </div>
 
                     <div className="pt-8 border-t border-gray-100">
-                      <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-4">Research Value</label>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Research Value</label>
                       {isEditMode ? (
                         <textarea
                           value={user.researchValue || ''}
                           onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'powerUsersHighNeedExtreme', index, 'researchValue'], e.target.value)}
                           rows={2}
-                          className="w-full bg-white border border-black py-3 px-4 text-sm font-medium focus:outline-none transition-colors resize-none"
+                          className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                         />
                       ) : (
                         <p className="text-sm font-medium text-gray-900 leading-relaxed bg-gray-50 p-6 border-l-2 border-black">{user.researchValue}</p>
@@ -413,8 +413,8 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
       {/* Marginalized Users (Barrier-Facing Extreme) */}
       {reportData.extremeUserProfiles?.marginalizedUsersBarrierFacingExtreme && 
        reportData.extremeUserProfiles.marginalizedUsersBarrierFacingExtreme.length > 0 && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Marginalized Users (Barrier-Facing Extreme)</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Marginalized Users (Barrier-Facing Extreme)</h2>
           <p className="text-xs text-gray-400 mb-8 max-w-xl italic">
             Users who face significant barriers and exclusion - Select to expand profile
           </p>
@@ -423,7 +423,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             {reportData.extremeUserProfiles.marginalizedUsersBarrierFacingExtreme.map((user: any, index: number) => {
               const userIndex = index + 1000; // Unique id to avoid conflicts with power users
               return (
-                <div key={index} className="border border-gray-100">
+                <div key={index} className="overflow-hidden rounded-xl border border-gray-200">
                   {/* User Header */}
                   <button
                     onClick={() => toggleUser(userIndex)}
@@ -439,100 +439,100 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                   {/* User Details */}
                   {expandedUsers[userIndex] && (
                     <div className="p-8 space-y-10 border-t border-gray-100 bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Demographics</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Demographics</label>
                           {isEditMode ? (
                             <textarea
                               value={user.demographics || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'demographics'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.demographics}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.demographics}</p>
                           )}
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Barriers Faced</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Barriers Faced</label>
                           {isEditMode ? (
                             <textarea
                               value={user.barriersFaced || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'barriersFaced'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.barriersFaced}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.barriersFaced}</p>
                           )}
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Pain Point Experience</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Pain Point Experience</label>
                           {isEditMode ? (
                             <textarea
                               value={user.painPointExperience || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'painPointExperience'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.painPointExperience}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.painPointExperience}</p>
                           )}
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Exclusion Factors</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Exclusion Factors</label>
                           {isEditMode ? (
                             <textarea
                               value={user.exclusionFactors || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'exclusionFactors'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.exclusionFactors}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.exclusionFactors}</p>
                           )}
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Unique Challenges</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Unique Challenges</label>
                           {isEditMode ? (
                             <textarea
                               value={user.uniqueChallenges || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'uniqueChallenges'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.uniqueChallenges}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.uniqueChallenges}</p>
                           )}
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Focus Areas</label>
+                          <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Interview Focus Areas</label>
                           {isEditMode ? (
                             <textarea
                               value={user.interviewFocus || ''}
                               onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'interviewFocus'], e.target.value)}
                               rows={2}
-                              className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                              className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                             />
                           ) : (
-                            <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{user.interviewFocus}</p>
+                            <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{user.interviewFocus}</p>
                           )}
                         </div>
                       </div>
 
                       <div className="pt-8 border-t border-gray-100">
-                        <label className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-4">Research Value</label>
+                        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Research Value</label>
                         {isEditMode ? (
                           <textarea
                             value={user.researchValue || ''}
                             onChange={(e) => updateTextAtPath(['extremeUserProfiles', 'marginalizedUsersBarrierFacingExtreme', index, 'researchValue'], e.target.value)}
                             rows={2}
-                            className="w-full bg-white border border-black py-3 px-4 text-sm font-medium focus:outline-none transition-colors resize-none"
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                           />
                         ) : (
                           <p className="text-sm font-medium text-gray-900 leading-relaxed bg-gray-50 p-6 border-l-2 border-black">{user.researchValue}</p>
@@ -549,47 +549,47 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Research Strategy */}
       {reportData.researchStrategy && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Research Strategy</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Research Strategy</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {reportData.researchStrategy.userRecruitment && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">User Recruitment</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">User Recruitment</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchStrategy.userRecruitment || ''}
                     onChange={(e) => updateTextAtPath(['researchStrategy', 'userRecruitment'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.researchStrategy.userRecruitment}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchStrategy.userRecruitment}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.interviewApproach && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Interview Approach</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Interview Approach</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.researchStrategy.interviewApproach || ''}
                     onChange={(e) => updateTextAtPath(['researchStrategy', 'interviewApproach'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.researchStrategy.interviewApproach}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchStrategy.interviewApproach}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.keyInsightsToExplore && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Key Insights to Explore</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Key Insights to Explore</label>
                 {Array.isArray(reportData.researchStrategy.keyInsightsToExplore) ? (
-                  <ul className="space-y-2 border-l border-gray-100 pl-4">
+                  <ul className="space-y-2 border-l border-gray-100 pl-6">
                     {reportData.researchStrategy.keyInsightsToExplore.map((insight: string, i: number) => (
                       <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
                         <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
@@ -598,16 +598,16 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-600 border-l border-gray-100 pl-4">{reportData.researchStrategy.keyInsightsToExplore}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm text-gray-600">{reportData.researchStrategy.keyInsightsToExplore}</p>
                 )}
               </div>
             )}
 
             {reportData.researchStrategy.expectedBreakthroughAreas && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Expected Breakthrough Areas</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Expected Breakthrough Areas</label>
                 {Array.isArray(reportData.researchStrategy.expectedBreakthroughAreas) ? (
-                  <ul className="space-y-2 border-l border-gray-100 pl-4">
+                  <ul className="space-y-2 border-l border-gray-100 pl-6">
                     {reportData.researchStrategy.expectedBreakthroughAreas.map((area: string, i: number) => (
                       <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
                         <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
@@ -616,7 +616,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-600 border-l border-gray-100 pl-4">{reportData.researchStrategy.expectedBreakthroughAreas}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm text-gray-600">{reportData.researchStrategy.expectedBreakthroughAreas}</p>
                 )}
               </div>
             )}
@@ -626,38 +626,38 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
 
       {/* Design Implications */}
       {reportData.designImplications && (
-        <section className="p-8 border border-gray-100">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Design Implications</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Design Implications</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {reportData.designImplications.powerUserInsights && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Power User Insights</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Power User Insights</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.designImplications.powerUserInsights || ''}
                     onChange={(e) => updateTextAtPath(['designImplications', 'powerUserInsights'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.designImplications.powerUserInsights}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.designImplications.powerUserInsights}</p>
                 )}
               </div>
             )}
 
             {reportData.designImplications.marginalizedUserInsights && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Marginalized User Insights</label>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Marginalized User Insights</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.designImplications.marginalizedUserInsights || ''}
                     onChange={(e) => updateTextAtPath(['designImplications', 'marginalizedUserInsights'], e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-200 py-2 px-3 text-sm focus:outline-none focus:border-black transition-colors resize-none"
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 leading-relaxed border-l border-gray-100 pl-4">{reportData.designImplications.marginalizedUserInsights}</p>
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.designImplications.marginalizedUserInsights}</p>
                 )}
               </div>
             )}
@@ -665,8 +665,8 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             {reportData.designImplications.solutionOpportunities && 
              reportData.designImplications.solutionOpportunities.length > 0 && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Solution Opportunities</label>
-                <ul className="space-y-2 border-l border-gray-100 pl-4">
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Solution Opportunities</label>
+                <ul className="space-y-2 border-l border-gray-100 pl-6">
                   {reportData.designImplications.solutionOpportunities.map((opportunity: string, i: number) => (
                     <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
                       <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
@@ -680,8 +680,8 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
             {reportData.designImplications.implementationConsiderations && 
              reportData.designImplications.implementationConsiderations.length > 0 && (
               <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-3">Implementation Considerations</label>
-                <ul className="space-y-2 border-l border-gray-100 pl-4">
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Considerations</label>
+                <ul className="space-y-2 border-l border-gray-100 pl-6">
                   {reportData.designImplications.implementationConsiderations.map((consideration: string, i: number) => (
                     <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
                       <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />

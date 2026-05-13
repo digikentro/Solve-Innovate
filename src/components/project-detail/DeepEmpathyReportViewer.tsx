@@ -10,14 +10,14 @@ interface DeepEmpathyReportViewerProps {
 }
 
 export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave }: DeepEmpathyReportViewerProps) => {
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     observation: true,
     immersion: false,
     roleplaying: false,
     shadowing: false,
     conversation: false
   });
-  
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,7 +57,8 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
     }
   };
 
-  const updateTextAtPath = (path: string[], value: string) => {    setEditedData((prev: any) => {
+  const updateTextAtPath = (path: string[], value: string) => {
+    setEditedData((prev: any) => {
       const cloneObj = (obj: any, p: (string | number)[]): any => {
         if (p.length === 0) return value;
         const head = p[0];
@@ -78,7 +79,8 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
     });
   };
 
-  const updateArrayItemAtPath = (path: string[], index: number, value: string) => {    setEditedData((prev: any) => {
+  const updateArrayItemAtPath = (path: string[], index: number, value: string) => {
+    setEditedData((prev: any) => {
       const fullPath = [...path, index];
       const cloneObj = (obj: any, p: (string | number)[]): any => {
         if (p.length === 0) return value;
@@ -115,7 +117,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
 
   const renderEditableList = (items: string[] | undefined, path: string[], label: string) => {
     if (!items || items.length === 0) return null;
-    
+
     return (
       <div>
         <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">{label}</label>
@@ -163,7 +165,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Deep Empathy Research</h1>
           <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">Phase 02 · Qualitative Exploration Guide</p>
         </div>
-        
+
         <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           {projectId && onSave && (
             <>
@@ -220,7 +222,7 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
       {reportData.researchContextAnalysis && (
         <section className="rounded-2xl border border-gray-200 bg-white p-8">
           <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Research Context</h2>
-          
+
           <div className="flex flex-col gap-10">
             <div>
               <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Pain Point</label>
@@ -269,104 +271,123 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
       )}
 
       {/* Empathy Techniques */}
-      <div className="flex flex-col gap-4">
-        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Empathy Methodologies</h2>
-        
-        {/* Methodology Sections */}
-        {[
-          { key: 'observation', label: 'Technique 01: Observation', data: reportData.empathyTechnique1Observation, 
-            fields: [
-              { label: 'Focus Areas', path: ['empathyTechnique1Observation', 'observationFocusAreas'], items: reportData.empathyTechnique1Observation?.observationFocusAreas },
-              { label: 'Documentation Requirements', path: ['empathyTechnique1Observation', 'whatToDocument'], items: reportData.empathyTechnique1Observation?.whatToDocument },
-              { label: 'Critical Observation Questions', path: ['empathyTechnique1Observation', 'keyQuestionsForObservation'], items: reportData.empathyTechnique1Observation?.keyQuestionsForObservation }
-            ]
-          },
-          { key: 'immersion', label: 'Technique 02: Immersion', data: reportData.empathyTechnique2Immersion,
-            fields: [
-              { label: 'Immersion Activities', path: ['empathyTechnique2Immersion', 'immersionActivities'], items: reportData.empathyTechnique2Immersion?.immersionActivities },
-              { label: 'Experience Parameters', path: ['empathyTechnique2Immersion', 'whatToExperience'], items: reportData.empathyTechnique2Immersion?.whatToExperience },
-              { label: 'Insights to Capture', path: ['empathyTechnique2Immersion', 'keyInsightsToCapture'], items: reportData.empathyTechnique2Immersion?.keyInsightsToCapture }
-            ]
-          },
-          { key: 'roleplaying', label: 'Technique 03: Role-Playing', data: reportData.empathyTechnique3RolePlaying,
-            fields: [
-              { label: 'Scenarios', path: ['empathyTechnique3RolePlaying', 'rolePlayingScenarios'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingScenarios },
-              { label: 'Variable Parameters', path: ['empathyTechnique3RolePlaying', 'rolePlayingVariables'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingVariables },
-              { label: 'Key Research Questions', path: ['empathyTechnique3RolePlaying', 'keyQuestionsForRolePlaying'], items: reportData.empathyTechnique3RolePlaying?.keyQuestionsForRolePlaying }
-            ]
-          },
-          { key: 'shadowing', label: 'Technique 04: Shadowing', data: reportData.empathyTechnique4Shadowing,
-            fields: [
-              { label: 'Focus Areas', path: ['empathyTechnique4Shadowing', 'shadowingFocusAreas'], items: reportData.empathyTechnique4Shadowing?.shadowingFocusAreas },
-              { label: 'Documentation Guidelines', path: ['empathyTechnique4Shadowing', 'shadowingDocumentation'], items: reportData.empathyTechnique4Shadowing?.shadowingDocumentation },
-              { label: 'Expected Critical Insights', path: ['empathyTechnique4Shadowing', 'keyInsightsFromShadowing'], items: reportData.empathyTechnique4Shadowing?.keyInsightsFromShadowing }
-            ]
-          }
-        ].map((section) => section.data && (
-          <div key={section.key} className="overflow-hidden rounded-xl border border-gray-200">
-            <button
-              onClick={() => toggleSection(section.key)}
-              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections[section.key] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-            >
-              <div className="flex items-center gap-4">
-                <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections[section.key] ? 'opacity-70' : 'text-gray-500'}`}>{section.label}</span>
-              </div>
-              <span className="text-xs">{expandedSections[section.key] ? 'CLOSE' : 'EXPAND'}</span>
-            </button>
-            {expandedSections[section.key] && (
-              <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                  {section.fields.map((field, fIdx) => (
-                    <div key={fIdx}>
-                      {renderEditableList(field.items, field.path, field.label)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+      <section className="rounded-2xl border border-gray-200 bg-white p-8">
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-gray-500">Empathy Methodologies</h2>
 
-        {/* Technique 5: Deep Conversation - Specialized Layout */}
-        {reportData.empathyTechnique5Conversation?.deepInterviewQuestions && (
-          <div className="overflow-hidden rounded-xl border border-gray-200">
-            <button
-              onClick={() => toggleSection('conversation')}
-              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections['conversation'] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-            >
-              <div className="flex items-center gap-4">
-                <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections['conversation'] ? 'opacity-70' : 'text-gray-500'}`}>Technique 05: Deep Conversation</span>
-              </div>
-              <span className="text-xs">{expandedSections['conversation'] ? 'CLOSE' : 'EXPAND'}</span>
-            </button>
-
-            {expandedSections['conversation'] && (
-              <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
-                  {[
-                    { label: 'Opening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'openingQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions },
-                    { label: 'Belief-Uncovering Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'beliefUncoveringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.beliefUncoveringQuestions },
-                    { label: 'Behavior-Exploring Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'behaviorExploringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.behaviorExploringQuestions },
-                    { label: 'Context-Deepening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'contextDeepeningQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.contextDeepeningQuestions },
-                    { label: 'Innovation Opportunity Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'innovationOpportunityQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.innovationOpportunityQuestions },
-                    { label: 'Critical Follow-Up Probes', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'followUpProbes'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.followUpProbes }
-                  ].map((field, idx) => field.items && (
-                    <div key={idx} className="space-y-4">
-                      {renderEditableList(field.items, field.path, field.label)}
-                    </div>
-                  ))}
+        <div className="flex flex-col gap-4">
+          {/* Methodology Sections */}
+          {[
+            {
+              key: 'observation', label: 'Technique 01: Observation', data: reportData.empathyTechnique1Observation,
+              fields: [
+                { label: 'Focus Areas', path: ['empathyTechnique1Observation', 'observationFocusAreas'], items: reportData.empathyTechnique1Observation?.observationFocusAreas },
+                { label: 'Documentation Requirements', path: ['empathyTechnique1Observation', 'whatToDocument'], items: reportData.empathyTechnique1Observation?.whatToDocument },
+                { label: 'Critical Observation Questions', path: ['empathyTechnique1Observation', 'keyQuestionsForObservation'], items: reportData.empathyTechnique1Observation?.keyQuestionsForObservation }
+              ]
+            },
+            {
+              key: 'immersion', label: 'Technique 02: Immersion', data: reportData.empathyTechnique2Immersion,
+              fields: [
+                { label: 'Immersion Activities', path: ['empathyTechnique2Immersion', 'immersionActivities'], items: reportData.empathyTechnique2Immersion?.immersionActivities },
+                { label: 'Experience Parameters', path: ['empathyTechnique2Immersion', 'whatToExperience'], items: reportData.empathyTechnique2Immersion?.whatToExperience },
+                { label: 'Insights to Capture', path: ['empathyTechnique2Immersion', 'keyInsightsToCapture'], items: reportData.empathyTechnique2Immersion?.keyInsightsToCapture }
+              ]
+            },
+            {
+              key: 'roleplaying', label: 'Technique 03: Role-Playing', data: reportData.empathyTechnique3RolePlaying,
+              fields: [
+                { label: 'Scenarios', path: ['empathyTechnique3RolePlaying', 'rolePlayingScenarios'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingScenarios },
+                { label: 'Variable Parameters', path: ['empathyTechnique3RolePlaying', 'rolePlayingVariables'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingVariables },
+                { label: 'Key Research Questions', path: ['empathyTechnique3RolePlaying', 'keyQuestionsForRolePlaying'], items: reportData.empathyTechnique3RolePlaying?.keyQuestionsForRolePlaying }
+              ]
+            },
+            {
+              key: 'shadowing', label: 'Technique 04: Shadowing', data: reportData.empathyTechnique4Shadowing,
+              fields: [
+                { label: 'Focus Areas', path: ['empathyTechnique4Shadowing', 'shadowingFocusAreas'], items: reportData.empathyTechnique4Shadowing?.shadowingFocusAreas },
+                { label: 'Documentation Guidelines', path: ['empathyTechnique4Shadowing', 'shadowingDocumentation'], items: reportData.empathyTechnique4Shadowing?.shadowingDocumentation },
+                { label: 'Expected Critical Insights', path: ['empathyTechnique4Shadowing', 'keyInsightsFromShadowing'], items: reportData.empathyTechnique4Shadowing?.keyInsightsFromShadowing }
+              ]
+            }
+          ].map((section) => section.data && (
+            <div key={section.key} className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                onClick={() => toggleSection(section.key)}
+                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections[section.key] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections[section.key] ? 'opacity-70' : 'text-gray-500'}`}>{section.label}</span>
                 </div>
-              </div>
-            )}
+                <span className="text-xs">{expandedSections[section.key] ? 'CLOSE' : 'EXPAND'}</span>
+              </button>
+              {expandedSections[section.key] && (
+                <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    {section.fields.map((field, fIdx) => (
+                      <div key={fIdx}>
+                        {renderEditableList(field.items, field.path, field.label)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Technique 5: Deep Conversation - Specialized Layout */}
+          {reportData.empathyTechnique5Conversation?.deepInterviewQuestions && (
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                onClick={() => toggleSection('conversation')}
+                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections['conversation'] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections['conversation'] ? 'opacity-70' : 'text-gray-500'}`}>Technique 05: Deep Conversation</span>
+                </div>
+                <span className="text-xs">{expandedSections['conversation'] ? 'CLOSE' : 'EXPAND'}</span>
+              </button>
+
+              {expandedSections['conversation'] && (
+                <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                    {[
+                      { label: 'Opening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'openingQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions },
+                      { label: 'Belief-Uncovering Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'beliefUncoveringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.beliefUncoveringQuestions },
+                      { label: 'Behavior-Exploring Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'behaviorExploringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.behaviorExploringQuestions },
+                      { label: 'Context-Deepening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'contextDeepeningQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.contextDeepeningQuestions },
+                      { label: 'Innovation Opportunity Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'innovationOpportunityQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.innovationOpportunityQuestions },
+                      { label: 'Critical Follow-Up Probes', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'followUpProbes'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.followUpProbes }
+                    ].map((field, idx) => field.items && (
+                      <div key={idx} className="space-y-4">
+                        {renderEditableList(field.items, field.path, field.label)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Research Execution Guidance */}
+      {reportData.researchExecutionGuidance && (
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Execution Guidance</h2>
+
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+            {renderEditableList(reportData.researchExecutionGuidance.preResearchPreparation, ['researchExecutionGuidance', 'preResearchPreparation'], 'Pre-Research Preparation')}
+            {renderEditableList(reportData.researchExecutionGuidance.duringResearchBestPractices, ['researchExecutionGuidance', 'duringResearchBestPractices'], 'During Research Best Practices')}
+            {renderEditableList(reportData.researchExecutionGuidance.postResearchAnalysis, ['researchExecutionGuidance', 'postResearchAnalysis'], 'Post-Research Analysis')}
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
       {/* Insight Synthesis Framework */}
       {reportData.insightSynthesisFramework && (
         <section className="rounded-2xl border border-gray-200 bg-white p-8">
           <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Synthesis Framework</h2>
-          
+
           <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
             {renderEditableList(reportData.insightSynthesisFramework.beliefInsights, ['insightSynthesisFramework', 'beliefInsights'], 'Expected Belief Insights')}
             {renderEditableList(reportData.insightSynthesisFramework.behavioralInsights, ['insightSynthesisFramework', 'behavioralInsights'], 'Expected Behavioral Insights')}
