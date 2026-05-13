@@ -271,99 +271,101 @@ export const PsychologicalAnalysisReportViewer = ({ data, onGenerateNew, project
       )}
 
       {/* Behavioral Clusters */}
-      <div className="flex flex-col gap-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-8">
         <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Behavioral Cluster Catalog</h2>
         
-        {reportData.clusters?.map((cluster: any, idx: number) => (
-          <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
-            <button
-              onClick={() => toggleCluster(idx)}
-              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-            >
-              <div className="flex items-center gap-4">
-                <span className={`text-xs font-medium uppercase tracking-wide ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-500'}`}>Cluster 0{idx + 1}</span>
-                <span className="text-sm font-medium">{cluster.irrationalBehavior || 'Behavioral Pattern'}</span>
-              </div>
-              <span className="text-xs">{expandedClusters[idx] ? 'CLOSE' : 'EXPAND'}</span>
-            </button>
-            {expandedClusters[idx] && (
-              <div className="flex flex-col gap-12 bg-white p-8 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                  <div className="flex flex-col gap-6">
-                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Rational Counterpart</label>
-                    {isEditMode ? (
-                      <textarea
-                        value={cluster.rationalCounterpart || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'rationalCounterpart'], e.target.value)}
-                        rows={3}
-                        className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-200">{cluster.rationalCounterpart}</p>
-                    )}
-                  </div>
-                  
-                  {renderEditableList(cluster.rawEvidenceFromStudentData, ['clusters', idx.toString(), 'rawEvidenceFromStudentData'], 'Raw Evidence')}
+        <div className="flex flex-col gap-6">
+          {reportData.clusters?.map((cluster: any, idx: number) => (
+            <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                onClick={() => toggleCluster(idx)}
+                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-500'}`}>Cluster 0{idx + 1}</span>
+                  <span className="text-sm font-medium">{cluster.irrationalBehavior || 'Behavioral Pattern'}</span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-10 border-t border-gray-100">
-                  {[
-                    { label: 'Cognitive Biases', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'cognitiveBiases'], value: cluster.psychologicalAnalysis?.cognitiveBiases },
-                    { label: 'Emotional Drivers', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'emotionalDrivers'], value: cluster.psychologicalAnalysis?.emotionalDrivers },
-                    { label: 'Psychological Needs', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'psychologicalNeeds'], value: cluster.psychologicalAnalysis?.psychologicalNeeds },
-                    { label: 'Continuity Factor', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'whyItPersists'], value: cluster.psychologicalAnalysis?.whyItPersists }
-                  ].map((field, fIdx) => (
-                    <div key={fIdx} className="flex flex-col gap-3">
-                      <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">{field.label}</label>
+                <span className="text-xs">{expandedClusters[idx] ? 'CLOSE' : 'EXPAND'}</span>
+              </button>
+              {expandedClusters[idx] && (
+                <div className="flex flex-col gap-12 bg-white p-8 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    <div className="flex flex-col gap-6">
+                      <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Rational Counterpart</label>
                       {isEditMode ? (
                         <textarea
-                          value={field.value || ''}
-                          onChange={(e) => updateTextAtPath(field.path as string[], e.target.value)}
+                          value={cluster.rationalCounterpart || ''}
+                          onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'rationalCounterpart'], e.target.value)}
                           rows={3}
-                          className="w-full bg-white border border-gray-200 p-3 text-xs focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
+                          className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
                         />
                       ) : (
-                        <p className="text-xs text-gray-600 leading-relaxed">{field.value}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l border-gray-200">{cluster.rationalCounterpart}</p>
                       )}
                     </div>
-                  ))}
-                </div>
+                    
+                    {renderEditableList(cluster.rawEvidenceFromStudentData, ['clusters', idx.toString(), 'rawEvidenceFromStudentData'], 'Raw Evidence')}
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pt-10 border-t border-gray-200">
-                  <div className="flex flex-col gap-6">
-                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Behavioral Science Basis</label>
-                    {isEditMode ? (
-                      <textarea
-                        value={cluster.behavioralScienceExplanation || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'behavioralScienceExplanation'], e.target.value)}
-                        rows={4}
-                        className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l-2 border-gray-200 italic">"{cluster.behavioralScienceExplanation}"</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-6">
-                    <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Strategic Innovation Insight</label>
-                    {isEditMode ? (
-                      <textarea
-                        value={cluster.innovationInsight || ''}
-                        onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'innovationInsight'], e.target.value)}
-                        rows={4}
-                        className="w-full bg-white border border-gray-200 p-4 text-sm font-medium focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
-                      />
-                    ) : (
-                      <div className="rounded-lg border border-gray-200 bg-white p-6">
-                        <p className="text-sm font-medium text-gray-900 leading-relaxed">{cluster.innovationInsight}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-10 border-t border-gray-100">
+                    {[
+                      { label: 'Cognitive Biases', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'cognitiveBiases'], value: cluster.psychologicalAnalysis?.cognitiveBiases },
+                      { label: 'Emotional Drivers', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'emotionalDrivers'], value: cluster.psychologicalAnalysis?.emotionalDrivers },
+                      { label: 'Psychological Needs', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'psychologicalNeeds'], value: cluster.psychologicalAnalysis?.psychologicalNeeds },
+                      { label: 'Continuity Factor', path: ['clusters', idx.toString(), 'psychologicalAnalysis', 'whyItPersists'], value: cluster.psychologicalAnalysis?.whyItPersists }
+                    ].map((field, fIdx) => (
+                      <div key={fIdx} className="flex flex-col gap-3">
+                        <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">{field.label}</label>
+                        {isEditMode ? (
+                          <textarea
+                            value={field.value || ''}
+                            onChange={(e) => updateTextAtPath(field.path as string[], e.target.value)}
+                            rows={3}
+                            className="w-full bg-white border border-gray-200 p-3 text-xs focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-xs text-gray-600 leading-relaxed">{field.value}</p>
+                        )}
                       </div>
-                    )}
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pt-10 border-t border-gray-200">
+                    <div className="flex flex-col gap-6">
+                      <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Behavioral Science Basis</label>
+                      {isEditMode ? (
+                        <textarea
+                          value={cluster.behavioralScienceExplanation || ''}
+                          onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'behavioralScienceExplanation'], e.target.value)}
+                          rows={4}
+                          className="w-full bg-white border border-gray-200 p-4 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600 leading-relaxed pl-6 border-l-2 border-gray-200 italic">"{cluster.behavioralScienceExplanation}"</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-6">
+                      <label className="text-[10px] font-medium uppercase tracking-wide text-gray-500 block">Strategic Innovation Insight</label>
+                      {isEditMode ? (
+                        <textarea
+                          value={cluster.innovationInsight || ''}
+                          onChange={(e) => updateTextAtPath(['clusters', idx.toString(), 'innovationInsight'], e.target.value)}
+                          rows={4}
+                          className="w-full bg-white border border-gray-200 p-4 text-sm font-medium focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 resize-none rounded-lg"
+                        />
+                      ) : (
+                        <div className="rounded-lg border border-gray-200 bg-white p-6">
+                          <p className="text-sm font-medium text-gray-900 leading-relaxed">{cluster.innovationInsight}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Critical Requirements */}
       {reportData.criticalRequirements && (

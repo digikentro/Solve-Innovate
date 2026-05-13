@@ -475,8 +475,14 @@ export class ProjectService {
 
   /**
    * Save selected extreme user summary into research_data JSONB column
+   * @param extremeUserThreadKey stable key under chatbox_extreuser (eu_…) for n8n / UI correlation
    */
-  static async saveChatExtremeUser(projectId: string, userId: string, data: string | null): Promise<void> {
+  static async saveChatExtremeUser(
+    projectId: string,
+    userId: string,
+    data: string | null,
+    extremeUserThreadKey?: string | null
+  ): Promise<void> {
     // Fetch current research_data first
     const { data: row, error: fetchError } = await supabase
       .from('projects')
@@ -498,8 +504,10 @@ export class ProjectService {
         : (row?.research_data || {});
     } catch { existing = {}; }
 
-    // Merge chatExtremeUser key
-    const merged = { ...existing, chatExtremeUser: data };
+    const merged: Record<string, any> = { ...existing, chatExtremeUser: data };
+    if (extremeUserThreadKey !== undefined && extremeUserThreadKey !== null) {
+      merged.chatExtremeUserThreadKey = extremeUserThreadKey;
+    }
 
     const { error } = await supabase
       .from('projects')
@@ -508,5 +516,78 @@ export class ProjectService {
       .eq('user_id', userId);
 
     if (error) console.error('Failed to save chatExtremeUser into research_data:', error);
+  }
+
+  /**
+   * Merge one extreme-user chat thread into chatbox_extreuser (read–modify–write).
+   * Preserves other threads and messages on the same key.
+   * Moves legacy bucket key "undefined" (string) to eu_migrated_* so n8n stops collapsing chats.
+   */
+  static async mergeExtremeUserChatboxThread(
+    projectId: string,
+    userId: string,
+    threadKey: string,
+    entry: { name: string; persona_summary: string; created_at?: string }
+  ): Promise<void> {
+    if (!threadKey || threadKey === 'undefined') {
+      console.error('mergeExtremeUserChatboxThread: invalid threadKey');
+      return;
+    }
+
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('chatbox_extreuser')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch chatbox_extreuser:', fetchError);
+      return;
+    }
+
+    let map: Record<string, any> = {};
+    const raw = row?.chatbox_extreuser;
+    if (raw) {
+      try {
+        map = typeof raw === 'string' ? JSON.parse(raw) : { ...(raw as object) };
+      } catch {
+        map = {};
+      }
+    }
+    if (typeof map !== 'object' || map === null || Array.isArray(map)) map = {};
+
+    if (Object.prototype.hasOwnProperty.call(map, 'undefined')) {
+      const orphan = map.undefined as Record<string, unknown> | undefined;
+      delete map.undefined;
+      const legacyKey = `eu_migrated_${Date.now()}`;
+      map[legacyKey] = {
+        ...(typeof orphan === 'object' && orphan ? orphan : {}),
+        name: (orphan as { name?: string })?.name || 'Migrated chat',
+      };
+    }
+
+    const existing = map[threadKey];
+    const created = entry.created_at || new Date().toISOString();
+    map[threadKey] = {
+      ...(typeof existing === 'object' && existing ? existing : {}),
+      name: entry.name,
+      persona_summary: entry.persona_summary,
+      created_at: (existing as { created_at?: string })?.created_at || created,
+      messages: Array.isArray((existing as { messages?: unknown })?.messages)
+        ? (existing as { messages: unknown[] }).messages
+        : [],
+    };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        chatbox_extreuser: map,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to merge chatbox_extreuser:', error);
   }
 }

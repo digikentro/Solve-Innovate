@@ -283,213 +283,215 @@ export const TransformationFrameworkReportViewer = ({ data, onGenerateNew, proje
 
             {/* Irrationality Clusters */}
             {irrationalityClusters.length > 0 && (
-                <div className="flex flex-col gap-6">
+                <section className="rounded-2xl border border-gray-200 bg-white p-8">
                     <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Irrationality Clusters Analysis</h2>
-                    {irrationalityClusters.map((cluster: any, idx: number) => (
-                        <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
-                            <button
-                                onClick={() => toggleCluster(idx)}
-                                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span className={`text-xs font-medium uppercase tracking-wide ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-500'}`}>Cluster 0{idx + 1}</span>
-                                    <span className="text-sm font-medium">{cluster.irrationality ? `"${cluster.irrationality.substring(0, 60)}${cluster.irrationality.length > 60 ? '...' : ''}"` : 'Irrationality Cluster'}</span>
-                                </div>
-                                <span className="text-xs">{expandedClusters[idx] ? 'CLOSE' : 'EXPAND'}</span>
-                            </button>
-                            {expandedClusters[idx] && (
-                                <div className="flex flex-col gap-8 bg-white p-8">
-                                    {/* Irrationality */}
-                                    <div>
-                                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Irrationality</label>
-                                        {isEditMode ? (
-                                            <textarea
-                                                value={cluster.irrationality || ''}
-                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'irrationality'], e.target.value)}
-                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[80px]"
-                                            />
-                                        ) : (
-                                            <p className="text-sm text-gray-600 leading-relaxed">{cluster.irrationality}</p>
-                                        )}
+                    <div className="flex flex-col gap-6">
+                        {irrationalityClusters.map((cluster: any, idx: number) => (
+                            <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
+                                <button
+                                    onClick={() => toggleCluster(idx)}
+                                    className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedClusters[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <span className={`text-xs font-medium uppercase tracking-wide ${expandedClusters[idx] ? 'opacity-70' : 'text-gray-500'}`}>Cluster 0{idx + 1}</span>
+                                        <span className="text-sm font-medium">{cluster.irrationality ? `"${cluster.irrationality.substring(0, 60)}${cluster.irrationality.length > 60 ? '...' : ''}"` : 'Irrationality Cluster'}</span>
                                     </div>
-
-                                    {/* Diagnosis */}
-                                    {cluster.diagnosis && cluster.diagnosis.length > 0 && (
+                                    <span className="text-xs">{expandedClusters[idx] ? 'CLOSE' : 'EXPAND'}</span>
+                                </button>
+                                {expandedClusters[idx] && (
+                                    <div className="flex flex-col gap-8 bg-white p-8">
+                                        {/* Irrationality */}
                                         <div>
-                                            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Cognitive Biases (Diagnosis)</label>
-                                            {isEditMode ? (
-                                                <div className="space-y-2">
-                                                    {cluster.diagnosis.map((bias: string, i: number) => (
-                                                        <input
-                                                            key={i}
-                                                            type="text"
-                                                            value={bias || ''}
-                                                            onChange={(e) => updateArrayItemAtPath(['irrationalityClusters', idx, 'diagnosis'], i, e.target.value)}
-                                                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <ul className="space-y-2 border-l border-gray-200 pl-4">
-                                                    {cluster.diagnosis.map((bias: string, i: number) => (
-                                                        <li key={i} className="text-xs text-gray-600">• {bias}</li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Psychological Need Analysis */}
-                                    {cluster.psychologicalNeedAnalysis && (
-                                        <div>
-                                            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Psychological Need Analysis</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                {cluster.psychologicalNeedAnalysis.coreNeed !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Core Need</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.psychologicalNeedAnalysis.coreNeed || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'coreNeed'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.coreNeed}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {cluster.psychologicalNeedAnalysis.biasDrivenMotivation !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Bias-Driven Motivation</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.psychologicalNeedAnalysis.biasDrivenMotivation || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'biasDrivenMotivation'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.biasDrivenMotivation}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {cluster.psychologicalNeedAnalysis.persistenceFactor !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Persistence Factor</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.psychologicalNeedAnalysis.persistenceFactor || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'persistenceFactor'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.persistenceFactor}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {cluster.psychologicalNeedAnalysis.painPointConnection !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Pain Point Connection</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.psychologicalNeedAnalysis.painPointConnection || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'painPointConnection'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.painPointConnection}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Outcome */}
-                                    {cluster.outcome !== undefined && (
-                                        <div>
-                                            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Outcome</label>
+                                            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Irrationality</label>
                                             {isEditMode ? (
                                                 <textarea
-                                                    value={cluster.outcome || ''}
-                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcome'], e.target.value)}
+                                                    value={cluster.irrationality || ''}
+                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'irrationality'], e.target.value)}
                                                     className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[80px]"
                                                 />
                                             ) : (
-                                                <p className="text-sm text-gray-600 leading-relaxed">{cluster.outcome}</p>
+                                                <p className="text-sm text-gray-600 leading-relaxed">{cluster.irrationality}</p>
                                             )}
                                         </div>
-                                    )}
 
-                                    {/* Outcome Validation */}
-                                    {cluster.outcomeValidation && (
-                                        <div>
-                                            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Outcome Validation</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                {cluster.outcomeValidation.smartPsychologyUse !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Smart Psychology Use</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.outcomeValidation.smartPsychologyUse || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'smartPsychologyUse'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.smartPsychologyUse}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {cluster.outcomeValidation.painPointAlignment !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Pain Point Alignment</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.outcomeValidation.painPointAlignment || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'painPointAlignment'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.painPointAlignment}</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {cluster.outcomeValidation.specificityLevel !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Specificity Level</span>
-                                                        {isEditMode ? (
+                                        {/* Diagnosis */}
+                                        {cluster.diagnosis && cluster.diagnosis.length > 0 && (
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Cognitive Biases (Diagnosis)</label>
+                                                {isEditMode ? (
+                                                    <div className="space-y-2">
+                                                        {cluster.diagnosis.map((bias: string, i: number) => (
                                                             <input
+                                                                key={i}
                                                                 type="text"
-                                                                value={cluster.outcomeValidation.specificityLevel || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'specificityLevel'], e.target.value)}
+                                                                value={bias || ''}
+                                                                onChange={(e) => updateArrayItemAtPath(['irrationalityClusters', idx, 'diagnosis'], i, e.target.value)}
                                                                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                                                             />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.specificityLevel}</p>
-                                                        )}
+                                                        ))}
                                                     </div>
-                                                )}
-                                                {cluster.outcomeValidation.directionFocus !== undefined && (
-                                                    <div>
-                                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Direction Focus</span>
-                                                        {isEditMode ? (
-                                                            <textarea
-                                                                value={cluster.outcomeValidation.directionFocus || ''}
-                                                                onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'directionFocus'], e.target.value)}
-                                                                className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.directionFocus}</p>
-                                                        )}
-                                                    </div>
+                                                ) : (
+                                                    <ul className="space-y-2 border-l border-gray-200 pl-4">
+                                                        {cluster.diagnosis.map((bias: string, i: number) => (
+                                                            <li key={i} className="text-xs text-gray-600">• {bias}</li>
+                                                        ))}
+                                                    </ul>
                                                 )}
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                                        )}
+
+                                        {/* Psychological Need Analysis */}
+                                        {cluster.psychologicalNeedAnalysis && (
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Psychological Need Analysis</label>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {cluster.psychologicalNeedAnalysis.coreNeed !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Core Need</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.psychologicalNeedAnalysis.coreNeed || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'coreNeed'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.coreNeed}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.psychologicalNeedAnalysis.biasDrivenMotivation !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Bias-Driven Motivation</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.psychologicalNeedAnalysis.biasDrivenMotivation || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'biasDrivenMotivation'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.biasDrivenMotivation}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.psychologicalNeedAnalysis.persistenceFactor !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Persistence Factor</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.psychologicalNeedAnalysis.persistenceFactor || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'persistenceFactor'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.persistenceFactor}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.psychologicalNeedAnalysis.painPointConnection !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Pain Point Connection</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.psychologicalNeedAnalysis.painPointConnection || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'psychologicalNeedAnalysis', 'painPointConnection'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.psychologicalNeedAnalysis.painPointConnection}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Outcome */}
+                                        {cluster.outcome !== undefined && (
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Outcome</label>
+                                                {isEditMode ? (
+                                                    <textarea
+                                                        value={cluster.outcome || ''}
+                                                        onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcome'], e.target.value)}
+                                                        className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[80px]"
+                                                    />
+                                                ) : (
+                                                    <p className="text-sm text-gray-600 leading-relaxed">{cluster.outcome}</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Outcome Validation */}
+                                        {cluster.outcomeValidation && (
+                                            <div>
+                                                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-4">Outcome Validation</label>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {cluster.outcomeValidation.smartPsychologyUse !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Smart Psychology Use</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.outcomeValidation.smartPsychologyUse || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'smartPsychologyUse'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.smartPsychologyUse}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.outcomeValidation.painPointAlignment !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Pain Point Alignment</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.outcomeValidation.painPointAlignment || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'painPointAlignment'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.painPointAlignment}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.outcomeValidation.specificityLevel !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Specificity Level</span>
+                                                            {isEditMode ? (
+                                                                <input
+                                                                    type="text"
+                                                                    value={cluster.outcomeValidation.specificityLevel || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'specificityLevel'], e.target.value)}
+                                                                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.specificityLevel}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {cluster.outcomeValidation.directionFocus !== undefined && (
+                                                        <div>
+                                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-2">Direction Focus</span>
+                                                            {isEditMode ? (
+                                                                <textarea
+                                                                    value={cluster.outcomeValidation.directionFocus || ''}
+                                                                    onChange={(e) => updateTextAtPath(['irrationalityClusters', idx, 'outcomeValidation', 'directionFocus'], e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-black resize-none min-h-[60px]"
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-600 leading-relaxed">{cluster.outcomeValidation.directionFocus}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
             )}
 
             {/* Outcome Integration Analysis */}

@@ -5,7 +5,7 @@ const JSON_HEADERS: HeadersInit = {
 
 /**
  * POST JSON to an n8n webhook URL from the browser.
- * The n8n instance must allow this app's origin (CORS).
+ * Uses application/json (may trigger a CORS preflight; the n8n host must answer OPTIONS).
  */
 export function postN8nWebhook(
   webhookUrl: string,

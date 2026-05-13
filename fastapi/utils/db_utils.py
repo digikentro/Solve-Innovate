@@ -29,6 +29,10 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
     else:
         database_url = sqlite_default
 
+    # Render/Heroku-style URLs use postgres:// ; normalize before driver detection.
+    if database_url.startswith("postgres://"):
+        database_url = "postgresql://" + database_url[len("postgres://") :]
+
     if database_url.startswith("sqlite://"):
         database_url = database_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     elif database_url.startswith("postgresql://"):
@@ -42,6 +46,12 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
     if "sqlite" in database_url:
         connect_args["check_same_thread"] = False
 
+    # PgBouncer (e.g. Supabase pooler, many managed Postgres URLs) in transaction or
+    # statement mode breaks asyncpg prepared statements. Disable the cache whenever
+    # we use asyncpg — set here so it still applies if query-string rewriting below fails.
+    if "postgresql+asyncpg" in urlsplit(database_url).scheme:
+        connect_args["statement_cache_size"] = 0
+
     try:
         split_result = urlsplit(database_url)
         query_params = parse_qsl(split_result.query, keep_blank_values=True)
@@ -54,15 +64,8 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
                 for k, _ in query_params
             )
             if not has_prepared_statement_cache_setting:
-                # PgBouncer transaction/statement pooling does not work reliably
-                # with asyncpg prepared statements. Disabling the asyncpg/SQLAlchemy
-                # prepared-statement cache avoids DuplicatePreparedStatementError
-                # during startup and normal request handling on pooled Postgres URLs.
+                # SQLAlchemy also reads this URL option for the asyncpg dialect.
                 rewritten_query_params.append(("prepared_statement_cache_size", "0"))
-            
-            # Also set statement_cache_size=0 directly in connect_args for asyncpg
-            # This ensures the cache is disabled at the asyncpg connection level
-            connect_args["statement_cache_size"] = 0
 
         for k, v in query_params:
             key_lower = k.lower()

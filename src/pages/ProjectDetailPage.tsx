@@ -1,4 +1,4 @@
-import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
+import { useParams, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +55,7 @@ const SECTIONS = [
 
 export const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { setTopBarTitle, setActiveProjectScore, setActiveProjectAssessment } = useWorkspace();
@@ -678,7 +679,13 @@ export const ProjectDetailPage = () => {
             {/* Chat Section */}
             {activeSection === 'chat' && (
               <div>
-                <EmbeddedChatSection projectId={project.id} extremeUserData={extremeUserData} project={project} userId={user.id} />
+                <EmbeddedChatSection
+                  projectId={project.id}
+                  extremeUserData={extremeUserData}
+                  project={project}
+                  userId={user.id}
+                  onRefreshProject={refetchProject}
+                />
               </div>
             )}
 

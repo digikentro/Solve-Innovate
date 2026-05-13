@@ -147,20 +147,29 @@ export const MarketSearchSection = ({
 
             console.log('Market Search Request Body:', requestBody);
 
-            const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook-test/marketrearch';
+            const webhookUrl =
+                import.meta.env.VITE_N8N_MARKET_RESEARCH_WEBHOOK?.trim() ||
+                'https://n8n.srv922914.hstgr.cloud/webhook/marketrearch';
 
-            const response = await postN8nWebhook(targetUrl, requestBody);
+            const response = await postN8nWebhook(webhookUrl, requestBody);
+            const responseText = await response.text();
 
             if (!response.ok) {
-                console.error('API Response not ok:', response.status, response.statusText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let detail = `${response.status} ${response.statusText}`.trim();
+                try {
+                    const errBody = JSON.parse(responseText) as { message?: string };
+                    if (errBody?.message) detail = errBody.message;
+                } catch {
+                    if (responseText?.trim()) detail = responseText.trim().slice(0, 300);
+                }
+                console.error('Market research webhook error:', response.status, detail, responseText);
+                throw new Error(detail);
             }
 
             let data = null;
             try {
-                const text = await response.text();
-                if (text && text.trim()) {
-                    data = JSON.parse(text);
+                if (responseText && responseText.trim()) {
+                    data = JSON.parse(responseText);
                 }
             } catch (parseError) {
                 console.log('Response parsing skipped or empty response');
@@ -175,7 +184,8 @@ export const MarketSearchSection = ({
             }
         } catch (error) {
             console.error('Error generating market research:', error);
-            toast.error('Failed to generate market research. Please try again.');
+            const msg = error instanceof Error && error.message ? error.message : 'Failed to generate market research. Please try again.';
+            toast.error(msg.length > 160 ? `${msg.slice(0, 157)}…` : msg);
         } finally {
             setIsGenerating(false);
         }

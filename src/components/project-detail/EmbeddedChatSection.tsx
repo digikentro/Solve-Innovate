@@ -1,13 +1,16 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX,
-  FiArrowLeft, FiRefreshCw, FiChevronDown, FiClock, FiPlus,
+  FiSend,
+  FiMessageCircle,
+  FiUserPlus,
+  FiUsers,
+  FiX,
+  FiInfo,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
 import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { postN8nWebhook } from '@/services/n8nWebhook';
 
@@ -24,9 +27,10 @@ interface ExtremeUserEntry {
   name: string;
   created_at: string;
   messages: Array<{ user: string; assistant: string; generated_at: string }>;
+  /** Full extreme-user brief; sent to n8n on every message so the model stays in persona */
+  persona_summary?: string;
 }
 
-// Map of userKey → ExtremeUserEntry
 type ExtremeUserMap = Record<string, ExtremeUserEntry>;
 
 interface CustomExtremeUser {
@@ -36,11 +40,15 @@ interface CustomExtremeUser {
   description: string;
 }
 
+type ActiveThread = null | { kind: 'extreme'; key: string } | { kind: 'provided' };
+
 interface EmbeddedChatSectionProps {
   projectId: string;
   extremeUserData?: any;
   project?: any;
   userId?: string;
+  /** Refetch project after n8n persists chat so `chatbox_extreuser` / `chatbox` stay in sync */
+  onRefreshProject?: () => void | Promise<void>;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -73,132 +81,206 @@ function messagesFromEntry(entry: ExtremeUserEntry): ChatMessage[] {
   ]);
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function messagesFromRows(
+  rows: Array<{ user: string; assistant: string; generated_at: string }>
+): ChatMessage[] {
+  return rows.flatMap((m, idx) => [
+    {
+      id: `u-${idx}`,
+      text: m.user,
+      isUser: true,
+      timestamp: new Date(m.generated_at),
+    },
+    {
+      id: `a-${idx}`,
+      text: m.assistant,
+      isUser: false,
+      timestamp: new Date(m.generated_at),
+    },
+  ]);
+}
+
+function mergePreferLongerHistory(local: ChatMessage[], fromServer: ChatMessage[]): ChatMessage[] {
+  if (fromServer.length >= local.length) return fromServer;
+  return local;
+}
+
+// ─── Primary button (matches AsIsMapReportViewer) ───────────────────────────
+
+const btnPrimary =
+  'rounded-lg bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50';
+
+const btnOutline =
+  'rounded-lg border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50';
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export const EmbeddedChatSection = ({
   projectId,
   extremeUserData,
   project,
   userId,
+  onRefreshProject,
 }: EmbeddedChatSectionProps) => {
   const { user } = useAuth();
   const effectiveUserId = userId || user?.id || '';
 
-  // ── Parsed extreme users from Supabase ──
   const extremeUserMap = useMemo<ExtremeUserMap>(
     () => parseExtremeUserMap(project?.chatbox_extreuser),
     [project?.chatbox_extreuser]
   );
-  const userKeys = useMemo(() => Object.keys(extremeUserMap), [extremeUserMap]);
 
-  // ── Provided-user (custom) saved state ──
+  const sortedUserKeys = useMemo(() => {
+    return Object.keys(extremeUserMap).sort((a, b) => {
+      const ta = new Date(extremeUserMap[a]?.created_at || 0).getTime();
+      const tb = new Date(extremeUserMap[b]?.created_at || 0).getTime();
+      return tb - ta;
+    });
+  }, [extremeUserMap]);
+
+  const researchExtremeMeta = useMemo(() => {
+    if (!project?.research_data) return { threadKey: undefined as string | undefined, chatExtremeUser: '' };
+    try {
+      const rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data || {};
+      return {
+        threadKey: typeof rd.chatExtremeUserThreadKey === 'string' ? rd.chatExtremeUserThreadKey : undefined,
+        chatExtremeUser: typeof rd.chatExtremeUser === 'string' ? rd.chatExtremeUser : '',
+      };
+    } catch {
+      return { threadKey: undefined, chatExtremeUser: '' };
+    }
+  }, [project?.research_data]);
+
   const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
+  const [activeThread, setActiveThread] = useState<ActiveThread>(null);
 
-  // ── Chat mode ──
-  // 'none'      → selection screen
-  // 'selected'  → chatting with an extreme user (multi-user)
-  // 'provided'  → chatting with the custom provided user
-  const [chatMode, setChatMode] = useState<'none' | 'selected' | 'provided'>('none');
-
-  // ── Active extreme user key ──
-  const [activeUserKey, setActiveUserKey] = useState<string | null>(null);
-
-  // ── Messages in current view ──
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // ── Modals ──
   const [isCustomUserModalOpen, setIsCustomUserModalOpen] = useState(false);
   const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
-  const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
+  const [isPersonaInfoOpen, setIsPersonaInfoOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState<'provided' | null>(null);
 
   const [customUser, setCustomUser] = useState<CustomExtremeUser>({
-    name: '', age: '', location: '', description: '',
+    name: '',
+    age: '',
+    location: '',
+    description: '',
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const switcherRef = useRef<HTMLDivElement>(null);
 
-  // ── Scroll to bottom ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Close switcher on outside click ──
-  useEffect(() => {
-    if (!isUserSwitcherOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
-        setIsUserSwitcherOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [isUserSwitcherOpen]);
-
-  // ── Restore provided user from research_data ──
   useEffect(() => {
     if (!project) return;
     let rd: Record<string, any> = {};
     try {
-      rd = typeof project.research_data === 'string'
-        ? JSON.parse(project.research_data)
-        : (project.research_data || {});
-    } catch { rd = {}; }
+      rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data || {};
+    } catch {
+      rd = {};
+    }
     if (rd.chatProvidedUser) setSavedProvidedUser(rd.chatProvidedUser);
   }, [project]);
 
-  // ── Load messages when switching active extreme user ──
-  useEffect(() => {
-    if (chatMode !== 'selected' || !activeUserKey) return;
-    const entry = extremeUserMap[activeUserKey];
-    setMessages(entry ? messagesFromEntry(entry) : []);
-  }, [activeUserKey, chatMode, extremeUserMap]);
-
-  // ── Load provided-user history ──
-  useEffect(() => {
-    if (chatMode !== 'provided') return;
-    (async () => {
+  const loadExtremeThreadMessages = useCallback(
+    async (key: string) => {
       try {
-        const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
-        setMessages(
-          history.flatMap((chat, idx) => [
-            { id: `u-${idx}`, text: chat.user, isUser: true, timestamp: new Date(chat.generated_at) },
-            { id: `a-${idx}`, text: chat.assistant, isUser: false, timestamp: new Date(chat.generated_at) },
-          ])
+        const rows = await ProjectService.getProjectChatboxExtreUserHistory(
+          projectId,
+          effectiveUserId,
+          key
         );
-      } catch { setMessages([]); }
-    })();
-  }, [chatMode, projectId, effectiveUserId]);
+        if (rows.length > 0) {
+          setMessages(messagesFromRows(rows));
+          return;
+        }
+        const entry = extremeUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      } catch {
+        const entry = extremeUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      }
+    },
+    [projectId, effectiveUserId, extremeUserMap]
+  );
 
-  // ── Enter chat with a specific extreme user ──
+  useEffect(() => {
+    if (!activeThread) {
+      setMessages([]);
+      return;
+    }
+    if (activeThread.kind === 'extreme') {
+      void loadExtremeThreadMessages(activeThread.key);
+      return;
+    }
+    if (activeThread.kind === 'provided') {
+      let cancelled = false;
+      (async () => {
+        try {
+          const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
+          if (cancelled) return;
+          setMessages(
+            history.flatMap((chat, idx) => [
+              {
+                id: `u-${idx}`,
+                text: chat.user,
+                isUser: true,
+                timestamp: new Date(chat.generated_at),
+              },
+              {
+                id: `a-${idx}`,
+                text: chat.assistant,
+                isUser: false,
+                timestamp: new Date(chat.generated_at),
+              },
+            ])
+          );
+        } catch {
+          if (!cancelled) setMessages([]);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [activeThread, projectId, effectiveUserId, loadExtremeThreadMessages]);
+
+  const onRefreshRef = useRef(onRefreshProject);
+  onRefreshRef.current = onRefreshProject;
+  useEffect(() => {
+    void onRefreshRef.current?.();
+  }, [projectId, effectiveUserId]);
+
   const enterExtremeUserChat = (key: string) => {
-    setActiveUserKey(key);
-    setChatMode('selected');
-    setIsUserSwitcherOpen(false);
+    setActiveThread({ kind: 'extreme', key });
   };
 
-  // ── Switch user inside chat ──
-  const switchUser = (key: string) => {
-    if (key === activeUserKey) { setIsUserSwitcherOpen(false); return; }
-    setActiveUserKey(key);
-    setIsUserSwitcherOpen(false);
+  const enterProvidedChat = () => {
+    if (!savedProvidedUser) {
+      setIsCustomUserModalOpen(true);
+      return;
+    }
+    setActiveThread({ kind: 'provided' });
   };
 
-  // ── Exit chat ──
-  const exitChat = () => {
-    setChatMode('none');
-    setActiveUserKey(null);
-    setMessages([]);
-    setInputMessage('');
-    setIsUserSwitcherOpen(false);
-  };
-
-  // ── Send message ──
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isTyping) return;
+    if (!inputMessage.trim() || isTyping || !activeThread) return;
+
+    if (activeThread.kind === 'extreme') {
+      const k = activeThread.key;
+      if (!k || k === 'undefined' || k.startsWith('temp_')) return;
+    }
 
     const text = inputMessage;
     setInputMessage('');
@@ -214,17 +296,28 @@ export const EmbeddedChatSection = ({
 
     try {
       let webhookUrl: string;
-      let requestBody: Record<string, any> = {
+      const requestBody: Record<string, any> = {
         project_id: projectId,
         user: text,
       };
 
-      if (chatMode === 'selected' && activeUserKey) {
+      if (activeThread.kind === 'extreme') {
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_extreuser';
-        requestBody.extreme_user_key = activeUserKey;
-        // Also pass user context for the AI
-        const entry = extremeUserMap[activeUserKey];
-        if (entry) requestBody.extreme_user_name = entry.name;
+        const key = activeThread.key;
+        const entry = extremeUserMap[key] as ExtremeUserEntry | undefined;
+        requestBody.extreme_user_key = key;
+        requestBody.extremeUserKey = key;
+        requestBody.extreme_user_id = key;
+        requestBody.extreme_user_name = (entry?.name || key).trim();
+        const persona =
+          (typeof entry?.persona_summary === 'string' ? entry.persona_summary : '').trim() ||
+          (researchExtremeMeta.threadKey === key ? researchExtremeMeta.chatExtremeUser : '').trim();
+        if (persona) {
+          requestBody.extreme_user_persona = persona;
+          requestBody.extreme_user_summary = persona;
+          requestBody.persona_summary = persona;
+          requestBody.extremeUserPersona = persona;
+        }
       } else {
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo';
         if (savedProvidedUser) {
@@ -241,14 +334,38 @@ export const EmbeddedChatSection = ({
       if (Array.isArray(data) && data[0]?.Assistant) reply = data[0].Assistant;
       else if (data.output) reply = data.output;
 
-      setMessages(prev => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date() },
-      ]);
+      const assistantMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: reply,
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      await Promise.resolve(onRefreshProject?.());
+
+      if (activeThread.kind === 'extreme') {
+        const rows = await ProjectService.getProjectChatboxExtreUserHistory(
+          projectId,
+          effectiveUserId,
+          activeThread.key
+        );
+        const fromServer = messagesFromRows(rows);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      } else {
+        const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
+        const fromServer = messagesFromRows(history);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      }
     } catch {
       setMessages(prev => [
         ...prev,
-        { id: (Date.now() + 1).toString(), text: "Sorry, there was an error. Please try again.", isUser: false, timestamp: new Date() },
+        {
+          id: (Date.now() + 1).toString(),
+          text: 'Sorry, there was an error. Please try again.',
+          isUser: false,
+          timestamp: new Date(),
+        },
       ]);
     } finally {
       setIsTyping(false);
@@ -256,19 +373,29 @@ export const EmbeddedChatSection = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void handleSendMessage();
+    }
   };
 
-  // ── Provided-user submit ──
   const handleCustomUserSubmit = async () => {
-    if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
+    if (
+      !customUser.name.trim() ||
+      !customUser.age.trim() ||
+      !customUser.location.trim() ||
+      !customUser.description.trim()
+    )
+      return;
 
     try {
       await postN8nWebhook('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
         project_id: projectId,
         ...customUser,
       });
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
 
     if (effectiveUserId) {
       await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, customUser);
@@ -277,465 +404,530 @@ export const EmbeddedChatSection = ({
 
     setCustomUser({ name: '', age: '', location: '', description: '' });
     setIsCustomUserModalOpen(false);
-    setChatMode('provided');
+    setActiveThread({ kind: 'provided' });
+    void onRefreshProject?.();
   };
 
-  // ── Handle new extreme user selection from modal ──
   const handleExtremeUserSelect = async (userSummary: string) => {
+    if (!effectiveUserId) return;
     setIsSelectUserModalOpen(false);
-    // The n8n modal flow creates the user entry; after saving we enter the chat.
-    // For now, trigger n8n to create the user slot and then enter chat.
-    // The new user key will be assigned by n8n; we need to trigger a project refresh
-    // and then find the new key. For immediate UX, treat this as "selected" mode temporarily.
-    if (effectiveUserId) {
-      await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary);
-    }
-    // Find if n8n already assigned a key for this user by name
-    const matchKey = Object.keys(extremeUserMap).find(k =>
-      extremeUserMap[k].name?.toLowerCase().includes(userSummary.split('\n')[0]?.toLowerCase().slice(0, 20))
-    );
-    if (matchKey) {
-      enterExtremeUserChat(matchKey);
-    } else {
-      // Fall back: open chat with a temporary key; n8n will create it
-      const tempKey = `temp_${Date.now()}`;
-      setActiveUserKey(tempKey);
-      setChatMode('selected');
-    }
+    const firstLine = userSummary.split('\n')[0]?.trim() || 'New AI user';
+    const threadKey = `eu_${crypto.randomUUID().replace(/-/g, '')}`;
+
+    await ProjectService.mergeExtremeUserChatboxThread(projectId, effectiveUserId, threadKey, {
+      name: firstLine,
+      persona_summary: userSummary,
+    });
+    await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary, threadKey);
+
+    await Promise.resolve(onRefreshProject?.());
+    setActiveThread({ kind: 'extreme', key: threadKey });
+    void onRefreshProject?.();
   };
 
-  // ── Active user label ──
-  const activeEntry = activeUserKey ? extremeUserMap[activeUserKey] : null;
-  const activeUserLabel = chatMode === 'selected'
-    ? (activeEntry?.name || activeUserKey || 'Unknown User')
-    : chatMode === 'provided'
-    ? (savedProvidedUser ? `Custom: ${savedProvidedUser.name}` : 'Provided User')
-    : '';
+  const activeEntry =
+    activeThread?.kind === 'extreme' && activeThread.key
+      ? (extremeUserMap[activeThread.key] ?? null)
+      : null;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // SELECTION SCREEN
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (chatMode === 'none') {
-    return (
-      <div className="space-y-6">
-        {/* Header Card */}
-        <Card className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden">
-          <CardHeader className="px-8 py-6 border-b border-gray-100 flex flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border border-gray-100 flex items-center justify-center">
-                <FiMessageCircle className="w-5 h-5 text-gray-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-medium text-gray-900">Interact with User</CardTitle>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Chat with AI users or provide your own</p>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-8">
-            <div className="space-y-8">
-              {/* ── Extreme Users Grid ── */}
-              {userKeys.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-900">AI Users</h3>
-                    <Button
-                      onClick={() => setIsSelectUserModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                    >
-                      <FiPlus className="w-3.5 h-3.5 mr-1.5" /> Add User
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {userKeys.map(key => {
-                      const entry = extremeUserMap[key];
-                      const msgCount = entry.messages?.length ?? 0;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => enterExtremeUserChat(key)}
-                          className="flex items-center gap-3 px-4 py-4 bg-white border border-gray-200 hover:border-gray-300 rounded-md text-left transition-all duration-200 hover:shadow-sm group"
-                        >
-                          <div className="w-9 h-9 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
-                            <FiUser className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm text-gray-900 truncate">{entry.name}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <FiClock className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {msgCount === 0 ? 'No messages' : `${msgCount} msg${msgCount > 1 ? 's' : ''}`}
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+  const activeUserLabel =
+    activeThread?.kind === 'extreme'
+      ? activeEntry?.name || activeThread.key || 'AI user'
+      : activeThread?.kind === 'provided'
+        ? savedProvidedUser
+          ? savedProvidedUser.name
+          : 'Your user'
+        : '';
 
-              {/* ── Divider ── */}
-              {userKeys.length > 0 && (
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-                  <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-muted-foreground font-medium">or</span></div>
-                </div>
-              )}
+  const chatResearchSnippet = useMemo(() => {
+    if (!project?.research_data) return '';
+    try {
+      const rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data;
+      const s = rd?.chatExtremeUser;
+      return typeof s === 'string' ? s.slice(0, 2000) : '';
+    } catch {
+      return '';
+    }
+  }, [project?.research_data]);
 
-              {/* ── Empty state or Add User ── */}
-              {userKeys.length === 0 && (
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => setIsSelectUserModalOpen(true)}
-                    className="w-full bg-primary text-white hover:bg-primary/90"
-                    size="lg"
-                  >
-                    <FiUsers className="w-5 h-5 mr-2" />
-                    Select an AI User
-                  </Button>
-                </div>
-              )}
+  const showRightPane = activeThread !== null;
 
-              {/* ── Provided User Card ── */}
-              {savedProvidedUser ? (
-                <Card className="bg-white border border-gray-200 shadow-none">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 bg-secondary rounded-md flex items-center justify-center flex-shrink-0">
-                          <FiUserPlus className="w-4 h-4 text-secondary-foreground" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="font-semibold text-sm text-gray-900 block">{savedProvidedUser.name}</span>
-                          <span className="text-xs text-muted-foreground">{savedProvidedUser.age} · {savedProvidedUser.location}</span>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => setConfirmClear('provided')}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        <FiRefreshCw className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={() => setChatMode('provided')}
-                      className="w-full"
-                      size="sm"
-                    >
-                      Continue Chat
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Button
-                  onClick={() => setIsCustomUserModalOpen(true)}
-                  variant="outline"
-                  className="w-full justify-start"
-                >
-                  <FiUserPlus className="w-4 h-4 mr-2" />
-                  Provide Your Own User
-                </Button>
-              )}
-            </div>
-
-            {/* ── Extreme User Selection Modal ── */}
-            <ExtremeUserSelectionModal
-              isOpen={isSelectUserModalOpen}
-              onClose={() => setIsSelectUserModalOpen(false)}
-              onSelectUser={handleExtremeUserSelect}
-              extremeUserData={extremeUserData}
-            />
-          </CardContent>
-        </Card>
-
-        {/* ── Confirmation Dialog ── */}
-        {confirmClear && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-sm bg-white border border-gray-200 shadow-lg rounded-md">
-              <CardHeader className="border-b border-gray-100">
-                <CardTitle className="text-gray-900">Change user?</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">This will clear the saved user.</p>
-              </CardHeader>
-              <CardContent className="pt-6 flex justify-end gap-3">
-                <Button onClick={() => setConfirmClear(null)} variant="outline">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={async () => {
-                    if (effectiveUserId) await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
-                    setSavedProvidedUser(null);
-                    setConfirmClear(null);
-                  }}
-                  variant="default"
-                >
-                  Yes, Change
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* ── Custom User Modal ── */}
-        {isCustomUserModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md bg-white border border-gray-200 shadow-lg rounded-md">
-              <CardHeader className="border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-gray-900">Provide Your Extreme User</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Enter user details below</p>
-                  </div>
-                  <Button
-                    onClick={() => setIsCustomUserModalOpen(false)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <FiX className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                {['name', 'age', 'location'].map(field => (
-                  <div key={field} className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-900 capitalize">{field}</label>
-                    <Input
-                      type="text"
-                      value={customUser[field as keyof CustomExtremeUser]}
-                      onChange={e => setCustomUser(prev => ({ ...prev, [field]: e.target.value }))}
-                      placeholder={field === 'age' ? 'e.g. 25' : field === 'location' ? 'e.g. Mumbai' : `Enter user ${field}`}
-                    />
-                  </div>
-                ))}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-900">Description</label>
-                  <textarea
-                    value={customUser.description}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe characteristics, behaviors, needs..."
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
-                  />
-                </div>
-              </CardContent>
-              <div className="border-t border-gray-100 px-6 py-4 flex justify-end gap-3">
-                <Button onClick={() => setIsCustomUserModalOpen(false)} variant="outline">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCustomUserSubmit}
-                  disabled={!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()}
-                >
-                  Start Chat
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* ── Extreme User Selection Modal ── */}
-        <ExtremeUserSelectionModal
-          isOpen={isSelectUserModalOpen}
-          onClose={() => setIsSelectUserModalOpen(false)}
-          onSelectUser={handleExtremeUserSelect}
-          extremeUserData={extremeUserData}
-        />
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CHAT MODE
-  // ─────────────────────────────────────────────────────────────────────────────
-  const isExtreme = chatMode === 'selected';
+  const extremeThreadBroken =
+    activeThread?.kind === 'extreme' &&
+    (!activeThread.key || activeThread.key === 'undefined' || activeThread.key.startsWith('temp_'));
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden h-[75vh] flex flex-col">
-      {/* ── HEADER ── */}
-      <div className="relative px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button
-              onClick={exitChat}
-              variant="ghost"
-              size="sm"
-            >
-              <FiArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="w-9 h-9 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
-              <FiMessageCircle className="w-4 h-4 text-white" />
-            </div>
-
-            {isExtreme && userKeys.length > 1 ? (
-              <div className="relative min-w-0" ref={switcherRef}>
-                <Button
-                  onClick={() => setIsUserSwitcherOpen(v => !v)}
-                  variant="outline"
-                  size="sm"
-                  className="text-sm"
-                >
-                  <span className="truncate max-w-[140px]">{activeUserLabel}</span>
-                  <FiChevronDown className={`w-3.5 h-3.5 ml-1.5 transition-transform ${isUserSwitcherOpen ? 'rotate-180' : ''}`} />
-                </Button>
-
-                {isUserSwitcherOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden z-50">
-                    <div className="px-3 py-2 border-b border-gray-100">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Switch User</p>
-                    </div>
-                    <div className="max-h-52 overflow-y-auto">
-                      {userKeys.map(key => {
-                        const entry = extremeUserMap[key];
-                        const isActive = key === activeUserKey;
-                        return (
-                          <button
-                            key={key}
-                            onClick={() => switchUser(key)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-sm border-b border-gray-50 last:border-b-0 ${isActive ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
-                          >
-                            <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-100'}`}>
-                              <FiUser className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-gray-900'}`}>{entry.name}</p>
-                              <p className="text-xs text-muted-foreground">{entry.messages?.length ?? 0} msg{(entry.messages?.length ?? 0) !== 1 ? 's' : ''}</p>
-                            </div>
-                            {isActive && <div className="w-2 h-2 bg-primary rounded-md flex-shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="px-3 py-2 border-t border-gray-100">
-                      <Button
-                        onClick={() => { setIsUserSwitcherOpen(false); setIsSelectUserModalOpen(true); }}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs w-full justify-start"
-                      >
-                        <FiPlus className="w-3.5 h-3.5 mr-1.5" /> Add another user
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">{activeUserLabel}</p>
-                <p className="text-xs text-muted-foreground">AI User</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-md border border-green-200 flex-shrink-0">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-md animate-pulse" />
-            <span className="text-xs font-semibold text-green-700">Online</span>
-          </div>
+    <div className="flex flex-col gap-3">
+      {/* Page header — tighter spacing to chat shell */}
+      <div className="flex flex-col gap-2 border-b border-gray-100 pb-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Interact with User
+          </h1>
+          <p className="mt-1 max-w-xl text-base leading-snug text-gray-500">
+            Chat with AI users or provide your own
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          <button type="button" onClick={() => setIsCustomUserModalOpen(true)} className={btnPrimary}>
+            Provide Your Own User
+          </button>
         </div>
       </div>
 
-      {/* ── MESSAGES ── */}
-      <div className="relative flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-12 h-12 bg-primary rounded-md flex items-center justify-center mb-4">
-                <FiMessageCircle className="w-6 h-6 text-white" />
+      {/* Master–detail shell */}
+      <div className="flex min-h-[min(75vh,720px)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex-row">
+        {/* Conversation list */}
+        <aside className="flex w-full shrink-0 flex-col border-b border-gray-100 bg-white lg:w-[280px] lg:border-b-0 lg:border-r">
+          <div className="border-b border-gray-100 p-4">
+            <button
+              type="button"
+              onClick={() => setIsSelectUserModalOpen(true)}
+              className={`${btnPrimary} w-full`}
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                <FiUsers className="size-4" />
+                New AI user
+              </span>
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              Conversations
+            </p>
+            {sortedUserKeys.length === 0 && !savedProvidedUser && (
+              <p className="px-2 py-4 text-sm leading-relaxed text-gray-600">
+                No AI users yet. Use <span className="font-medium text-gray-900">New AI user</span> to
+                create one from your extreme user research.
+              </p>
+            )}
+            <ul className="flex flex-col gap-1.5">
+              {sortedUserKeys.map(key => {
+                const entry = extremeUserMap[key];
+                const isActive = activeThread?.kind === 'extreme' && activeThread.key === key;
+                const count = entry?.messages?.length ?? 0;
+                return (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      onClick={() => enterExtremeUserChat(key)}
+                      className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'border-gray-900 bg-gray-50 text-gray-900'
+                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="line-clamp-2">{entry?.name || `User ${key.slice(0, 8)}`}</span>
+                      <span className="mt-1 block text-xs font-normal text-gray-500">
+                        {count === 0 ? 'No messages yet' : `${count} exchange${count !== 1 ? 's' : ''}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {savedProvidedUser && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => enterProvidedChat()}
+                    className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                      activeThread?.kind === 'provided'
+                        ? 'border-gray-900 bg-gray-50 text-gray-900'
+                        : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="line-clamp-2 flex items-center gap-2">
+                      <FiUserPlus className="size-4 shrink-0 text-gray-600" />
+                      {savedProvidedUser.name}
+                    </span>
+                    <span className="mt-1 block text-xs font-normal text-gray-500">
+                      {savedProvidedUser.age} · {savedProvidedUser.location}
+                    </span>
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+          {!savedProvidedUser && (
+            <div className="border-t border-gray-100 p-3">
+              <button type="button" onClick={() => setIsCustomUserModalOpen(true)} className={`${btnOutline} w-full`}>
+                <span className="inline-flex items-center justify-center gap-2">
+                  <FiUserPlus className="size-4" />
+                  Add your own user
+                </span>
+              </button>
+            </div>
+          )}
+          {savedProvidedUser && (
+            <div className="border-t border-gray-100 p-3">
+              <button
+                type="button"
+                onClick={() => setConfirmClear('provided')}
+                className={`${btnOutline} flex w-full items-center justify-center gap-2 text-gray-600`}
+              >
+                <FiRefreshCw className="size-4" />
+                Replace saved user
+              </button>
+            </div>
+          )}
+        </aside>
+
+        {/* Chat pane */}
+        <div className="flex min-h-[420px] min-w-0 flex-1 flex-col bg-white">
+          {!showRightPane ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-16 text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-gray-100">
+                <FiMessageCircle className="size-7 text-gray-700" />
               </div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-1">Start Your Conversation</h4>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                Chat with <span className="font-semibold">{activeUserLabel}</span> from their perspective.
+              <p className="max-w-md text-base text-gray-600">
+                Choose a conversation on the left, start a{' '}
+                <button
+                  type="button"
+                  onClick={() => setIsSelectUserModalOpen(true)}
+                  className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-900"
+                >
+                  new AI user
+                </button>
+                , or use{' '}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomUserModalOpen(true)}
+                  className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-900"
+                >
+                  Provide Your Own User
+                </button>
+                .
               </p>
             </div>
           ) : (
-            messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex max-w-[80%] ${msg.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center shadow-sm ${
-                    msg.isUser
-                      ? 'bg-primary text-white ml-2'
-                      : 'bg-gray-100 text-gray-600 mr-2 border border-gray-200'
-                  }`}>
-                    {msg.isUser ? <FiUser className="w-4 h-4" /> : <FiMessageCircle className="w-4 h-4" />}
-                  </div>
-                  <div className="space-y-1">
-                    <div className={`px-4 py-2 rounded-md text-sm leading-relaxed font-medium ${
-                      msg.isUser
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-900 border border-gray-200'
-                    }`}>
-                      {msg.text}
+            <>
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-6">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 sm:text-base">
+                    {activeUserLabel}
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    {activeThread?.kind === 'provided' ? 'Your profile' : 'AI persona'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPersonaInfoOpen(true)}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-700 transition-colors hover:bg-gray-50"
+                  aria-label="Persona details"
+                >
+                  <FiInfo className="size-5" />
+                </button>
+              </div>
+
+              <div className="relative min-h-0 flex-1 overflow-y-auto bg-gray-50/50">
+                <div className="space-y-4 p-4 sm:p-6">
+                  {messages.length === 0 && !isTyping ? (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center">
+                      <p className="text-sm text-gray-600">
+                        No messages yet. Type below to start the conversation.
+                      </p>
                     </div>
-                    <p className={`text-xs px-1 ${msg.isUser ? 'text-right text-muted-foreground' : 'text-muted-foreground'}`}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+                  ) : (
+                    messages.map(msg => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[min(100%,520px)] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                            msg.isUser
+                              ? 'bg-gray-900 text-white'
+                              : 'border border-gray-200 bg-white text-gray-900'
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
 
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%]">
-                <div className="w-8 h-8 rounded-md bg-gray-100 text-gray-600 mr-2 flex items-center justify-center border border-gray-200">
-                  <FiMessageCircle className="w-4 h-4" />
-                </div>
-                <div className="bg-gray-100 px-4 py-2 rounded-md border border-gray-200">
-                  <div className="flex space-x-1 items-center">
-                    {[0, 0.2, 0.4].map((delay, i) => (
-                      <div key={i} className="w-2 h-2 bg-primary rounded-md animate-bounce" style={{ animationDelay: `${delay}s`}} />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-2">typing…</span>
-                  </div>
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="flex max-w-[min(100%,520px)] items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+                        <div className="flex gap-1">
+                          {[0, 0.15, 0.3].map((delay, i) => (
+                            <div
+                              key={i}
+                              className="size-2 animate-bounce rounded-full bg-gray-400"
+                              style={{ animationDelay: `${delay}s` }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs uppercase tracking-wide text-gray-500">Typing</span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </div>
-            </div>
+
+              <div className="shrink-0 border-t border-gray-100 bg-white p-4 sm:p-6">
+                {extremeThreadBroken && (
+                  <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    This thread uses an invalid legacy key, so messages are blocked. Use{' '}
+                    <button
+                      type="button"
+                      className="font-medium underline underline-offset-2"
+                      onClick={() => setIsSelectUserModalOpen(true)}
+                    >
+                      New AI user
+                    </button>{' '}
+                    to start a thread with a stable id and full persona text.
+                  </div>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <Input
+                    type="text"
+                    value={inputMessage}
+                    onChange={e => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Start typing"
+                    disabled={isTyping || extremeThreadBroken}
+                    className="min-h-11 flex-1 rounded-xl border-gray-200 text-sm focus-visible:ring-black/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleSendMessage()}
+                    disabled={!inputMessage.trim() || isTyping || extremeThreadBroken}
+                    className={`${btnPrimary} inline-flex h-11 shrink-0 items-center justify-center px-5 sm:w-auto`}
+                  >
+                    {isTyping ? (
+                      <span className="flex gap-1">
+                        {[0, 0.1, 0.2].map((d, i) => (
+                          <span
+                            key={i}
+                            className="size-1.5 animate-bounce rounded-full bg-white"
+                            style={{ animationDelay: `${d}s` }}
+                          />
+                        ))}
+                      </span>
+                    ) : (
+                      <FiSend className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* ── INPUT ── */}
-      <div className="relative border-t border-gray-100 bg-white p-4 flex-shrink-0">
-        <div className="flex items-end gap-3">
-          <Input
-            type="text"
-            value={inputMessage}
-            onChange={e => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={`Message ${activeUserLabel}…`}
-            disabled={isTyping}
-            className="text-sm"
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isTyping}
-            className="bg-primary text-white hover:bg-primary/90 flex-shrink-0"
-            size="sm"
-          >
-            {isTyping ? (
-              <div className="flex space-x-1">
-                {[0, 0.1, 0.2].map((d, i) => (
-                  <div key={i} className="w-1.5 h-1.5 bg-white rounded-md animate-bounce" style={{ animationDelay: `${d}s` }} />
-                ))}
-              </div>
-            ) : (
-              <FiSend className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Select User Modal ── */}
       <ExtremeUserSelectionModal
         isOpen={isSelectUserModalOpen}
         onClose={() => setIsSelectUserModalOpen(false)}
-        onSelectUser={handleExtremeUserSelect}
+        onSelectUser={userSummary => void handleExtremeUserSelect(userSummary)}
         extremeUserData={extremeUserData}
       />
-    </Card>
+
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Change user?</h3>
+            <p className="mb-8 text-sm text-gray-600">This will clear the saved user profile.</p>
+            <div className="flex gap-4">
+              <button type="button" onClick={() => setConfirmClear(null)} className={`${btnOutline} flex-1`}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (effectiveUserId)
+                    await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
+                  setSavedProvidedUser(null);
+                  if (activeThread?.kind === 'provided') setActiveThread(null);
+                  setConfirmClear(null);
+                  void onRefreshProject?.();
+                }}
+                className={`${btnPrimary} flex-1`}
+              >
+                Yes, change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCustomUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Provide your extreme user</h3>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Enter user details below
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomUserModalOpen(false)}
+                  className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <FiX className="size-5" />
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[55vh] space-y-4 overflow-y-auto px-6 py-6">
+              {(['name', 'age', 'location'] as const).map(field => (
+                <div key={field} className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    {field}
+                  </label>
+                  <Input
+                    type="text"
+                    value={customUser[field]}
+                    onChange={e => setCustomUser(prev => ({ ...prev, [field]: e.target.value }))}
+                    placeholder={
+                      field === 'age' ? 'e.g. 25' : field === 'location' ? 'e.g. Mumbai' : 'Name'
+                    }
+                    className="rounded-xl border-gray-200 text-sm"
+                  />
+                </div>
+              ))}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  Description
+                </label>
+                <textarea
+                  value={customUser.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setCustomUser(prev => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder="Characteristics, behaviors, needs…"
+                  rows={4}
+                  className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              <button type="button" onClick={() => setIsCustomUserModalOpen(false)} className={btnOutline}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCustomUserSubmit()}
+                disabled={
+                  !customUser.name.trim() ||
+                  !customUser.age.trim() ||
+                  !customUser.location.trim() ||
+                  !customUser.description.trim()
+                }
+                className={btnPrimary}
+              >
+                Start chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPersonaInfoOpen && showRightPane && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900">Persona details</h3>
+                <p className="mt-1 truncate text-sm text-gray-600">{activeUserLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPersonaInfoOpen(false)}
+                className="rounded-xl p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
+              >
+                <FiX className="size-5" />
+              </button>
+            </div>
+            <div className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-6 text-sm leading-relaxed text-gray-700">
+              {activeThread?.kind === 'extreme' && activeEntry && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Created</p>
+                    <p className="mt-1 text-gray-900">
+                      {activeEntry.created_at
+                        ? new Date(activeEntry.created_at).toLocaleString()
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Exchanges stored</p>
+                    <p className="mt-1 text-gray-900">{activeEntry.messages?.length ?? 0}</p>
+                  </div>
+                  {(activeEntry.persona_summary || chatResearchSnippet) ? (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        {activeEntry.persona_summary ? 'Persona (stored on thread)' : 'Selection context'}
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {activeEntry.persona_summary || chatResearchSnippet}
+                      </pre>
+                    </div>
+                  ) : null}
+                </>
+              )}
+              {activeThread?.kind === 'extreme' && !activeEntry && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Status</p>
+                  <p className="mt-1 text-gray-900">
+                    Thread metadata is not in the loaded project yet (refresh if this persists), or the
+                    conversation key is invalid.
+                  </p>
+                  {researchExtremeMeta.threadKey === activeThread.key && researchExtremeMeta.chatExtremeUser ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Latest selection (research_data)
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {researchExtremeMeta.chatExtremeUser}
+                      </pre>
+                    </div>
+                  ) : chatResearchSnippet ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Selection context
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {chatResearchSnippet}
+                      </pre>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+              {activeThread?.kind === 'provided' && savedProvidedUser && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Age</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.age}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Location</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Description</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.description}</p>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="border-t border-gray-100 px-6 py-4">
+              <button type="button" onClick={() => setIsPersonaInfoOpen(false)} className={`${btnOutline} w-full`}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
