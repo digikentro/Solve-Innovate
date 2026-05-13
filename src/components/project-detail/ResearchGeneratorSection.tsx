@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 import { FiPlus, FiTerminal, FiChevronRight, FiDatabase, FiUsers } from 'react-icons/fi';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -163,26 +164,15 @@ export const ResearchGeneratorSection = ({
     }
 
     setIsLoading(true);
-    const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
 
     try {
       const requestBody = requestBodyMapper
         ? requestBodyMapper(formData, projectId)
         : { project_id: projectId, ...formData };
 
-      console.log(`Sending ${title} Request via proxy:`, requestBody);
+      console.log(`Sending ${title} Request to n8n:`, requestBody);
 
-      const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          target_url: apiEndpoint,
-          payload: requestBody
-        })
-      });
+      const response = await postN8nWebhook(apiEndpoint, requestBody as Record<string, unknown>);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

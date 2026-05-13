@@ -9,6 +9,7 @@ import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -71,8 +72,6 @@ function messagesFromEntry(entry: ExtremeUserEntry): ChatMessage[] {
     },
   ]);
 }
-
-const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -233,11 +232,7 @@ export const EmbeddedChatSection = ({
         }
       }
 
-      const res = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_url: webhookUrl, payload: requestBody }),
-      });
+      const res = await postN8nWebhook(webhookUrl, requestBody);
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -269,13 +264,9 @@ export const EmbeddedChatSection = ({
     if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
 
     try {
-      await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target_url: 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo',
-          payload: { project_id: projectId, ...customUser },
-        }),
+      await postN8nWebhook('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
+        project_id: projectId,
+        ...customUser,
       });
     } catch { /* non-critical */ }
 

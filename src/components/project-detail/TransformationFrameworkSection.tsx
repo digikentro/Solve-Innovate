@@ -5,6 +5,7 @@ import type { Project } from '@/types/project';
 import { TransformationFrameworkReportViewer } from './TransformationFrameworkReportViewer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface TransformationFrameworkSectionProps {
     project: Project;
@@ -38,20 +39,9 @@ export const TransformationFrameworkSection = ({
                 project_id: project.id,
             };
 
-            const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
             const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/Transformation_Framework';
 
-            const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    target_url: targetUrl,
-                    payload: requestBody
-                }),
-            });
+            const response = await postN8nWebhook(targetUrl, requestBody);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

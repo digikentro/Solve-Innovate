@@ -6,6 +6,7 @@ import type { Project } from '@/types/project';
 import { MarketResearchReportViewer } from './MarketResearchReportViewer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface MarketSearchSectionProps {
     project: Project;
@@ -146,20 +147,9 @@ export const MarketSearchSection = ({
 
             console.log('Market Search Request Body:', requestBody);
 
-            const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
             const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook-test/marketrearch';
 
-            const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    target_url: targetUrl,
-                    payload: requestBody
-                }),
-            });
+            const response = await postN8nWebhook(targetUrl, requestBody);
 
             if (!response.ok) {
                 console.error('API Response not ok:', response.status, response.statusText);

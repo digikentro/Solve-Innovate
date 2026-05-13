@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface TestingSectionProps {
     project: Project;
@@ -160,20 +161,9 @@ export const TestingSection = ({
 
             console.log('Testing Request Body:', requestBody);
 
-            const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || 'http://localhost:8000';
             const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/testing';
 
-            const response = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    target_url: targetUrl,
-                    payload: requestBody
-                }),
-            });
+            const response = await postN8nWebhook(targetUrl, requestBody);
 
             if (!response.ok) {
                 console.error('API Response not ok:', response.status, response.statusText);

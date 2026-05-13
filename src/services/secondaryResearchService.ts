@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 export type SecondaryResearchFileRef = {
   bucket: string;
@@ -177,20 +178,12 @@ export async function saveSecondaryResearchToSupabase(params: {
 }
 
 // ── Optional: forward to n8n for AI processing ────────────────────────────────
-const BACKEND_URL = (import.meta as any).env?.VITE_PPT_API_URL || ((import.meta as any).env?.PROD ? '' : 'http://localhost:8000');
 
 export async function postSecondaryResearchToN8n(params: {
   webhookUrl: string;
   payload: SecondaryResearchWebhookPayload;
 }): Promise<void> {
-  const res = await fetch(`${BACKEND_URL}/api/v1/webhook/proxy`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      target_url: params.webhookUrl,
-      payload: params.payload
-    }),
-  });
+  const res = await postN8nWebhook(params.webhookUrl, params.payload as Record<string, unknown>);
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(text || `n8n request failed (${res.status})`);
