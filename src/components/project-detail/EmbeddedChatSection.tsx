@@ -299,6 +299,8 @@ export const EmbeddedChatSection = ({
       const requestBody: Record<string, any> = {
         project_id: projectId,
         user: text,
+        user_id: activeThread.key,
+        user_name: activeThread.key, // Fallback, updated below
       };
 
       if (activeThread.kind === 'extreme') {
@@ -308,11 +310,13 @@ export const EmbeddedChatSection = ({
         requestBody.extreme_user_key = key;
         requestBody.extremeUserKey = key;
         requestBody.extreme_user_id = key;
-        requestBody.extreme_user_name = (entry?.name || key).trim();
+        requestBody.user_name = (entry?.name || key).trim();
+        requestBody.extreme_user_name = requestBody.user_name;
         const persona =
           (typeof entry?.persona_summary === 'string' ? entry.persona_summary : '').trim() ||
           (researchExtremeMeta.threadKey === key ? researchExtremeMeta.chatExtremeUser : '').trim();
         if (persona) {
+          requestBody.extreme_user_data = persona;
           requestBody.extreme_user_persona = persona;
           requestBody.extreme_user_summary = persona;
           requestBody.persona_summary = persona;
@@ -322,6 +326,8 @@ export const EmbeddedChatSection = ({
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo';
         if (savedProvidedUser) {
           requestBody.provided_user_data = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
+          requestBody.user_name = savedProvidedUser.name;
+          requestBody.extreme_user_data = requestBody.provided_user_data;
         }
       }
 

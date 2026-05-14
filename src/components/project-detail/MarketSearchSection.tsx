@@ -74,31 +74,44 @@ export const MarketSearchSection = ({
         let designStage = 'Early Concept';
         if (project.prototype_images) {
             try {
-                const protoImages = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
+                let protoImages = project.prototype_images;
+                if (typeof project.prototype_images === 'string') {
+                    let cleanString = project.prototype_images.trim();
+                    if (!cleanString.startsWith('{') && !cleanString.startsWith('[')) {
+                        cleanString = `{${cleanString}}`;
+                    }
+                    protoImages = JSON.parse(cleanString);
+                }
+                
                 if (protoImages?.image) {
                     designStage = 'Refined Prototype';
                 } else if (protoImages?.sketch) {
                     designStage = 'Rough Prototype';
                 }
             } catch (e) {
-                console.error('Failed to parse prototype_images', e);
+                console.warn('Failed to parse prototype_images', e);
             }
         }
 
         let prototypeArtifacts: { sketch?: string; image?: string } = {};
         if (project.prototype_images) {
             try {
-                const parsed = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
+                let parsed = project.prototype_images;
+                if (typeof project.prototype_images === 'string') {
+                    // Fix potentially malformed JSON string (e.g. using single quotes or unescaped values)
+                    let cleanString = project.prototype_images.trim();
+                    if (!cleanString.startsWith('{') && !cleanString.startsWith('[')) {
+                        cleanString = `{${cleanString}}`; // Attempt to wrap if it's missing brackets
+                    }
+                    parsed = JSON.parse(cleanString);
+                }
+                
                 prototypeArtifacts = {
                     sketch: parsed?.sketch,
                     image: parsed?.image,
                 };
             } catch (e) {
-                console.error('Failed to parse prototype_images', e);
+                console.warn('Failed to parse prototype_images', e);
             }
         }
 

@@ -16,9 +16,14 @@ export const MarketResearchReportViewer = ({ data, onGenerateNew }: MarketResear
         'references': false,
     });
 
-    const reportData = data?.content || data;
+    let reportData = data?.content || data;
+    
+    // If the LLM returned it as an array (as per the prompt schema), extract the first object
+    if (Array.isArray(reportData) && reportData.length > 0) {
+        reportData = reportData[0];
+    }
 
-    if (!reportData) {
+    if (!reportData || Object.keys(reportData).length === 0) {
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">No Market Research data available</p>
