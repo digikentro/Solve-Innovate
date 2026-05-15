@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDrag } from '@use-gesture/react';
 import ReactECharts from 'echarts-for-react';
 
@@ -12,6 +12,12 @@ import type {
   SpatialTextBlock,
   Theme,
 } from '@/types/presentation';
+
+// ─── Fixed Reference Canvas ───────────────────────────────────────────────────
+// All slides are authored at 960×540 (16:9) and scaled via CSS transform to fit
+// any container. This ensures pixel-perfect consistency across screen sizes.
+export const SLIDE_REFERENCE_WIDTH = 960;
+export const SLIDE_REFERENCE_HEIGHT = 540;
 
 interface SlideRendererProps {
   slide: SlideData;
@@ -51,6 +57,96 @@ const getNormalizedPosition = (
 const pxToPercent = (px: number, total: number): number => {
   if (!total) return 0;
   return (px / total) * 100;
+};
+
+// Font sizes relative to the 960×540 reference canvas.
+// They will scale proportionally via CSS transform: scale() at runtime.
+const VARIANT_FONT_SIZES: Record<string, number> = {
+  title: 38,
+  subtitle: 26,
+  heading: 28,
+  body: 18,
+  bullets: 18,
+  caption: 13,
+};
+
+// ─── Scaled Slide Canvas ───────────────────────────────────────────────────────
+// Wraps the slide in a fixed 960×540 div and applies a CSS transform scale
+// so the slide fills its parent container while maintaining perfect proportions.
+
+interface ScaledSlideCanvasProps {
+  children: React.ReactNode;
+  className?: string;
+  fillHeight?: boolean;
+}
+
+const ScaledSlideCanvas = ({ children, className = '', fillHeight = false }: ScaledSlideCanvasProps) => {
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  const computeScale = useCallback(() => {
+    if (!outerRef.current) return;
+    const { width, height } = outerRef.current.getBoundingClientRect();
+    if (!width || !height) return;
+    setScale(Math.min(width / SLIDE_REFERENCE_WIDTH, height / SLIDE_REFERENCE_HEIGHT));
+  }, []);
+
+  useEffect(() => {
+    computeScale();
+    const observer = new ResizeObserver(computeScale);
+    if (outerRef.current) observer.observe(outerRef.current);
+    return () => observer.disconnect();
+  }, [computeScale]);
+
+  // fillHeight=true: used in the editor viewer. Fills parent width+height,
+  // slides are centered. No aspect-ratio overflow issue.
+  if (fillHeight) {
+    return (
+      <div
+        ref={outerRef}
+        className={`relative w-full h-full overflow-hidden ${className}`}
+      >
+        <div
+          style={{
+            width: SLIDE_REFERENCE_WIDTH,
+            height: SLIDE_REFERENCE_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: -(SLIDE_REFERENCE_HEIGHT / 2),
+            marginLeft: -(SLIDE_REFERENCE_WIDTH / 2),
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // fillHeight=false: used in thumbnails. Keeps w-full + aspect-ratio.
+  return (
+    <div
+      ref={outerRef}
+      className={`relative w-full overflow-hidden ${className}`}
+      style={{ aspectRatio: `${SLIDE_REFERENCE_WIDTH} / ${SLIDE_REFERENCE_HEIGHT}` }}
+    >
+      <div
+        style={{
+          width: SLIDE_REFERENCE_WIDTH,
+          height: SLIDE_REFERENCE_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 };
 
 const toChartPoints = (raw: unknown): SpatialChartDataPoint[] => {
@@ -492,75 +588,92 @@ export const SlideRenderer = ({
     bottom: logoPosition.startsWith('bottom') ? '2%' : 'auto',
   };
 
-  return (
-    <div className={`relative w-full aspect-video rounded-2xl overflow-hidden ${className}`}>
-      <div
-        ref={stageRef}
-        className="relative h-full w-full"
-        style={{
-          background: theme.colors.bg,
-          color: theme.colors.text,
-          fontFamily: theme.fonts.body,
-        }}
-        onMouseDown={() => {
-          if (isInteractive && onSelectBlocks) {
-            onSelectBlocks([]);
-            onBlockSelect?.(null);
-            setEditingTextBlockId(null);
-          }
-        }}
-      >
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt="Logo"
-            className="absolute h-[8%] w-[8%] object-contain z-[999]"
-            style={logoStyle}
+  // The slide canvas — fixed 960×540, CSS-scaled to fit any container.
+  const slideCanvas = (
+    <div
+      ref={stageRef}
+      className="relative"
+      style={{
+        width: SLIDE_REFERENCE_WIDTH,
+        height: SLIDE_REFERENCE_HEIGHT,
+        background: theme.colors.bg,
+        color: theme.colors.text,
+        fontFamily: theme.fonts.body,
+      }}
+      onMouseDown={() => {
+        if (isInteractive && onSelectBlocks) {
+          onSelectBlocks([]);
+          onBlockSelect?.(null);
+          setEditingTextBlockId(null);
+        }
+      }}
+    >
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="Logo"
+          className="absolute object-contain z-[999]"
+          style={{
+            width: '8%',
+            height: '8%',
+            ...logoStyle,
+          }}
+        />
+      ) : null}
+
+      {slideBlocks.map((block, blockIndex) => {
+        const isSelected = selectedBlockIds.includes(block.id);
+        const isEditing = editingTextBlockId === block.id;
+
+        return (
+          <DraggableBlock
+            key={block.id}
+            block={block}
+            blockIndex={blockIndex}
+            theme={theme}
+            stageRef={stageRef}
+            isSelected={isSelected}
+            isEditing={isEditing}
+            isInteractive={isInteractive}
+            isDragging={isDragging}
+            onSelect={handleSelect}
+            onBlockSelect={(id) => onBlockSelect?.(id)}
+            onPositionChange={handlePositionChange}
+            onSizeChange={handleSizeChange}
+            onDoubleClick={(id) => setEditingTextBlockId(id)}
+            onTextChange={(value) => {
+              updateBlock(block.id, (target) => ({
+                ...(target as SpatialTextBlock),
+                content: value,
+              }));
+            }}
+            onTextBlur={() => {
+              // Do not unmount automatically on blur so that external toolbars can maintain the editor instance
+            }}
+            onChartRef={(instance) => {
+              if (instance) {
+                chartRefs.current.set(block.id, instance);
+              } else {
+                chartRefs.current.delete(block.id);
+              }
+            }}
+            onDragStateChange={setIsDragging}
           />
-        ) : null}
-
-        {slideBlocks.map((block, blockIndex) => {
-          const isSelected = selectedBlockIds.includes(block.id);
-          const isEditing = editingTextBlockId === block.id;
-
-          return (
-            <DraggableBlock
-              key={block.id}
-              block={block}
-              blockIndex={blockIndex}
-              theme={theme}
-              stageRef={stageRef}
-              isSelected={isSelected}
-              isEditing={isEditing}
-              isInteractive={isInteractive}
-              isDragging={isDragging}
-              onSelect={handleSelect}
-              onBlockSelect={(id) => onBlockSelect?.(id)}
-              onPositionChange={handlePositionChange}
-              onSizeChange={handleSizeChange}
-              onDoubleClick={(id) => setEditingTextBlockId(id)}
-              onTextChange={(value) => {
-                updateBlock(block.id, (target) => ({
-                  ...(target as SpatialTextBlock),
-                  content: value,
-                }));
-              }}
-              onTextBlur={() => {
-                // Do not unmount automatically on blur so that external toolbars can maintain the editor instance
-              }}
-              onChartRef={(instance) => {
-                if (instance) {
-                  chartRefs.current.set(block.id, instance);
-                } else {
-                  chartRefs.current.delete(block.id);
-                }
-              }}
-              onDragStateChange={setIsDragging}
-            />
-          );
-        })}
-      </div>
+        );
+      })}
     </div>
+  );
+
+  // For 'measure' role (used in print), return the raw fixed-size canvas.
+  // The PrintablePresentation component applies its own print-scale transform.
+  if (role === 'measure') {
+    return slideCanvas;
+  }
+
+  return (
+    <ScaledSlideCanvas className={`rounded-2xl ${className}`} fillHeight={role === 'viewer'}>
+      {slideCanvas}
+    </ScaledSlideCanvas>
   );
 };
 
@@ -586,13 +699,14 @@ const BlockBody = ({
   onChartRef,
 }: BlockBodyProps) => {
   if (block.type === 'text') {
+    // Font sizes are fixed px values relative to the 960×540 reference canvas.
+    // They scale automatically via the CSS transform: scale() in ScaledSlideCanvas.
+    const variantFontSize = VARIANT_FONT_SIZES[block.style?.variant || 'body'] ?? 18;
     const textStyle: React.CSSProperties = {
       textAlign: block.style?.align || 'left',
       color: block.style?.color || theme.colors.text,
       fontWeight: block.style?.emphasis === 'strong' ? 700 : 400,
-      fontSize: block.style?.font_size
-        ? `${block.style.font_size}px`
-        : 'clamp(12px, 1.2vw, 26px)',
+      fontSize: block.style?.font_size ? `${block.style.font_size}px` : `${variantFontSize}px`,
     };
 
     if (isEditing) {
@@ -688,7 +802,7 @@ const BlockBody = ({
     const defaultColor = block.color || theme.colors.primary;
     return (
       <div className="h-full w-full bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-        <table className="w-full text-left border-collapse text-[10px] md:text-xs">
+        <table className="w-full text-left border-collapse" style={{ fontSize: '11px' }}>
           <thead>
             <tr style={{ backgroundColor: `${defaultColor}15` }}>
               {block.data.headers.map((h: string, i: number) => (

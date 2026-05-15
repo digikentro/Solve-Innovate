@@ -27,11 +27,9 @@ BLOCK RULES
 1) text blocks require content and style.
 2) image blocks require prompt; do not provide URLs. Limit the total number of image blocks in the entire presentation to 4 maximum. Focus on high-impact visual slides only.
 3) chart blocks require chart_type and data points with numeric values.
-4) icon blocks require type "icon" and icon_query (search term).
-5) shape blocks require type "shape", shape_type (square, circle, rectangle, triangle, line) and color. Use these to frame content!
-6) Keep exact numbers, percentages, names, and quotes from source content.
-7) Never invent unsupported quantitative facts.
-8) You CAN use placeholder text or icons if it helps to construct a beautiful layout, as long as the core content is preserved.
+4) Keep exact numbers, percentages, names, and quotes from source content.
+5) Never invent unsupported quantitative facts.
+6) You CAN use placeholder text or images if it helps to construct a beautiful layout, as long as the core content is preserved.
 """
 
 

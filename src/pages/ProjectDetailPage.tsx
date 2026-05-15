@@ -3,7 +3,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
-import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor, FiFileText, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
 import { ProjectService } from '@/services/projectService';
@@ -63,6 +63,8 @@ export const ProjectDetailPage = () => {
   // Active section state
   const [activeSection, setActiveSection] = useState('project-info');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [presentationViewMode, setPresentationViewMode] = useState<'list' | 'editor'>('list');
   const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
   const [headerActionsNode, setHeaderActionsNode] = useState<HTMLElement | null>(null);
 
@@ -290,6 +292,7 @@ export const ProjectDetailPage = () => {
 
 
 
+
   // Function to extract Target Users from As-Is Map and populate Extreme User form
   const populateTargetUserFromAsIsMap = () => {
     if (!asIsMapData) return;
@@ -332,6 +335,22 @@ export const ProjectDetailPage = () => {
       case 'market-search':            return hasData(marketSearchData);
       case 'presentation':             return true; // last section
       default:                         return false;
+    }
+  };
+
+  // Navigation logic
+  const currentIndex = SECTIONS.findIndex(s => s.id === activeSection);
+  const prevSection = currentIndex > 0 ? SECTIONS[currentIndex - 1] : null;
+  const nextSection = currentIndex < SECTIONS.length - 1 ? SECTIONS[currentIndex + 1] : null;
+  const isNextUnlocked = nextSection ? isSectionCompleted(activeSection) : false;
+
+  const goToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    setVisitedSections(prev => new Set([...prev, sectionId]));
+    // Scroll content area to top
+    const contentArea = document.getElementById('project-detail-content');
+    if (contentArea) {
+      contentArea.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -392,12 +411,30 @@ export const ProjectDetailPage = () => {
       <div className="h-full flex bg-[#faf8f5] overflow-hidden font-sans">
       {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
       <aside className={`
-        absolute lg:relative top-0 left-0 h-full w-64 flex-shrink-0
+        absolute lg:relative top-0 left-0 h-full flex-shrink-0
         bg-[#f5f3ef] border-r border-gray-200/50
-        transition-transform duration-300 ease-in-out z-30
-        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        transition-all duration-300 ease-in-out z-30 flex flex-col
+        ${isMobileSidebarOpen ? 'translate-x-0 w-64' : (
+          (activeSection === 'presentation' && presentationViewMode === 'editor')
+            ? '-translate-x-full lg:translate-x-0 w-0 overflow-hidden border-none' 
+            : (isDesktopSidebarCollapsed ? '-translate-x-full lg:translate-x-0 w-20' : '-translate-x-full lg:translate-x-0 w-64')
+        )}
       `}>
-        <nav className="h-full overflow-y-auto py-8 px-4 space-y-3 custom-scrollbar">
+        {/* Sidebar Collapse Toggle - Gray, rounded, non-intrusive */}
+        <div className="absolute -right-2.5 top-[30%] z-40 hidden lg:block">
+          <button
+            onClick={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+            className="w-5 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded flex items-center justify-center transition-colors shadow-sm"
+            title={isDesktopSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isDesktopSidebarCollapsed ? (
+              <FiChevronRight className="w-3.5 h-3.5 text-gray-500" />
+            ) : (
+              <FiChevronLeft className="w-3.5 h-3.5 text-gray-500" />
+            )}
+          </button>
+        </div>
+        <nav className={`flex-1 overflow-y-auto py-4 ${isDesktopSidebarCollapsed ? 'px-2' : 'px-4'} space-y-3 custom-scrollbar`}>
             {SECTIONS.map((section, index) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
@@ -418,8 +455,8 @@ export const ProjectDetailPage = () => {
                       setIsMobileSidebarOpen(false);
                     }}
                   >
-                    <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span className="truncate flex-1 text-left">{section.label}</span>
+                    <Icon className={`w-4 h-4 ${isDesktopSidebarCollapsed ? '' : 'mr-2'} flex-shrink-0`} />
+                    {!isDesktopSidebarCollapsed && <span className="truncate flex-1 text-left">{section.label}</span>}
                   </Button>
                 );
               }
@@ -436,7 +473,7 @@ export const ProjectDetailPage = () => {
                       setIsMobileSidebarOpen(false);
                     }}
                     className={`
-                      w-full justify-start h-10 px-4 border-none shadow-none
+                      w-full ${isDesktopSidebarCollapsed ? 'justify-center' : 'justify-start'} h-10 px-4 border-none shadow-none
                       transition-all duration-200 bg-transparent hover:bg-transparent
                       ${!isUnlocked
                         ? 'text-gray-300 opacity-50'
@@ -444,14 +481,15 @@ export const ProjectDetailPage = () => {
                       }
                     `}
                   >
-                    <Icon className={`w-4 h-4 mr-3 flex-shrink-0 ${!isUnlocked ? 'text-gray-300' : 'text-gray-400'}`} />
-                    <span className="truncate flex-1 text-left">{section.label}</span>
-                    {!isUnlocked && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300 ml-2" />}
+                    <Icon className={`w-4 h-4 ${isDesktopSidebarCollapsed ? '' : 'mr-3'} flex-shrink-0 ${!isUnlocked ? 'text-gray-300' : 'text-gray-400'}`} />
+                    {!isDesktopSidebarCollapsed && <span className="truncate flex-1 text-left">{section.label}</span>}
+                    {!isUnlocked && !isDesktopSidebarCollapsed && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300 ml-2" />}
                   </Button>
               );
             })}
         </nav>
       </aside>
+
 
       {/* Overlay for mobile */}
       {isMobileSidebarOpen && (
@@ -495,9 +533,9 @@ export const ProjectDetailPage = () => {
       )}
 
       {/* Right Side - Content area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar">
-        <main className="flex-1">
-          <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
+      <div id="project-detail-content" className={`flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar relative`}>
+        <main className="flex-1 pb-24">
+          <div className={`p-4 sm:p-6 lg:p-10 mx-auto transition-all duration-300 ${(activeSection === 'presentation' && presentationViewMode === 'editor') || isDesktopSidebarCollapsed ? 'max-w-full' : 'max-w-7xl'}`}>
             {/* Project Information */}
             {activeSection === 'project-info' && (
               <div className="flex flex-col gap-10">
@@ -896,9 +934,48 @@ export const ProjectDetailPage = () => {
                 <PresentationSection
                   project={project}
                   onRefreshProject={refetchProject}
+                  onViewModeChange={setPresentationViewMode}
                 />
               </div>
             )}
+          </div>
+
+          {/* Section Navigation Arrowheads */}
+          <div className="sticky bottom-10 left-0 right-0 pointer-events-none z-40">
+            <div className={`mx-auto transition-all duration-300 flex justify-between px-6 sm:px-10 items-center ${(activeSection === 'presentation' && presentationViewMode === 'editor') || isDesktopSidebarCollapsed ? 'max-w-full' : 'max-w-7xl'}`}>
+              <div className="pointer-events-auto">
+                {prevSection && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => goToSection(prevSection.id)}
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white shadow-xl border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+                    title={`Previous: ${prevSection.label}`}
+                  >
+                    <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="pointer-events-auto">
+                {nextSection && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!isNextUnlocked}
+                    onClick={() => goToSection(nextSection.id)}
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white shadow-xl border-gray-200 transition-all duration-200 ${
+                      isNextUnlocked 
+                        ? 'hover:bg-gray-50 hover:text-gray-900' 
+                        : 'opacity-50 cursor-not-allowed grayscale'
+                    }`}
+                    title={isNextUnlocked ? `Next: ${nextSection.label}` : 'Complete current section to unlock next'}
+                  >
+                    <FiChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </main>
       </div>

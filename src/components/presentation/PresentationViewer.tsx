@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { FiLayout, FiSliders, FiPlus } from 'react-icons/fi';
 import { RteToolbar } from './RteToolbar';
@@ -9,14 +9,16 @@ import {
   FiChevronDown,
   FiChevronLeft,
   FiChevronRight,
+  FiCloud,
   FiCopy,
   FiCornerDownRight,
-  FiEdit2,
   FiMoreVertical,
   FiPlay,
-  FiSidebar,
+  FiRotateCcw,
+  FiRotateCw,
   FiTrash2,
   FiUpload,
+  FiX,
 } from 'react-icons/fi';
 
 import { THEMES } from '@/themes';
@@ -31,7 +33,7 @@ import type {
 } from '@/types/presentation';
 import { presentationApi } from '@/services/presentationApi';
 import { SlideThumbnails } from './SlideThumbnails';
-import { SlideRenderer } from './renderer/SlideRenderer';
+import { SlideRenderer, SLIDE_REFERENCE_WIDTH, SLIDE_REFERENCE_HEIGHT } from './renderer/SlideRenderer';
 
 type PanelTab = 'design' | 'insert' | 'format';
 
@@ -155,7 +157,7 @@ export const PresentationViewer = ({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [regenInstructions, setRegenInstructions] = useState('');
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [thumbnailsOpen, setThumbnailsOpen] = useState(true);
 
   // Image insertion state
   type ImageInsertMode = 'url' | 'upload' | 'ai';
@@ -249,12 +251,15 @@ export const PresentationViewer = ({
     }
   };
 
-  const enterPresentationMode = async () => {
-    if (!stageRef.current) {
-      return;
-    }
-    await stageRef.current.requestFullscreen();
+  const [isPresentMode, setIsPresentMode] = useState(false);
+
+  const enterPresentationMode = () => {
+    setIsPresentMode(true);
   };
+
+  const exitPresentationMode = useCallback(() => {
+    setIsPresentMode(false);
+  }, []);
 
   useEffect(() => {
     const handleArrowNavigation = (event: KeyboardEvent) => {
@@ -278,156 +283,161 @@ export const PresentationViewer = ({
         event.preventDefault();
         onSelectSlide(currentIndex + 1);
       }
+
+      if (event.key === 'Escape' && isPresentMode) {
+        event.preventDefault();
+        exitPresentationMode();
+      }
     };
 
     window.addEventListener('keydown', handleArrowNavigation);
     return () => window.removeEventListener('keydown', handleArrowNavigation);
-  }, [canGoNext, canGoPrevious, currentIndex, onSelectSlide]);
+  }, [canGoNext, canGoPrevious, currentIndex, isPresentMode, exitPresentationMode, onSelectSlide]);
 
   return (
     <ActiveEditorProvider>
-    <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative">
-      <div className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4">
-        <div className="flex items-center gap-3 min-w-0">
+    <div className="h-[calc(100vh-180px)] min-h-[680px] rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative flex flex-col">
+
+      {/* ── TOP BAR ─────────────────────────────────────────────────── */}
+      <div className="h-16 border-b border-slate-200 bg-white flex items-center px-4 relative flex-shrink-0 z-30">
+
+        {/* Left: Back button */}
+        <div className="absolute left-4">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-100"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <FiArrowLeft className="h-4 w-4" />
-            Back
+            Back to Presentations
           </button>
+        </div>
+
+        {/* Center: Title */}
+        <div className="flex-1 flex justify-center">
           <input
             value={title}
             onChange={(event) => onTitleChange(event.target.value)}
             aria-label="Presentation title"
-            className="w-72 max-w-[40vw] bg-transparent text-base font-semibold text-slate-900 border-b border-transparent focus:outline-none focus:border-sky-500"
+            className="text-base font-semibold text-slate-900 bg-transparent text-center border-b border-transparent focus:outline-none focus:border-sky-500 w-64 max-w-[28vw] truncate"
           />
-          <span className="text-xs text-slate-500">{getSaveLabel(saveState)}</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onUndo}
-            disabled={!canUndo}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
-          >
-            Undo
-          </button>
-          <button
-            onClick={onRedo}
-            disabled={!canRedo}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 disabled:opacity-40"
-          >
-            Redo
-          </button>
-          <button
-            onClick={() => setRightPanelOpen((prev) => !prev)}
-            aria-label="Toggle side panel"
-            title="Toggle side panel"
-            className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700"
-          >
-            <FiSidebar className="h-4 w-4" />
-          </button>
-        </div>
+        {/* Right: Save + Undo/Redo + Actions */}
+        <div className="absolute right-4 flex items-center gap-1.5">
+          {/* Save indicator — single colored cloud */}
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md ${
+            saveState === 'saving' ? 'text-amber-500' :
+            saveState === 'error'  ? 'text-red-500'   : 'text-emerald-600'
+          }`}>
+            <FiCloud className="h-4 w-4" />
+            <span>{getSaveLabel(saveState)}</span>
+          </span>
 
-        <div className="flex items-center gap-2 relative">
-          <button
-            onClick={enterPresentationMode}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-sm"
+          <div className="w-px h-5 bg-slate-200 mx-0.5" />
+
+          <button onClick={onUndo} disabled={!canUndo} title="Undo"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-colors"
           >
-            <FiPlay className="h-4 w-4" />
-            Present
+            <FiRotateCcw className="h-3.5 w-3.5" /> Undo
+          </button>
+          <button onClick={onRedo} disabled={!canRedo} title="Redo"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition-colors"
+          >
+            <FiRotateCw className="h-3.5 w-3.5" /> Redo
+          </button>
+
+          <div className="w-px h-5 bg-slate-200 mx-0.5" />
+
+          <button onClick={enterPresentationMode}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-700 transition-colors"
+          >
+            <FiPlay className="h-4 w-4" /> Present
           </button>
 
           <div className="relative">
-            <button
-              onClick={() => setShowExportMenu((prev) => !prev)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"
+            <button onClick={() => setShowExportMenu((prev) => !prev)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-100 transition-colors"
             >
-              Export
-              <FiChevronDown className="h-4 w-4" />
+              Export <FiChevronDown className="h-4 w-4" />
             </button>
             {showExportMenu ? (
               <div className="absolute right-0 mt-2 w-44 rounded-lg border border-slate-200 bg-white shadow-lg p-1 z-50">
-                <button
-                  disabled={isExporting}
-                  onClick={onExportPptx}
+                <button disabled={isExporting} onClick={onExportPptx}
                   className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
-                >
-                  Export PPTX
-                </button>
-                <button
-                  disabled={isExporting || isExportingPdfLocal}
-                  onClick={triggerPdfExport}
+                >Export PPTX</button>
+                <button disabled={isExporting || isExportingPdfLocal} onClick={triggerPdfExport}
                   className="w-full px-3 py-2 text-left text-sm rounded hover:bg-slate-100 disabled:opacity-50"
-                >
-                  Export PDF
-                </button>
+                >Export PDF</button>
               </div>
             ) : null}
           </div>
 
           <div className="relative">
-            <button
-              onClick={() => setShowSettingsMenu((prev) => !prev)}
+            <button onClick={() => setShowSettingsMenu((prev) => !prev)}
               aria-label="Open slide settings"
-              title="Slide settings"
-              className="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-slate-200"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
             >
               <FiMoreVertical className="h-4 w-4" />
             </button>
             {showSettingsMenu ? (
               <div className="absolute right-0 mt-2 w-72 rounded-lg border border-slate-200 bg-white shadow-lg p-2 z-50 space-y-2">
                 <label className="block text-xs text-slate-500">Single Slide AI Regeneration</label>
-                <textarea
-                  value={regenInstructions}
-                  onChange={(event) => setRegenInstructions(event.target.value)}
+                <textarea value={regenInstructions} onChange={(e) => setRegenInstructions(e.target.value)}
                   aria-label="Single slide regeneration instructions"
                   className="w-full min-h-[80px] rounded-md border border-slate-200 px-2 py-1 text-sm"
                   placeholder="Add optional instructions"
                 />
-                <button
-                  onClick={() => onRegenerateSlide(currentIndex, regenInstructions || undefined)}
+                <button onClick={() => onRegenerateSlide(currentIndex, regenInstructions || undefined)}
                   className="w-full px-3 py-2 rounded-md bg-sky-600 text-white text-sm"
-                >
-                  Regenerate Current Slide
-                </button>
+                >Regenerate Current Slide</button>
               </div>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="flex h-[calc(100%-64px)] overflow-hidden relative">
-        <aside className="w-[280px] h-full border-r border-slate-200 bg-white p-3 overflow-hidden flex-shrink-0">
-          <SlideThumbnails
-            slides={slides}
-            theme={activeTheme}
-            logoUrl={settings.logoUrl || undefined}
-            logoPosition={settings.logoPosition}
-            currentIndex={currentIndex}
-            onSelect={onSelectSlide}
-            onReorder={onReorderSlides}
-            onAddSlide={() => onAddSlide(currentIndex)}
-          />
-        </aside>
+      {/* ── BODY ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden relative">
 
-        <main className="flex-1 h-full min-h-0 bg-slate-100 p-4 flex flex-col gap-3 relative">
-          <style>{`
-            :fullscreen .slide-container {
-              max-width: none !important;
-              width: 100vw !important;
-              height: 100vh !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-          `}</style>
-          {selectedBlockIds.length > 0 && <div className="absolute top-2 left-0 right-0 z-20 flex justify-center"><RteToolbar /></div>}
-        <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center py-6" ref={stageRef}>
-        <div className="w-full max-w-4xl px-4 slide-container">
+        {/* Left: Collapsible thumbnail sidebar */}
+        <div className={`h-full relative flex-shrink-0 transition-[width] duration-300 ease-in-out ${thumbnailsOpen ? 'w-[220px]' : 'w-0'}`}>
+          {/* Collapse toggle button */}
+          <button
+            onClick={() => setThumbnailsOpen((prev) => !prev)}
+            aria-label={thumbnailsOpen ? 'Collapse slide panel' : 'Expand slide panel'}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full z-10 bg-white rounded-r-xl border border-l-0 border-slate-200 shadow-md px-1 py-4 hover:bg-slate-50 transition-colors"
+          >
+            {thumbnailsOpen
+              ? <FiChevronLeft className="h-4 w-4 text-slate-500" />
+              : <FiChevronRight className="h-4 w-4 text-slate-500" />}
+          </button>
+          {/* Sidebar panel */}
+          <div className="w-[220px] h-full bg-white border-r border-slate-200 rounded-tr-2xl rounded-br-2xl shadow-xl overflow-hidden p-3">
+            <SlideThumbnails
+              slides={slides}
+              theme={activeTheme}
+              logoUrl={settings.logoUrl || undefined}
+              logoPosition={settings.logoPosition}
+              currentIndex={currentIndex}
+              onSelect={onSelectSlide}
+              onReorder={onReorderSlides}
+              onAddSlide={() => onAddSlide(currentIndex)}
+            />
+          </div>
+        </div>
+
+        {/* Center: Slide canvas */}
+        <main className="flex-1 relative overflow-hidden bg-slate-100">
+          {/* RteToolbar when blocks are selected */}
+          {selectedBlockIds.length > 0 && (
+            <div className="absolute top-3 left-0 right-0 z-20 flex justify-center pointer-events-none">
+              <div className="pointer-events-auto"><RteToolbar /></div>
+            </div>
+          )}
+
+          {/* Slide — absolute fill, pb-24 reserves space for nav bar */}
+          <div className="absolute inset-0 flex items-center justify-center p-4 pb-24">
+            <div className="w-full h-full">
               <SlideRenderer
                 key={currentIndex}
                 slide={slide}
@@ -437,45 +447,30 @@ export const PresentationViewer = ({
                 role="viewer"
                 selectedBlockIds={selectedBlockIds}
                 onSelectBlocks={onSelectBlocks}
-                onBlockSelect={() => {
-                  // Do not auto-open the format tab
-                }}
+                onBlockSelect={() => {}}
                 onSlideChange={(nextSlide) => onUpdateSlide(currentIndex, () => nextSlide)}
               />
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+          {/* Floating bottom nav bar */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-white rounded-2xl shadow-lg border border-slate-200 px-4 py-2.5 min-w-[360px]">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => onSelectSlide(currentIndex - 1)}
-                disabled={!canGoPrevious}
+              <button onClick={() => onSelectSlide(currentIndex - 1)} disabled={!canGoPrevious}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
               >
-                <FiChevronLeft className="h-3.5 w-3.5" />
-                Prev
+                <FiChevronLeft className="h-3.5 w-3.5" /> Prev
               </button>
-
-              <input
-                type="range"
-                min={0}
-                max={Math.max(0, slides.length - 1)}
-                value={currentIndex}
-                onChange={(event) => onSelectSlide(Number(event.target.value))}
-                className="flex-1 accent-sky-600"
-                aria-label="Slide navigation slider"
+              <input type="range" min={0} max={Math.max(0, slides.length - 1)} value={currentIndex}
+                onChange={(e) => onSelectSlide(Number(e.target.value))}
+                className="flex-1 accent-sky-600" aria-label="Slide navigation slider"
               />
-
-              <button
-                onClick={() => onSelectSlide(currentIndex + 1)}
-                disabled={!canGoNext}
+              <button onClick={() => onSelectSlide(currentIndex + 1)} disabled={!canGoNext}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
               >
-                Next
-                <FiChevronRight className="h-3.5 w-3.5" />
+                Next <FiChevronRight className="h-3.5 w-3.5" />
               </button>
-
-              <span className="min-w-[86px] text-right text-xs font-semibold text-slate-500">
+              <span className="min-w-[52px] text-right text-xs font-semibold text-slate-500">
                 {currentIndex + 1} / {slides.length}
               </span>
             </div>
@@ -483,11 +478,11 @@ export const PresentationViewer = ({
         </main>
 
         {activeTab ? (
-          <aside className="absolute right-16 top-0 h-full w-[320px] z-30 shadow-2xl border-l border-slate-200 bg-white rounded-l-2xl overflow-hidden">
+          <aside className="absolute right-[84px] top-4 bottom-16 w-72 z-30 shadow-2xl border border-slate-200 bg-white rounded-2xl overflow-hidden">
             <div className="h-12 border-b border-slate-200 flex items-center px-4 font-semibold text-slate-700 capitalize">
               {activeTab} Actions
-              <button 
-                onClick={() => setActiveTab(null)} 
+              <button
+                onClick={() => setActiveTab(null)}
                 className="ml-auto text-slate-400 hover:text-slate-600"
               >
                 ✕
@@ -988,31 +983,29 @@ export const PresentationViewer = ({
           </div>
         </aside>
         ) : null}
-        
-        {/* Right Icon Strip */}
-        <aside className="w-16 h-full border-l border-slate-200 bg-white flex flex-col items-center py-4 gap-4 flex-shrink-0 z-40 bg-slate-50">
-          <button
-            onClick={() => setActiveTab(activeTab === 'design' ? null : 'design')}
-            className={`p-3 rounded-xl ${activeTab === 'design' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
-            title="Design"
-          >
-            <FiLayout className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setActiveTab(activeTab === 'insert' ? null : 'insert')}
-            className={`p-3 rounded-xl ${activeTab === 'insert' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
-            title="Insert"
-          >
-            <FiPlus className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setActiveTab(activeTab === 'format' ? null : 'format')}
-            className={`p-3 rounded-xl ${activeTab === 'format' ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100'}`}
-            title="Format"
-          >
-            <FiSliders className="w-5 h-5" />
-          </button>
-        </aside>
+
+        {/* Right: Tool strip (Design / Insert / Format) */}
+        <div className="flex-shrink-0 w-20 flex flex-col items-center justify-center py-6 z-20">
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-2 flex flex-col gap-1">
+            {(['design', 'insert', 'format'] as const).map((tab) => {
+              const Icon = tab === 'design' ? FiLayout : tab === 'insert' ? FiPlus : FiSliders;
+              const label = tab === 'design' ? 'Design' : tab === 'insert' ? 'Insert' : 'Format';
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(activeTab === tab ? null : tab)}
+                  className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[10px] font-medium transition-colors ${
+                    activeTab === tab ? 'bg-sky-100 text-sky-600' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                  }`}
+                  title={label}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
       </div>
       {isExportingPdfLocal && (
@@ -1021,6 +1014,73 @@ export const PresentationViewer = ({
         </div>
       )}
     </div>
+
+    {/* ── Fullscreen Present Mode Overlay ──────────────────────────────── */}
+    {isPresentMode && (
+      <div
+        className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center"
+        onClick={exitPresentationMode}
+      >
+        {/* Slide — fills the screen while keeping 16:9 aspect ratio */}
+        <div
+          className="w-full h-full flex items-center justify-center p-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* The SlideRenderer's ScaledSlideCanvas handles the scaling automatically */}
+            <div className="w-full" style={{ maxHeight: '100vh', aspectRatio: `${SLIDE_REFERENCE_WIDTH} / ${SLIDE_REFERENCE_HEIGHT}` }}>
+              <SlideRenderer
+                key={`present-${currentIndex}`}
+                slide={slide}
+                theme={activeTheme}
+                logoUrl={settings.logoUrl || undefined}
+                logoPosition={settings.logoPosition}
+                role="viewer"
+                selectedBlockIds={[]}
+                onSelectBlocks={() => {}}
+                onBlockSelect={() => {}}
+                onSlideChange={() => {}}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation controls at bottom */}
+        <div
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/60 backdrop-blur-sm rounded-2xl px-6 py-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => onSelectSlide(currentIndex - 1)}
+            disabled={!canGoPrevious}
+            className="p-2 rounded-lg text-white disabled:opacity-30 hover:bg-white/20"
+            aria-label="Previous slide"
+          >
+            <FiChevronLeft className="h-6 w-6" />
+          </button>
+          <span className="text-white text-sm font-semibold min-w-[64px] text-center">
+            {currentIndex + 1} / {slides.length}
+          </span>
+          <button
+            onClick={() => onSelectSlide(currentIndex + 1)}
+            disabled={!canGoNext}
+            className="p-2 rounded-lg text-white disabled:opacity-30 hover:bg-white/20"
+            aria-label="Next slide"
+          >
+            <FiChevronRight className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={exitPresentationMode}
+          className="absolute top-4 right-4 p-2 rounded-lg text-white hover:bg-white/20"
+          aria-label="Exit presentation mode"
+        >
+          <FiX className="h-6 w-6" />
+        </button>
+      </div>
+    )}
     </ActiveEditorProvider>
   );
 };

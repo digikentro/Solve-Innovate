@@ -76,7 +76,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                         <p className="text-xs font-medium text-gray-500 mb-1">Identified by:</p>
                         <div className="flex flex-wrap gap-1">
                             {issue.identified_by.map((persona: string, i: number) => (
-                                <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                                <span key={i} className="px-2 py-0.5 bg-white text-gray-700 text-xs rounded border border-gray-200">
                                     {persona}
                                 </span>
                             ))}
@@ -109,7 +109,7 @@ export const TestingReportViewer = ({ data, onGenerateNew, projectId, onSave }: 
                 {mod.user_impact && (
                     <div className="flex flex-wrap gap-1">
                         {mod.user_impact.map((user: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded">
+                            <span key={i} className="px-2 py-0.5 bg-white text-gray-700 text-xs rounded border border-gray-200">
                                 {user}
                             </span>
                         ))}

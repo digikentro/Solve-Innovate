@@ -18,11 +18,12 @@ import { PresentationViewer } from './PresentationViewer';
 interface PresentationSectionProps {
   project: Project;
   onRefreshProject?: () => void;
+  onViewModeChange?: (mode: 'list' | 'editor') => void;
 }
 
 type ViewMode = 'list' | 'editor';
 
-export const PresentationSection = ({ project }: PresentationSectionProps) => {
+export const PresentationSection = ({ project, onViewModeChange }: PresentationSectionProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activePresentationId, setActivePresentationId] = useState<string | null>(null);
   const [activeMarkdownId, setActiveMarkdownId] = useState<string | null>(null);
@@ -154,6 +155,7 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
     setActivePresentationId(item.id);
     setTitleDraft(item.title);
     setViewMode('editor');
+    onViewModeChange?.('editor');
 
     if (item.current_slide_count) {
       setSettings((prev) => ({
@@ -352,6 +354,7 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
                       setActivePresentationId(null);
                       setActiveMarkdownId(null);
                       setViewMode('list');
+                      onViewModeChange?.('list');
                       setOutline(null);
                       resetToConfig();
                     }
@@ -377,6 +380,7 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
                   <button
                     onClick={() => {
                       setViewMode('list');
+                      onViewModeChange?.('list');
                       resetToConfig();
                       setOutline(null);
                       setActivePresentationId(null);
@@ -560,6 +564,7 @@ console.log("current_markdown_presentation_id:", item.current_markdown_presentat
               canRedo={canRedo}
               onBack={() => {
                 setViewMode('list');
+                onViewModeChange?.('list');
                 resetToConfig();
                 setOutline(null);
                 setActiveMarkdownId(null);

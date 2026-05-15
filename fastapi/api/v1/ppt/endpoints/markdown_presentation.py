@@ -196,7 +196,7 @@ class SpatialTableBlock(BaseModel):
     data: SpatialTableData
     color: Optional[str] = None
 
-SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock | SpatialShapeBlock | SpatialIconBlock | SpatialTableBlock
+SpatialBlock = SpatialTextBlock | SpatialImageBlock | SpatialChartBlock | SpatialTableBlock
 
 
 class SpatialSlide(BaseModel):
@@ -897,14 +897,6 @@ async def _resolve_visual_blocks(deck: SpatialDeckPayload) -> SpatialDeckPayload
                         block.prompt = os.path.abspath(generated.path)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Image generation failed for block=%s: %s", block.id, exc)
-            elif isinstance(block, SpatialIconBlock):
-                block.icon_query = "/static/icons/placeholder.svg"
-                # try:
-                #     results = await ICON_FINDER_SERVICE.search_icons(query=block.icon_query, k=1)
-                #     if results and len(results) > 0:
-                #         block.icon_query = results[0]
-                # except Exception as exc:
-                #     logger.warning("Icon search failed for block=%s: %s", block.id, exc)
     return deck
 
 

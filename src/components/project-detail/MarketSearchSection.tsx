@@ -211,14 +211,12 @@ export const MarketSearchSection = ({
     // Show results if data exists
     if (hasData) {
         return (
-            <Card className="animate-fadeIn overflow-hidden border border-gray-200 bg-white shadow-none">
-                <CardContent className="px-6 pb-6 pt-6">
-                    <MarketResearchReportViewer
-                        data={marketSearchData}
-                        onGenerateNew={handleGenerateNew}
-                    />
-                </CardContent>
-            </Card>
+            <div className="animate-fadeIn">
+                <MarketResearchReportViewer
+                    data={marketSearchData}
+                    onGenerateNew={handleGenerateNew}
+                />
+            </div>
         );
     }
 

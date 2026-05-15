@@ -31,7 +31,6 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
   const [prototypeSketchUrl, setPrototypeSketchUrl] = useState<string | null>(null);
   const [prototypeImageUrl, setPrototypeImageUrl] = useState<string | null>(null);
   const [prototypeGeneratedAt, setPrototypeGeneratedAt] = useState<string | null>(null);
-  const [showCards, setShowCards] = useState(true);
   const [isSubmittingImage, setIsSubmittingImage] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
@@ -69,7 +68,6 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
     if (sketchUrl || imageUrl) {
       setIsGeneratingSketch(false);
       setIsGeneratingImage(false);
-      setShowCards(false);
     }
   };
 
@@ -160,7 +158,6 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
       setPrototypeSketchUrl(null);
       setPrototypeImageUrl(null);
       setPrototypeGeneratedAt(null);
-      setShowCards(true);
       setIsGeneratingSketch(false);
     }
 
@@ -276,9 +273,22 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Sketch Prototype Card */}
-      <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+    <div className="flex flex-col gap-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Create Prototype
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Generate visual concepts and high-fidelity prototypes for your selected idea.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Sketch Prototype Card */}
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
         <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary">
@@ -393,11 +403,11 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Idea Selection Cards */}
-      {showCards && !isGeneratingSketch && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">Select an Idea to Prototype</h3>
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Select an Idea to Prototype</h3>
           {clusters.map((cluster: any) => (
             <Card key={cluster.rank} className="bg-white border border-gray-200 shadow-none rounded-md overflow-hidden">
               <div className="w-full flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-100">
@@ -541,8 +551,7 @@ export const PrototypingToolsSection = ({ ideaClusteringData, project, onRefresh
               )}
             </Card>
           ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 };
