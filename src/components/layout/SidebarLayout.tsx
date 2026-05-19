@@ -156,7 +156,7 @@ export function SidebarLayout() {
 
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-sidebar border-r border-gray-200 transition-all duration-300 ease-in-out ${
+        className={`fixed md:static inset-y-0 left-0 z-50 flex flex-col bg-white/40 backdrop-blur-md border-r border-gray-200/50 transition-all duration-300 ease-in-out ${
           isProjectPage ? 'w-0 overflow-hidden border-r-0 opacity-0' : isCollapsed ? 'w-20' : 'w-64'
         } ${
           isMobileOpen && !isProjectPage ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -311,16 +311,52 @@ export function SidebarLayout() {
 
         {/* Sidebar Footer */}
         <div className="p-4 mt-auto border-t border-gray-200/50 space-y-2">
-          {!isCollapsed && (
-            <>
-              <Button variant="outline" className="w-full justify-start text-sm">
-                <UserPlus className="mr-2 w-4 h-4" />
-                Invite Team Member
-              </Button>
-              <div className="text-xs text-gray-500 text-center py-2">
-                Free trial ends in 7 days
+          {!isCollapsed ? (
+            <Link
+              to="/profile"
+              onClick={closeMobileMenu}
+              className="w-full flex items-center gap-3 p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all text-left"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white overflow-hidden flex-shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-semibold">{displayName.charAt(0).toUpperCase()}</span>
+                )}
               </div>
-            </>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-700 truncate">{displayName}</p>
+                <p className="text-xs text-gray-400 truncate">View Profile</p>
+              </div>
+            </Link>
+          ) : (
+            <Link
+              to="/profile"
+              onClick={closeMobileMenu}
+              className="relative group flex justify-center w-full"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white cursor-pointer overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-semibold">{displayName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              {/* Tooltip when collapsed */}
+              <div
+                className="
+                  absolute bottom-0 left-[calc(100%+12px)]
+                  px-2.5 py-1.5 rounded-lg border border-gray-200/60
+                  bg-white shadow-md text-xs font-medium text-gray-700
+                  opacity-0 invisible translate-x-1
+                  group-hover:opacity-100 group-hover:visible group-hover:translate-x-0
+                  transition-all duration-200 ease-out
+                  z-50 whitespace-nowrap
+                "
+              >
+                View Profile ({displayName})
+              </div>
+            </Link>
           )}
 
           <button
@@ -408,53 +444,55 @@ export function SidebarLayout() {
             )}
 
             {/* Profile Dropdown */}
-            <div className="relative group">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white cursor-pointer overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs font-semibold">{displayName.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <div
-                className="
-                  absolute right-0 top-[calc(100%+8px)]
-                  w-44 rounded-xl border border-gray-200/60
-                  bg-gradient-to-b from-white/95 to-gray-50/90
-                  backdrop-blur-md shadow-lg
-                  opacity-0 invisible translate-y-1
-                  group-hover:opacity-100 group-hover:visible group-hover:translate-y-0
-                  transition-all duration-200 ease-out
-                  z-50
-                "
-              >
-                <div className="p-1.5">
-                  <Link
-                    to="/profile"
-                    className="
-                      relative flex items-center px-3 py-2 text-sm font-medium text-gray-700
-                      rounded-lg hover:bg-gray-100/70 transition-colors duration-150
-                      after:absolute after:bottom-1 after:left-3 after:h-px after:w-0
-                      after:bg-gray-700 after:transition-all after:duration-250 hover:after:w-[calc(100%-24px)]
-                    "
-                  >
-                    Edit Profile
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="
-                      relative w-full flex text-left items-center px-3 py-2 text-sm font-medium text-red-500
-                      rounded-lg hover:bg-red-50/70 transition-colors duration-150
-                      after:absolute after:bottom-1 after:left-3 after:h-px after:w-0
-                      after:bg-red-400 after:transition-all after:duration-250 hover:after:w-[calc(100%-24px)]
-                    "
-                  >
-                    Sign Out
-                  </button>
+            {isProjectPage && (
+              <div className="relative group">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white cursor-pointer overflow-hidden">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-semibold">{displayName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div
+                  className="
+                    absolute right-0 top-[calc(100%+8px)]
+                    w-44 rounded-xl border border-gray-200/60
+                    bg-gradient-to-b from-white/95 to-gray-50/90
+                    backdrop-blur-md shadow-lg
+                    opacity-0 invisible translate-y-1
+                    group-hover:opacity-100 group-hover:visible group-hover:translate-y-0
+                    transition-all duration-200 ease-out
+                    z-50
+                  "
+                >
+                  <div className="p-1.5">
+                    <Link
+                      to="/profile"
+                      className="
+                        relative flex items-center px-3 py-2 text-sm font-medium text-gray-700
+                        rounded-lg hover:bg-gray-100/70 transition-colors duration-150
+                        after:absolute after:bottom-1 after:left-3 after:h-px after:w-0
+                        after:bg-gray-700 after:transition-all after:duration-250 hover:after:w-[calc(100%-24px)]
+                      "
+                    >
+                      Edit Profile
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="
+                        relative w-full flex text-left items-center px-3 py-2 text-sm font-medium text-red-500
+                        rounded-lg hover:bg-red-50/70 transition-colors duration-150
+                        after:absolute after:bottom-1 after:left-3 after:h-px after:w-0
+                        after:bg-red-400 after:transition-all after:duration-250 hover:after:w-[calc(100%-24px)]
+                      "
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </header>
 

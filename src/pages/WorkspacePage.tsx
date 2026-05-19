@@ -120,7 +120,11 @@ export function WorkspacePage() {
   const [uploadedPdfs, setUploadedPdfs] = useState<File[]>([]);
   const [pdfContext, setPdfContext] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [showAllPrompts, setShowAllPrompts] = useState(false);
 
+  useEffect(() => {
+    setShowAllPrompts(false);
+  }, [projectType]);
 
   const [contentVisible, setContentVisible] = useState(false);
   useEffect(() => {
@@ -327,60 +331,114 @@ export function WorkspacePage() {
       {/* State 1: Input / Chat Prompt */}
       {!generatedProblem && !isGenerating && (
         <>
-          <div className="w-full flex flex-col items-center space-y-6 mt-2 md:mt-4 relative z-10">
-            {/* Greeting */}
-            <p style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontSize: 'min(12vw, 5rem)',
-              fontStyle: 'italic',
-              color: '#111827',
-              marginBottom: '-12px',
-              letterSpacing: '-0.03em',
-              lineHeight: 0.9,
-              minHeight: '1em'
-            }}>
-              {profileLoading ? '' : firstName ? `Hello, ${firstName}` : 'Hello there'}
-            </p>
-            <h2 className="text-xl md:text-2xl font-medium text-gray-400 text-center tracking-tight mb-8">
-              What would you like to build?
-            </h2>
-
-          {/* Project Type Selection Boxes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-            <div 
-              onClick={() => setProjectType('social-impact')}
-              className={`p-6 rounded-2xl cursor-pointer border-2 transition-all duration-300 flex flex-col items-center justify-center text-center ${
-                projectType === 'social-impact' 
-                  ? 'bg-black text-white border-black shadow-lg scale-105' 
-                  : 'bg-white text-black border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <h3 className="text-xl font-bold mb-2">Social Impact</h3>
-              <p className={`text-sm ${projectType === 'social-impact' ? 'text-gray-300' : 'text-gray-500'}`}>
-                Focus on UN Sustainable Development Goals and social challenges.
-              </p>
-            </div>
+          <div className={`w-full flex flex-col items-center mt-2 md:mt-4 relative z-10 ${projectType ? 'h-full flex-1' : ''}`}>
             
-            <div 
-              onClick={() => setProjectType('business')}
-              className={`p-6 rounded-2xl cursor-pointer border-2 transition-all duration-300 flex flex-col items-center justify-center text-center ${
-                projectType === 'business' 
-                  ? 'bg-black text-white border-black shadow-lg scale-105' 
-                  : 'bg-white text-black border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <h3 className="text-xl font-bold mb-2">Business</h3>
-              <p className={`text-sm ${projectType === 'business' ? 'text-gray-300' : 'text-gray-500'}`}>
-                Focus on market opportunities and commercial sectors.
+            {/* Spacer to push content to center initially */}
+            <div className={`transition-all duration-700 ease-in-out ${projectType ? 'h-0' : 'h-[16vh]'}`} />
+
+            {/* Greeting */}
+            <div className={`flex flex-col items-center transition-all duration-700 ease-in-out ${projectType ? 'opacity-0 max-h-0 pointer-events-none scale-90 mb-0' : 'opacity-100 max-h-[300px] mb-6'}`}>
+              <p style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontSize: 'min(12vw, 5rem)',
+                fontStyle: 'italic',
+                color: '#111827',
+                marginBottom: '-12px',
+                letterSpacing: '-0.03em',
+                lineHeight: 0.9,
+                minHeight: '1em'
+              }}>
+                {profileLoading ? '' : firstName ? `Hello, ${firstName}` : 'Hello there'}
               </p>
+              <h2 className="text-xl md:text-2xl font-medium text-gray-400 text-center tracking-tight mt-6">
+                What would you like to build?
+              </h2>
             </div>
-          </div>
+
+            {/* Project Type Selection Boxes */}
+            <div className={`grid gap-4 w-full max-w-2xl transition-all duration-500 ${projectType ? 'grid-cols-2 mb-6' : 'grid-cols-1 md:grid-cols-2'}`}>
+              <div 
+                onClick={() => setProjectType('social-impact')}
+                className={`rounded-2xl cursor-pointer border-2 transition-all duration-500 flex flex-col items-center justify-center text-center ${
+                  projectType === 'social-impact' 
+                    ? 'bg-black text-white border-black shadow-lg scale-105 p-4' 
+                    : `bg-white text-black border-gray-200 hover:border-gray-300 ${projectType ? 'p-3 opacity-60' : 'p-6'}`
+                }`}
+              >
+                <h3 className={`${projectType ? 'text-base' : 'text-xl'} font-bold transition-all duration-500`}>Social Impact</h3>
+                <div className={`transition-all duration-500 overflow-hidden ${projectType ? 'max-h-0 opacity-0 mt-0' : 'max-h-[100px] opacity-100 mt-2'}`}>
+                  <p className={`text-sm text-gray-500`}>
+                    Focus on UN Sustainable Development Goals and social challenges.
+                  </p>
+                </div>
+              </div>
+              
+              <div 
+                onClick={() => setProjectType('business')}
+                className={`rounded-2xl cursor-pointer border-2 transition-all duration-500 flex flex-col items-center justify-center text-center ${
+                  projectType === 'business' 
+                    ? 'bg-black text-white border-black shadow-lg scale-105 p-4' 
+                    : `bg-white text-black border-gray-200 hover:border-gray-300 ${projectType ? 'p-3 opacity-60' : 'p-6'}`
+                }`}
+              >
+                <h3 className={`${projectType ? 'text-base' : 'text-xl'} font-bold transition-all duration-500`}>Business</h3>
+                <div className={`transition-all duration-500 overflow-hidden ${projectType ? 'max-h-0 opacity-0 mt-0' : 'max-h-[100px] opacity-100 mt-2'}`}>
+                  <p className={`text-sm text-gray-500`}>
+                    Focus on market opportunities and commercial sectors.
+                  </p>
+                </div>
+              </div>
+            </div>
           
-          {/* Input Area (only visible if projectType is selected) */}
-          {projectType && (
-            <>
-              <div className="w-full relative max-w-3xl space-y-4">
-                {/* PDF Preview */}
+          {/* Main Content Area when Project Type is selected */}
+          <div className={`w-full flex-1 flex flex-col min-h-0 relative transition-all duration-700 delay-100 ${projectType ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none h-0 overflow-hidden'}`}>
+            
+            {/* Pre-written Prompts List */}
+            <div 
+              className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto px-2 pb-40"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+               <style dangerouslySetInnerHTML={{__html: `
+                 .flex-1::-webkit-scrollbar { display: none; }
+               `}} />
+               
+               <p className="text-sm text-gray-500 mb-4 font-medium text-center">
+                 Select our Pre-Written Prompts
+               </p>
+
+               <div className="flex flex-wrap justify-center gap-1.5">
+                {(showAllPrompts ? sectors : sectors.slice(0, 12)).map((sector) => (
+                  <button
+                    key={sector.id}
+                    onClick={() => {
+                      setPrompt(`I want to build something in ${sector.name}`);
+                    }}
+                    className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-normal text-gray-600 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
+                  >
+                    {sector.name}
+                  </button>
+                ))}
+               </div>
+               {sectors.length > 12 && (
+                 <div className="flex justify-center mt-4">
+                   <Button 
+                     variant="ghost" 
+                     onClick={() => setShowAllPrompts(!showAllPrompts)}
+                     className="text-gray-500 hover:text-gray-700 flex items-center gap-1.5 rounded-full text-xs"
+                   >
+                     {showAllPrompts ? 'Show Less' : 'Show More'}
+                     {showAllPrompts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                   </Button>
+                 </div>
+               )}
+            </div>
+
+            {/* Bottom Fixed Input Box */}
+            <div className="absolute bottom-0 left-0 right-0 pt-12 pb-4 px-2 flex flex-col items-center">
+              <p className="text-sm text-gray-500 mb-3 font-medium">Or, write your own problem</p>
+              
+              <div className="w-full max-w-3xl relative">
+                 {/* PDF Preview */}
                 {uploadedPdfs.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {uploadedPdfs.map((file, idx) => (
@@ -394,79 +452,59 @@ export function WorkspacePage() {
                     ))}
                   </div>
                 )}
-
-                <div className="relative">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => {
-                      setPrompt(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-                    }}
-                    placeholder="Describe your idea or choose a sector below..."
-                    className="w-full bg-white border border-gray-200 rounded-2xl p-4 pl-12 pr-16 text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none min-h-[60px] max-h-[200px] shadow-sm transition-shadow"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleGenerate();
-                      }
-                    }}
-                  />
-                  
-                  {/* Paperclip Button */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute left-3 bottom-3 w-10 h-10 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors"
-                    disabled={isProcessingPdf}
-                  >
-                    {isProcessingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handlePdfUpload}
-                    className="hidden"
-                    accept="application/pdf"
-                    multiple
-                  />
-
-                  {/* Submit Arrow */}
-                  <button
-                    onClick={() => handleGenerate()}
-                    disabled={!prompt.trim() && uploadedPdfs.length === 0}
-                    className="absolute right-3 bottom-3 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#1f2438] transition-colors"
-                  >
-                    <ArrowUp className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content Separation */}
-              <div className="w-full max-w-3xl my-2">
-                <Separator />
-              </div>
-
-              {/* Suggestions - Separate div centered and widened to parent container boundaries perfectly */}
-              <div className="w-full pt-1">
-                <p className="text-xs text-gray-500 text-center mb-3">Or, use our pre-written prompts</p>
-                <div className="flex flex-wrap justify-center gap-1.5 px-2">
-                  {sectors.map((sector) => (
-                    <button
-                      key={sector.id}
-                      onClick={() => {
-                        setPrompt(`I want to build something in ${sector.name}`);
-                      }}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors shadow-sm"
+                 
+                 <div className="flex items-end gap-2 bg-white border border-gray-200 rounded-2xl p-2 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent">
+                   
+                   {/* Upload Icon */}
+                   <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-10 h-10 shrink-0 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors mb-0.5"
+                      disabled={isProcessingPdf}
                     >
-                      {sector.name}
+                      {isProcessingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
                     </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handlePdfUpload}
+                      className="hidden"
+                      accept="application/pdf"
+                      multiple
+                    />
 
-          {isProfileIncomplete && (
+                   <textarea
+                      value={prompt}
+                      onChange={(e) => {
+                        setPrompt(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                      }}
+                      placeholder="Describe your idea..."
+                      className="w-full bg-transparent text-lg focus:outline-none resize-none py-2 max-h-[120px] self-center"
+                      rows={1}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleGenerate();
+                        }
+                      }}
+                    />
+
+                    {/* Submit Arrow */}
+                    <button
+                      onClick={() => handleGenerate()}
+                      disabled={!prompt.trim() && uploadedPdfs.length === 0}
+                      className="w-10 h-10 shrink-0 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#1f2438] transition-colors mb-0.5"
+                    >
+                      <ArrowUp className="w-5 h-5" />
+                    </button>
+
+                 </div>
+              </div>
+            </div>
+          </div>
+          
+          {!projectType && isProfileIncomplete && (
             <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 cursor-pointer hover:bg-gray-100 transition mt-4" onClick={() => navigate('/profile')}>
               <User className="w-4 h-4" />
               <span>Complete your profile for better AI matching</span>

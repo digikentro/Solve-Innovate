@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { FiSend, FiAlertTriangle, FiLoader } from 'react-icons/fi';
+import { FiAlertTriangle, FiLoader } from 'react-icons/fi';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { CheckCircle } from '@hugeicons/core-free-icons';
 
 const SearchPage: React.FC = () => {
   const [input, setInput] = useState('');
@@ -371,7 +373,7 @@ const SearchPage: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <FiSend className="w-4 h-4" />
+                    <HugeiconsIcon icon={CheckCircle} />
                     Validate Idea
                   </>
                 )}

@@ -194,7 +194,7 @@ export const ExtremeUserReportViewer = ({ data, onGenerateNew, projectId, onSave
                     type="button"
                     onClick={handleCancel}
                     disabled={isSaving}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
                   >
                     Discard
                   </button>
