@@ -43,4 +43,6 @@ export interface Project {
     assistant: string;
     generated_at: string;
   }> | null;
+  chatbox_extreuser?: any;
+  chatbox_audio_users?: any;
 }

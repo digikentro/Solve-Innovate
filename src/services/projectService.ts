@@ -590,4 +590,170 @@ export class ProjectService {
 
     if (error) console.error('Failed to merge chatbox_extreuser:', error);
   }
+
+  /**
+   * Upload audio file to Supabase storage
+   */
+  static async uploadAudioFile(file: File, projectId: string, userId: string): Promise<string> {
+    const context: ErrorContext = {
+      operation: 'upload_audio_file',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${projectId}/${Date.now()}.${fileExt}`;
+        const buffer = await file.arrayBuffer();
+        
+        const { data, error } = await supabase.storage
+          .from('audio_uploads')
+          .upload(fileName, buffer, { 
+            upsert: true,
+            contentType: file.type || 'audio/mpeg'
+          });
+
+        if (error) {
+          throw new Error('Unable to upload audio. Please try again.');
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('audio_uploads')
+          .getPublicUrl(fileName);
+
+        return publicUrl;
+      },
+      context
+    );
+  }
+
+  /**
+   * Get the full multi-user audio user map from chatbox_audio_users.
+   */
+  static async getAudioUserMap(
+    projectId: string,
+    userId: string
+  ): Promise<Record<string, { name: string; created_at: string; messages: Array<{ user: string; assistant: string; generated_at: string }> }>> {
+    const context: ErrorContext = {
+      operation: 'get_audio_user_map',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_audio_users')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') return {};
+          throw new Error('Unable to load audio user map. Please try again.');
+        }
+
+        const raw = data?.chatbox_audio_users;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+        return raw as Record<string, any>;
+      },
+      context
+    );
+  }
+
+  /**
+   * Merge one audio-user chat thread into chatbox_audio_users.
+   */
+  static async mergeAudioUserChatboxThread(
+    projectId: string,
+    userId: string,
+    threadKey: string,
+    entry: { name: string; persona_summary: string; created_at?: string; messages?: Array<{ user: string; assistant: string; generated_at: string }> }
+  ): Promise<void> {
+    if (!threadKey) return;
+
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('chatbox_audio_users')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch chatbox_audio_users:', fetchError);
+      return;
+    }
+
+    let map: Record<string, any> = {};
+    const raw = row?.chatbox_audio_users;
+    if (raw) {
+      try {
+        map = typeof raw === 'string' ? JSON.parse(raw) : { ...(raw as object) };
+      } catch { map = {}; }
+    }
+    if (typeof map !== 'object' || map === null || Array.isArray(map)) map = {};
+
+    const existing = map[threadKey];
+    const created = entry.created_at || new Date().toISOString();
+    map[threadKey] = {
+      ...(typeof existing === 'object' && existing ? existing : {}),
+      name: entry.name,
+      persona_summary: entry.persona_summary,
+      created_at: (existing as { created_at?: string })?.created_at || created,
+      messages: entry.messages || (Array.isArray((existing as { messages?: unknown })?.messages)
+        ? (existing as { messages: unknown[] }).messages
+        : []),
+    };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        chatbox_audio_users: map,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to merge chatbox_audio_users:', error);
+  }
+
+  static async getProjectChatboxAudioHistory(
+    projectId: string,
+    userId: string,
+    userKey?: string
+  ): Promise<Array<{ user: string; assistant: string; generated_at: string }>> {
+    const context: ErrorContext = {
+      operation: 'get_project_chatbox_audio_history',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_audio_users')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') throw new Error('Project not found');
+          throw new Error('Unable to load audio chat history. Please try again.');
+        }
+
+        const raw = data?.chatbox_audio_users;
+        if (!raw) return [];
+
+        if (userKey && typeof raw === 'object' && !Array.isArray(raw) && raw[userKey]) {
+          return raw[userKey].messages ?? [];
+        }
+
+        return [];
+      },
+      context
+    );
+  }
 }

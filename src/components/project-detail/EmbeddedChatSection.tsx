@@ -8,11 +8,15 @@ import {
   FiX,
   FiInfo,
   FiRefreshCw,
+  FiMic,
+  FiUploadCloud,
 } from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
 import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
 import { Input } from '@/components/ui/input';
+import { buttonVariants } from '@/components/ui/button';
 import { postN8nWebhook } from '@/services/n8nWebhook';
+import { CheckCheck } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,7 +44,7 @@ interface CustomExtremeUser {
   description: string;
 }
 
-type ActiveThread = null | { kind: 'extreme'; key: string } | { kind: 'provided' };
+type ActiveThread = null | { kind: 'extreme'; key: string } | { kind: 'provided' } | { kind: 'audio'; key: string };
 
 interface EmbeddedChatSectionProps {
   projectId: string;
@@ -107,11 +111,20 @@ function mergePreferLongerHistory(local: ChatMessage[], fromServer: ChatMessage[
 
 // ─── Primary button (matches AsIsMapReportViewer) ───────────────────────────
 
-const btnPrimary =
-  'rounded-lg bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50';
+const btnPrimary = buttonVariants({ variant: "default", size: "sm" });
 
-const btnOutline =
-  'rounded-lg border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50';
+const btnOutline = buttonVariants({ variant: "outline", size: "sm" });
+
+const dotColors = [
+  'bg-blue-500',
+  'bg-green-500',
+  'bg-purple-500',
+  'bg-yellow-500',
+  'bg-orange-500',
+  'bg-cyan-500',
+  'bg-teal-500',
+  'bg-indigo-500',
+];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -137,6 +150,19 @@ export const EmbeddedChatSection = ({
       return tb - ta;
     });
   }, [extremeUserMap]);
+
+  const audioUserMap = useMemo<ExtremeUserMap>(
+    () => parseExtremeUserMap(project?.chatbox_audio_users),
+    [project?.chatbox_audio_users]
+  );
+
+  const sortedAudioKeys = useMemo(() => {
+    return Object.keys(audioUserMap).sort((a, b) => {
+      const ta = new Date(audioUserMap[a]?.created_at || 0).getTime();
+      const tb = new Date(audioUserMap[b]?.created_at || 0).getTime();
+      return tb - ta;
+    });
+  }, [audioUserMap]);
 
   const researchExtremeMeta = useMemo(() => {
     if (!project?.research_data) return { threadKey: undefined as string | undefined, chatExtremeUser: '' };
@@ -165,6 +191,9 @@ export const EmbeddedChatSection = ({
   const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
   const [isPersonaInfoOpen, setIsPersonaInfoOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState<'provided' | null>(null);
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
 
   const [customUser, setCustomUser] = useState<CustomExtremeUser>({
     name: '',
@@ -215,6 +244,28 @@ export const EmbeddedChatSection = ({
     [projectId, effectiveUserId, extremeUserMap]
   );
 
+  const loadAudioThreadMessages = useCallback(
+    async (key: string) => {
+      try {
+        const rows = await ProjectService.getProjectChatboxAudioHistory(
+          projectId,
+          effectiveUserId,
+          key
+        );
+        if (rows.length > 0) {
+          setMessages(messagesFromRows(rows));
+          return;
+        }
+        const entry = audioUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      } catch {
+        const entry = audioUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      }
+    },
+    [projectId, effectiveUserId, audioUserMap]
+  );
+
   useEffect(() => {
     if (!activeThread) {
       setMessages([]);
@@ -222,6 +273,10 @@ export const EmbeddedChatSection = ({
     }
     if (activeThread.kind === 'extreme') {
       void loadExtremeThreadMessages(activeThread.key);
+      return;
+    }
+    if (activeThread.kind === 'audio') {
+      void loadAudioThreadMessages(activeThread.key);
       return;
     }
     if (activeThread.kind === 'provided') {
@@ -274,6 +329,58 @@ export const EmbeddedChatSection = ({
     setActiveThread({ kind: 'provided' });
   };
 
+  const enterAudioChat = (key: string) => {
+    setActiveThread({ kind: 'audio', key });
+  };
+
+  const handleAudioUploadSubmit = async () => {
+    if (!audioFile || !effectiveUserId) return;
+    setIsUploadingAudio(true);
+    try {
+      const audioUrl = await ProjectService.uploadAudioFile(audioFile, projectId, effectiveUserId);
+      const res = await postN8nWebhook('https://n8n.srv922914.hstgr.cloud/webhook/process_audio_conversation', {
+        project_id: projectId,
+        audio_url: audioUrl,
+        user_id: effectiveUserId
+      });
+      if (!res.ok) throw new Error(`Audio processing failed: HTTP ${res.status}`);
+
+      const raw = await res.text();
+      if (!raw.trim()) {
+        throw new Error(
+          'Audio workflow returned an empty response. Check that the n8n workflow is active and reaches the Respond to Webhook node.'
+        );
+      }
+
+      let data: { thread_key?: string; error?: string };
+      try {
+        data = JSON.parse(raw) as { thread_key?: string; error?: string };
+      } catch {
+        throw new Error(`Invalid JSON from audio workflow: ${raw.slice(0, 200)}`);
+      }
+
+      console.log('Audio workflow response:', data);
+
+      if (data.error) throw new Error(data.error);
+      if (!data.thread_key) {
+        throw new Error('n8n workflow did not return thread_key. Response: ' + raw);
+      }
+      
+      setIsAudioModalOpen(false);
+      setAudioFile(null);
+
+      // n8n directly updated the Supabase row. We just tell the frontend to refresh
+      // and immediately open the chat thread that n8n created.
+      await Promise.resolve(onRefreshProject?.());
+      setActiveThread({ kind: 'audio', key: data.thread_key });
+    } catch (e) {
+      console.error('Audio upload error:', e);
+      alert(`Failed to process audio file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
+      setIsUploadingAudio(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isTyping || !activeThread) return;
 
@@ -296,17 +403,18 @@ export const EmbeddedChatSection = ({
 
     try {
       let webhookUrl: string;
+      const threadKey = 'key' in activeThread ? activeThread.key : 'provided';
       const requestBody: Record<string, any> = {
         project_id: projectId,
         user: text,
-        user_id: activeThread.key,
-        user_name: activeThread.key, // Fallback, updated below
+        user_id: threadKey,
+        user_name: threadKey, // Fallback, updated below
       };
 
-      if (activeThread.kind === 'extreme') {
+      if (activeThread.kind === 'extreme' || activeThread.kind === 'audio') {
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_extreuser';
         const key = activeThread.key;
-        const entry = extremeUserMap[key] as ExtremeUserEntry | undefined;
+        const entry = activeThread.kind === 'audio' ? audioUserMap[key] : extremeUserMap[key] as ExtremeUserEntry | undefined;
         requestBody.extreme_user_key = key;
         requestBody.extremeUserKey = key;
         requestBody.extreme_user_id = key;
@@ -352,6 +460,14 @@ export const EmbeddedChatSection = ({
 
       if (activeThread.kind === 'extreme') {
         const rows = await ProjectService.getProjectChatboxExtreUserHistory(
+          projectId,
+          effectiveUserId,
+          activeThread.key
+        );
+        const fromServer = messagesFromRows(rows);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      } else if (activeThread.kind === 'audio') {
+        const rows = await ProjectService.getProjectChatboxAudioHistory(
           projectId,
           effectiveUserId,
           activeThread.key
@@ -432,13 +548,15 @@ export const EmbeddedChatSection = ({
   };
 
   const activeEntry =
-    activeThread?.kind === 'extreme' && activeThread.key
-      ? (extremeUserMap[activeThread.key] ?? null)
+    (activeThread?.kind === 'extreme' || activeThread?.kind === 'audio') && activeThread.key
+      ? ((activeThread.kind === 'audio' ? audioUserMap[activeThread.key] : extremeUserMap[activeThread.key]) ?? null)
       : null;
 
   const activeUserLabel =
     activeThread?.kind === 'extreme'
       ? activeEntry?.name || activeThread.key || 'AI user'
+      : activeThread?.kind === 'audio'
+      ? activeEntry?.name || activeThread.key || 'Audio Persona'
       : activeThread?.kind === 'provided'
         ? savedProvidedUser
           ? savedProvidedUser.name
@@ -466,9 +584,9 @@ export const EmbeddedChatSection = ({
     (!activeThread.key || activeThread.key === 'undefined' || activeThread.key.startsWith('temp_'));
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex h-[calc(100vh-100px)] min-h-[600px] flex-col gap-3 overflow-hidden">
       {/* Page header — tighter spacing to chat shell */}
-      <div className="flex flex-col gap-2 border-b border-gray-100 pb-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-gray-100 pb-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
         <div className="min-w-0 text-left">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
             Interact with User
@@ -477,31 +595,59 @@ export const EmbeddedChatSection = ({
             Chat with AI users or provide your own
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
-          <button type="button" onClick={() => setIsCustomUserModalOpen(true)} className={btnPrimary}>
-            Provide Your Own User
+        <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
+          <button
+            type="button"
+            onClick={() => setIsSelectUserModalOpen(true)}
+            className={btnPrimary}
+          >
+            <span className="inline-flex items-center gap-2">
+              <FiUsers className="size-4" />
+              New AI user
+            </span>
+          </button>
+          {!savedProvidedUser ? (
+            <button
+              type="button"
+              onClick={() => setIsCustomUserModalOpen(true)}
+              className={btnPrimary}
+            >
+              <span className="inline-flex items-center gap-2">
+                <FiUserPlus className="size-4" />
+                Provide Your Own User
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmClear('provided')}
+              className={btnPrimary}
+            >
+              <span className="inline-flex items-center gap-2">
+                <FiRefreshCw className="size-4" />
+                Replace saved user
+              </span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsAudioModalOpen(true)}
+            className={btnPrimary}
+          >
+             <span className="inline-flex items-center gap-2">
+              <FiMic className="size-4" />
+              Upload Audio Conversation
+            </span>
           </button>
         </div>
       </div>
 
       {/* Master–detail shell */}
-      <div className="flex min-h-[min(75vh,720px)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex-row">
         {/* Conversation list */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-gray-100 bg-white lg:w-[280px] lg:border-b-0 lg:border-r">
-          <div className="border-b border-gray-100 p-4">
-            <button
-              type="button"
-              onClick={() => setIsSelectUserModalOpen(true)}
-              className={`${btnPrimary} w-full`}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <FiUsers className="size-4" />
-                New AI user
-              </span>
-            </button>
-          </div>
+        <aside className="flex w-full shrink-0 flex-col overflow-hidden border-b border-gray-100 bg-white lg:w-[280px] lg:border-b-0 lg:border-r">
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <p className="px-2 pb-2 pl-3 pt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
               Conversations
             </p>
             {sortedUserKeys.length === 0 && !savedProvidedUser && (
@@ -511,7 +657,7 @@ export const EmbeddedChatSection = ({
               </p>
             )}
             <ul className="flex flex-col gap-1.5">
-              {sortedUserKeys.map(key => {
+              {sortedUserKeys.map((key, index) => {
                 const entry = extremeUserMap[key];
                 const isActive = activeThread?.kind === 'extreme' && activeThread.key === key;
                 const count = entry?.messages?.length ?? 0;
@@ -526,8 +672,39 @@ export const EmbeddedChatSection = ({
                           : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
                       }`}
                     >
-                      <span className="line-clamp-2">{entry?.name || `User ${key.slice(0, 8)}`}</span>
-                      <span className="mt-1 block text-xs font-normal text-gray-500">
+                      <span className="line-clamp-2 flex items-center gap-2">
+                        <span className={`size-2.5 shrink-0 rounded-full ${dotColors[index % dotColors.length]}`} />
+                        {entry?.name || `User ${key.slice(0, 8)}`}
+                      </span>
+                      <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
+                        {count === 0 ? 'No messages yet' : `${count} exchange${count !== 1 ? 's' : ''}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {sortedAudioKeys.map((key, index) => {
+                const entry = audioUserMap[key];
+                const isActive = activeThread?.kind === 'audio' && activeThread.key === key;
+                const count = entry?.messages?.length ?? 0;
+                const dotColor = dotColors[(index + sortedUserKeys.length) % dotColors.length];
+                return (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      onClick={() => enterAudioChat(key)}
+                      className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'border-gray-900 bg-gray-50 text-gray-900'
+                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="line-clamp-2 flex items-center gap-2">
+                        <span className={`size-2.5 shrink-0 rounded-full ${dotColor}`} />
+                        <FiMic className="size-4 shrink-0 text-gray-600" />
+                        {entry?.name || `Audio ${key.slice(0, 8)}`}
+                      </span>
+                      <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
                         {count === 0 ? 'No messages yet' : `${count} exchange${count !== 1 ? 's' : ''}`}
                       </span>
                     </button>
@@ -546,10 +723,11 @@ export const EmbeddedChatSection = ({
                     }`}
                   >
                     <span className="line-clamp-2 flex items-center gap-2">
+                      <span className={`size-2.5 shrink-0 rounded-full ${dotColors[(sortedUserKeys.length + sortedAudioKeys.length) % dotColors.length]}`} />
                       <FiUserPlus className="size-4 shrink-0 text-gray-600" />
                       {savedProvidedUser.name}
                     </span>
-                    <span className="mt-1 block text-xs font-normal text-gray-500">
+                    <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
                       {savedProvidedUser.age} · {savedProvidedUser.location}
                     </span>
                   </button>
@@ -557,32 +735,10 @@ export const EmbeddedChatSection = ({
               )}
             </ul>
           </div>
-          {!savedProvidedUser && (
-            <div className="border-t border-gray-100 p-3">
-              <button type="button" onClick={() => setIsCustomUserModalOpen(true)} className={`${btnOutline} w-full`}>
-                <span className="inline-flex items-center justify-center gap-2">
-                  <FiUserPlus className="size-4" />
-                  Add your own user
-                </span>
-              </button>
-            </div>
-          )}
-          {savedProvidedUser && (
-            <div className="border-t border-gray-100 p-3">
-              <button
-                type="button"
-                onClick={() => setConfirmClear('provided')}
-                className={`${btnOutline} flex w-full items-center justify-center gap-2 text-gray-600`}
-              >
-                <FiRefreshCw className="size-4" />
-                Replace saved user
-              </button>
-            </div>
-          )}
         </aside>
 
         {/* Chat pane */}
-        <div className="flex min-h-[420px] min-w-0 flex-1 flex-col bg-white">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
           {!showRightPane ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-16 text-center">
               <div className="flex size-14 items-center justify-center rounded-2xl bg-gray-100">
@@ -644,13 +800,18 @@ export const EmbeddedChatSection = ({
                         className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[min(100%,520px)] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                          className={`relative max-w-[min(100%,520px)] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                             msg.isUser
-                              ? 'bg-gray-900 text-white'
-                              : 'border border-gray-200 bg-white text-gray-900'
+                              ? 'bg-gray-200 text-gray-900 rounded-br-sm'
+                              : 'bg-white text-gray-900 border border-gray-200 rounded-bl-sm'
                           }`}
                         >
-                          {msg.text}
+                          <div className={msg.isUser ? 'pr-5' : ''}>{msg.text}</div>
+                          {msg.isUser && (
+                            <div className="absolute bottom-1 right-2 flex items-center justify-end">
+                              <CheckCheck className="size-4 text-green-500" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
@@ -658,7 +819,7 @@ export const EmbeddedChatSection = ({
 
                   {isTyping && (
                     <div className="flex justify-start">
-                      <div className="flex max-w-[min(100%,520px)] items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+                      <div className="flex max-w-[min(100%,520px)] items-center gap-2 rounded-2xl rounded-bl-sm border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
                         <div className="flex gap-1">
                           {[0, 0.15, 0.3].map((delay, i) => (
                             <div
@@ -929,6 +1090,69 @@ export const EmbeddedChatSection = ({
             <div className="border-t border-gray-100 px-6 py-4">
               <button type="button" onClick={() => setIsPersonaInfoOpen(false)} className={`${btnOutline} w-full`}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAudioModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upload Real-World Conversation</h3>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Provide an audio recording of your interview
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAudioModalOpen(false)}
+                  className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-gray-100"
+                  aria-label="Close"
+                  disabled={isUploadingAudio}
+                >
+                  <FiX className="size-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50">
+                <FiUploadCloud className="size-8 text-gray-400 mb-3" />
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={e => setAudioFile(e.target.files?.[0] || null)}
+                  className="mb-2 w-full max-w-xs text-sm"
+                  disabled={isUploadingAudio}
+                />
+                <p className="text-xs text-gray-500 text-center">Supports MP3, WAV, M4A up to 50MB</p>
+              </div>
+              {isUploadingAudio && (
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <FiRefreshCw className="size-4 animate-spin" />
+                  <span>Uploading and analyzing audio — this may take 1–2 minutes...</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setIsAudioModalOpen(false)}
+                className={btnOutline}
+                disabled={isUploadingAudio}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleAudioUploadSubmit()}
+                disabled={!audioFile || isUploadingAudio}
+                className={btnPrimary}
+              >
+                {isUploadingAudio ? 'Processing...' : 'Upload & Start Chat'}
               </button>
             </div>
           </div>
