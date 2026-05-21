@@ -1,6 +1,11 @@
 export interface Project {
   id: string;
   title: string;
+  /**
+   * User-editable sidebar/project label.
+   * Defaults to `title` when not customized.
+   */
+  display_name?: string | null;
   description: string;
   status: string;
   skills?: string[] | null;
@@ -11,6 +16,7 @@ export interface Project {
   as_is_map?: any;
   extreme_user_data?: any;
   deep_empathy_data?: any;
+  secondaryresearch?: any;
   psychological_analysis?: any;
   Behaviour_Framework?: any;
   HMW_Ideation_Framework?: any;
@@ -20,6 +26,7 @@ export interface Project {
   prototype_images?: any; // Stores generated prototype sketch metadata/url
   testing?: any; // Stores testing analysis data
   market_research?: any; // Stores market research data
+  presentation_id?: string | null; // ID linking to generated markdown presentation
   research_data?: any;
   canvas?: any;
   metadata?: any;
@@ -36,4 +43,6 @@ export interface Project {
     assistant: string;
     generated_at: string;
   }> | null;
+  chatbox_extreuser?: any;
+  chatbox_audio_users?: any;
 }

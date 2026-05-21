@@ -1,8 +1,12 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiSearch, FiLoader } from 'react-icons/fi';
+import { Loader2 } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { MarketResearchReportViewer } from './MarketResearchReportViewer';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface MarketSearchSectionProps {
     project: Project;
@@ -70,31 +74,44 @@ export const MarketSearchSection = ({
         let designStage = 'Early Concept';
         if (project.prototype_images) {
             try {
-                const protoImages = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
+                let protoImages = project.prototype_images;
+                if (typeof project.prototype_images === 'string') {
+                    let cleanString = project.prototype_images.trim();
+                    if (!cleanString.startsWith('{') && !cleanString.startsWith('[')) {
+                        cleanString = `{${cleanString}}`;
+                    }
+                    protoImages = JSON.parse(cleanString);
+                }
+                
                 if (protoImages?.image) {
                     designStage = 'Refined Prototype';
                 } else if (protoImages?.sketch) {
                     designStage = 'Rough Prototype';
                 }
             } catch (e) {
-                console.error('Failed to parse prototype_images', e);
+                console.warn('Failed to parse prototype_images', e);
             }
         }
 
         let prototypeArtifacts: { sketch?: string; image?: string } = {};
         if (project.prototype_images) {
             try {
-                const parsed = typeof project.prototype_images === 'string'
-                    ? JSON.parse(project.prototype_images)
-                    : project.prototype_images;
+                let parsed = project.prototype_images;
+                if (typeof project.prototype_images === 'string') {
+                    // Fix potentially malformed JSON string (e.g. using single quotes or unescaped values)
+                    let cleanString = project.prototype_images.trim();
+                    if (!cleanString.startsWith('{') && !cleanString.startsWith('[')) {
+                        cleanString = `{${cleanString}}`; // Attempt to wrap if it's missing brackets
+                    }
+                    parsed = JSON.parse(cleanString);
+                }
+                
                 prototypeArtifacts = {
                     sketch: parsed?.sketch,
                     image: parsed?.image,
                 };
             } catch (e) {
-                console.error('Failed to parse prototype_images', e);
+                console.warn('Failed to parse prototype_images', e);
             }
         }
 
@@ -143,25 +160,29 @@ export const MarketSearchSection = ({
 
             console.log('Market Search Request Body:', requestBody);
 
-            const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook-test/marketrearch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
+            const webhookUrl =
+                import.meta.env.VITE_N8N_MARKET_RESEARCH_WEBHOOK?.trim() ||
+                'https://n8n.srv922914.hstgr.cloud/webhook/marketrearch';
+
+            const response = await postN8nWebhook(webhookUrl, requestBody);
+            const responseText = await response.text();
 
             if (!response.ok) {
-                console.error('API Response not ok:', response.status, response.statusText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let detail = `${response.status} ${response.statusText}`.trim();
+                try {
+                    const errBody = JSON.parse(responseText) as { message?: string };
+                    if (errBody?.message) detail = errBody.message;
+                } catch {
+                    if (responseText?.trim()) detail = responseText.trim().slice(0, 300);
+                }
+                console.error('Market research webhook error:', response.status, detail, responseText);
+                throw new Error(detail);
             }
 
             let data = null;
             try {
-                const text = await response.text();
-                if (text && text.trim()) {
-                    data = JSON.parse(text);
+                if (responseText && responseText.trim()) {
+                    data = JSON.parse(responseText);
                 }
             } catch (parseError) {
                 console.log('Response parsing skipped or empty response');
@@ -176,7 +197,8 @@ export const MarketSearchSection = ({
             }
         } catch (error) {
             console.error('Error generating market research:', error);
-            toast.error('Failed to generate market research. Please try again.');
+            const msg = error instanceof Error && error.message ? error.message : 'Failed to generate market research. Please try again.';
+            toast.error(msg.length > 160 ? `${msg.slice(0, 157)}…` : msg);
         } finally {
             setIsGenerating(false);
         }
@@ -189,7 +211,7 @@ export const MarketSearchSection = ({
     // Show results if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
+            <div className="animate-fadeIn">
                 <MarketResearchReportViewer
                     data={marketSearchData}
                     onGenerateNew={handleGenerateNew}
@@ -200,39 +222,41 @@ export const MarketSearchSection = ({
 
     // Show generate button only
     return (
-        <div className="space-y-6">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-3xl shadow-lg p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-start gap-3">
-                        <div className="p-3 rounded-2xl bg-white/10">
-                            <FiSearch className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Market Search</h2>
-                            <p className="text-sm text-emerald-100 mt-1">
-                                Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project.
-                            </p>
-                        </div>
-                    </div>
-                    <button
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <FiSearch className="size-5 shrink-0 text-gray-400" />
+                    Market Search
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Comprehensive market research generation
+                </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+                <p className="text-sm leading-relaxed text-gray-600">
+                    Generate comprehensive market research based on your project data. All relevant information will be automatically extracted from your project insights, testing scenarios, and prototype details.
+                </p>
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className="px-8 py-4 bg-white text-emerald-700 font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
                     >
                         {isGenerating ? (
                             <>
-                                <FiLoader className="w-5 h-5 animate-spin" />
+                                <Loader2 className="mr-2 size-4 animate-spin" />
                                 Generating...
                             </>
                         ) : (
                             <>
-                                <FiSearch className="w-5 h-5" />
+                                <FiSearch className="mr-2 size-4" />
                                 Generate Market Research
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 };

@@ -23,7 +23,7 @@ export const VerticalModal: React.FC<ModalProps> = ({ open, onClose, children, c
   if (!open) return null;
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-40" onClick={onClose}>
-      <div className={`bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative animate-fade-in ${className || ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-white rounded-md shadow-lg max-w-2xl w-full p-6 relative animate-fade-in ${className || ''}`} onClick={(e) => e.stopPropagation()}>
         <button
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl font-bold focus:outline-none"
           onClick={onClose}
@@ -43,7 +43,7 @@ export const HorizontalModal: React.FC<ModalProps> = ({ open, onClose, children,
   if (!open) return null;
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-40" onClick={onClose}>
-      <div className={`bg-white rounded-lg shadow-lg max-w-5xl w-full p-6 relative animate-fade-in ${className || ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-white rounded-md shadow-lg max-w-5xl w-full p-6 relative animate-fade-in ${className || ''}`} onClick={(e) => e.stopPropagation()}>
         <button
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl font-bold focus:outline-none"
           onClick={onClose}

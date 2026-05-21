@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: solve-innovate-backend
+    env: docker
+    rootDir: fastapi
+    plan: free # or starter
+    healthCheckPath: /docs
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: USE_DATABASE_URL_FOR_SQL_WRITES
+        value: "true"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://solve-innovate-v3.onrender.com
+      - key: LLM
+        value: openai
+      - key: IMAGE_PROVIDER
+        value: dall-e-3
+      - key: APP_DATA_DIRECTORY
+        value: /app/app_data
+
+  - type: web
+    name: solve-innovate-frontend
+    runtime: static
+    rootDir: .
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_PPT_API_URL
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

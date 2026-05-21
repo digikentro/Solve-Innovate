@@ -42,6 +42,8 @@ export class ProjectService {
             .from('projects')
             .insert([{
               ...sanitizedData,
+              // Always initialize sidebar display name to the HMW/title unless explicitly provided.
+              display_name: (sanitizedData as any)?.display_name ?? (sanitizedData as any)?.title,
               user_id: userId,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -354,12 +356,13 @@ export class ProjectService {
 
   /**
    * Get chat history for a project (Select the User / Extreme User flow)
+   * Supports both the old flat-array format and the new keyed multi-user map.
    */
-  static async getProjectChatboxExtreUserHistory(projectId: string, userId: string): Promise<Array<{
-    user: string;
-    assistant: string;
-    generated_at: string;
-  }>> {
+  static async getProjectChatboxExtreUserHistory(
+    projectId: string,
+    userId: string,
+    userKey?: string
+  ): Promise<Array<{ user: string; assistant: string; generated_at: string }>> {
     const context: ErrorContext = {
       operation: 'get_project_chatbox_extre_user_history',
       userId,
@@ -376,14 +379,58 @@ export class ProjectService {
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
-            throw new Error('Project not found');
-          }
+          if (error.code === 'PGRST116') throw new Error('Project not found');
           throw new Error('Unable to load chat history. Please try again.');
         }
 
-        // Return the chatbox_extreuser data or empty array if null
-        return data?.chatbox_extreuser || [];
+        const raw = data?.chatbox_extreuser;
+        if (!raw) return [];
+
+        // New keyed map format: { user_abc123: { name, created_at, messages: [...] } }
+        if (userKey && typeof raw === 'object' && !Array.isArray(raw) && raw[userKey]) {
+          return raw[userKey].messages ?? [];
+        }
+
+        // Old flat-array format: [{ user, assistant, generated_at }]
+        if (Array.isArray(raw)) return raw;
+
+        return [];
+      },
+      context
+    );
+  }
+
+  /**
+   * Get the full multi-user extreme user map from chatbox_extreuser.
+   * Returns a Record<userKey, { name, created_at, messages }> or {}.
+   */
+  static async getExtremeUserMap(
+    projectId: string,
+    userId: string
+  ): Promise<Record<string, { name: string; created_at: string; messages: Array<{ user: string; assistant: string; generated_at: string }> }>> {
+    const context: ErrorContext = {
+      operation: 'get_extreme_user_map',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_extreuser')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') return {};
+          throw new Error('Unable to load user map. Please try again.');
+        }
+
+        const raw = data?.chatbox_extreuser;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+        return raw as Record<string, any>;
       },
       context
     );
@@ -428,8 +475,14 @@ export class ProjectService {
 
   /**
    * Save selected extreme user summary into research_data JSONB column
+   * @param extremeUserThreadKey stable key under chatbox_extreuser (eu_…) for n8n / UI correlation
    */
-  static async saveChatExtremeUser(projectId: string, userId: string, data: string | null): Promise<void> {
+  static async saveChatExtremeUser(
+    projectId: string,
+    userId: string,
+    data: string | null,
+    extremeUserThreadKey?: string | null
+  ): Promise<void> {
     // Fetch current research_data first
     const { data: row, error: fetchError } = await supabase
       .from('projects')
@@ -451,8 +504,10 @@ export class ProjectService {
         : (row?.research_data || {});
     } catch { existing = {}; }
 
-    // Merge chatExtremeUser key
-    const merged = { ...existing, chatExtremeUser: data };
+    const merged: Record<string, any> = { ...existing, chatExtremeUser: data };
+    if (extremeUserThreadKey !== undefined && extremeUserThreadKey !== null) {
+      merged.chatExtremeUserThreadKey = extremeUserThreadKey;
+    }
 
     const { error } = await supabase
       .from('projects')
@@ -461,5 +516,244 @@ export class ProjectService {
       .eq('user_id', userId);
 
     if (error) console.error('Failed to save chatExtremeUser into research_data:', error);
+  }
+
+  /**
+   * Merge one extreme-user chat thread into chatbox_extreuser (read–modify–write).
+   * Preserves other threads and messages on the same key.
+   * Moves legacy bucket key "undefined" (string) to eu_migrated_* so n8n stops collapsing chats.
+   */
+  static async mergeExtremeUserChatboxThread(
+    projectId: string,
+    userId: string,
+    threadKey: string,
+    entry: { name: string; persona_summary: string; created_at?: string }
+  ): Promise<void> {
+    if (!threadKey || threadKey === 'undefined') {
+      console.error('mergeExtremeUserChatboxThread: invalid threadKey');
+      return;
+    }
+
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('chatbox_extreuser')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch chatbox_extreuser:', fetchError);
+      return;
+    }
+
+    let map: Record<string, any> = {};
+    const raw = row?.chatbox_extreuser;
+    if (raw) {
+      try {
+        map = typeof raw === 'string' ? JSON.parse(raw) : { ...(raw as object) };
+      } catch {
+        map = {};
+      }
+    }
+    if (typeof map !== 'object' || map === null || Array.isArray(map)) map = {};
+
+    if (Object.prototype.hasOwnProperty.call(map, 'undefined')) {
+      const orphan = map.undefined as Record<string, unknown> | undefined;
+      delete map.undefined;
+      const legacyKey = `eu_migrated_${Date.now()}`;
+      map[legacyKey] = {
+        ...(typeof orphan === 'object' && orphan ? orphan : {}),
+        name: (orphan as { name?: string })?.name || 'Migrated chat',
+      };
+    }
+
+    const existing = map[threadKey];
+    const created = entry.created_at || new Date().toISOString();
+    map[threadKey] = {
+      ...(typeof existing === 'object' && existing ? existing : {}),
+      name: entry.name,
+      persona_summary: entry.persona_summary,
+      created_at: (existing as { created_at?: string })?.created_at || created,
+      messages: Array.isArray((existing as { messages?: unknown })?.messages)
+        ? (existing as { messages: unknown[] }).messages
+        : [],
+    };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        chatbox_extreuser: map,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to merge chatbox_extreuser:', error);
+  }
+
+  /**
+   * Upload audio file to Supabase storage
+   */
+  static async uploadAudioFile(file: File, projectId: string, userId: string): Promise<string> {
+    const context: ErrorContext = {
+      operation: 'upload_audio_file',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${projectId}/${Date.now()}.${fileExt}`;
+        const buffer = await file.arrayBuffer();
+        
+        const { data, error } = await supabase.storage
+          .from('audio_uploads')
+          .upload(fileName, buffer, { 
+            upsert: true,
+            contentType: file.type || 'audio/mpeg'
+          });
+
+        if (error) {
+          throw new Error('Unable to upload audio. Please try again.');
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('audio_uploads')
+          .getPublicUrl(fileName);
+
+        return publicUrl;
+      },
+      context
+    );
+  }
+
+  /**
+   * Get the full multi-user audio user map from chatbox_audio_users.
+   */
+  static async getAudioUserMap(
+    projectId: string,
+    userId: string
+  ): Promise<Record<string, { name: string; created_at: string; messages: Array<{ user: string; assistant: string; generated_at: string }> }>> {
+    const context: ErrorContext = {
+      operation: 'get_audio_user_map',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_audio_users')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') return {};
+          throw new Error('Unable to load audio user map. Please try again.');
+        }
+
+        const raw = data?.chatbox_audio_users;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+        return raw as Record<string, any>;
+      },
+      context
+    );
+  }
+
+  /**
+   * Merge one audio-user chat thread into chatbox_audio_users.
+   */
+  static async mergeAudioUserChatboxThread(
+    projectId: string,
+    userId: string,
+    threadKey: string,
+    entry: { name: string; persona_summary: string; created_at?: string; messages?: Array<{ user: string; assistant: string; generated_at: string }> }
+  ): Promise<void> {
+    if (!threadKey) return;
+
+    const { data: row, error: fetchError } = await supabase
+      .from('projects')
+      .select('chatbox_audio_users')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch chatbox_audio_users:', fetchError);
+      return;
+    }
+
+    let map: Record<string, any> = {};
+    const raw = row?.chatbox_audio_users;
+    if (raw) {
+      try {
+        map = typeof raw === 'string' ? JSON.parse(raw) : { ...(raw as object) };
+      } catch { map = {}; }
+    }
+    if (typeof map !== 'object' || map === null || Array.isArray(map)) map = {};
+
+    const existing = map[threadKey];
+    const created = entry.created_at || new Date().toISOString();
+    map[threadKey] = {
+      ...(typeof existing === 'object' && existing ? existing : {}),
+      name: entry.name,
+      persona_summary: entry.persona_summary,
+      created_at: (existing as { created_at?: string })?.created_at || created,
+      messages: entry.messages || (Array.isArray((existing as { messages?: unknown })?.messages)
+        ? (existing as { messages: unknown[] }).messages
+        : []),
+    };
+
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        chatbox_audio_users: map,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+
+    if (error) console.error('Failed to merge chatbox_audio_users:', error);
+  }
+
+  static async getProjectChatboxAudioHistory(
+    projectId: string,
+    userId: string,
+    userKey?: string
+  ): Promise<Array<{ user: string; assistant: string; generated_at: string }>> {
+    const context: ErrorContext = {
+      operation: 'get_project_chatbox_audio_history',
+      userId,
+      timestamp: new Date().toISOString()
+    };
+
+    return ErrorHandler.withRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('chatbox_audio_users')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') throw new Error('Project not found');
+          throw new Error('Unable to load audio chat history. Please try again.');
+        }
+
+        const raw = data?.chatbox_audio_users;
+        if (!raw) return [];
+
+        if (userKey && typeof raw === 'object' && !Array.isArray(raw) && raw[userKey]) {
+          return raw[userKey].messages ?? [];
+        }
+
+        return [];
+      },
+      context
+    );
   }
 }

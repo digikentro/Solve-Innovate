@@ -1,4 +1,7 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { FiChevronDown, FiChevronUp, FiEdit3, FiRefreshCw, FiSave, FiX, FiCheckCircle, FiAlertCircle, FiAward, FiTarget, FiTrendingUp, FiShield } from 'react-icons/fi';
 
 interface IdeaClusteringReportViewerProps {
   data: any;
@@ -8,96 +11,36 @@ interface IdeaClusteringReportViewerProps {
 }
 
 export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onSave }: IdeaClusteringReportViewerProps) => {
-  const [expandedClusters, setExpandedClusters] = useState<{[key: string]: boolean}>({});
-  const [expandedIdeaCards, setExpandedIdeaCards] = useState<{[key: number]: boolean}>({});
-  const [hoverTimer, setHoverTimer] = useState<number | null>(null);
-
+  const [expandedClusters, setExpandedClusters] = useState<{[key: string]: boolean}>({ '1': true });
+  const [expandedIdeaCards, setExpandedIdeaCards] = useState<{[key: number]: boolean}>({ 1: true });
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
-  const [originalData, setOriginalData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
 
   const reportData = isEditMode ? editedData : (data?.content || data);
 
-  if (!reportData) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No Idea Clustering data available</p>
-      </div>
-    );
-  }
-
-  const toggleCluster = (clusterId: string) => {
-    setExpandedClusters(prev => ({ ...prev, [clusterId]: !prev[clusterId] }));
-  };
-
-  const toggleIdeaCard = (rank: number) => {
-    setExpandedIdeaCards(prev => ({ ...prev, [rank]: !prev[rank] }));
-  };
-
-  const handleClusterMouseEnter = (clusterId: string) => {
-    // Auto-expand after a short hover delay to preview content
-    const timer = window.setTimeout(() => {
-      setExpandedClusters(prev => ({ ...prev, [clusterId]: true }));
-    }, 500);
-    setHoverTimer(timer);
-  };
-
-  const handleIdeaCardMouseEnter = (rank: number) => {
-    // Auto-expand after a short hover delay to preview content
-    const timer = window.setTimeout(() => {
-      setExpandedIdeaCards(prev => ({ ...prev, [rank]: true }));
-    }, 500);
-    setHoverTimer(timer);
-  };
-
-  const handleMouseLeave = () => {
-    if (hoverTimer) {
-      window.clearTimeout(hoverTimer);
-      setHoverTimer(null);
-    }
-  };
-
   const handleEditToggle = () => {
     if (!isEditMode) {
       const dataToEdit = data?.content || data;
-      setOriginalData(structuredClone(dataToEdit));
       setEditedData(structuredClone(dataToEdit));
       setIsEditMode(true);
+    } else {
+      setIsEditMode(false);
+      setEditedData(null);
     }
   };
 
-  const handleCancel = () => {
-    setShowCancelDialog(true);
-  };
-
-  const confirmCancel = () => {
-    setEditedData(null);
-    setOriginalData(null);
-    setIsEditMode(false);
-    setShowCancelDialog(false);
-  };
-
-  const handleSave = () => {
-    setShowSaveDialog(true);
-  };
-
-  const confirmSave = async () => {
-    setShowSaveDialog(false);
+  const handleSave = async () => {
     setIsSaving(true);
     try {
       if (onSave) {
         await onSave(editedData);
+        setIsEditMode(false);
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
-        setOriginalData(null);
-        setEditedData(null);
-        setIsEditMode(false);
       }
     } catch (error) {
       console.error('Save failed:', error);
@@ -111,111 +54,130 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
 
   const updateTextAtPath = (path: (string | number)[], value: any) => {
     setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return updated;
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (!p || p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, path);
     });
   };
 
   const updateArrayItemAtPath = (path: (string | number)[], index: number, value: any) => {
     setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length; i++) {
-        current = current[path[i]];
-      }
-      current[index] = value;
-      return updated;
+      const fullPath = [...path, index];
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (!p || p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, fullPath);
     });
   };
 
+  if (!reportData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-100">
+        <FiAlertCircle className="w-8 h-8 text-gray-200 mb-4" />
+        <p className="text-xs text-gray-400 uppercase tracking-widest">No Clustering Data Available</p>
+      </div>
+    );
+  }
+
+  const toggleCluster = (clusterId: string) => {
+    setExpandedClusters(prev => ({ ...prev, [clusterId]: !prev[clusterId] }));
+  };
+
+  const toggleIdeaCard = (rank: number) => {
+    setExpandedIdeaCards(prev => ({ ...prev, [rank]: !prev[rank] }));
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Save Confirmation Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Save Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to save these changes to the Idea Clustering and Idea Cards report?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cancel Confirmation Dialog */}
-      {showCancelDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Discard Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to discard all your changes?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCancelDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={confirmCancel}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Toast */}
+    <div className="space-y-12 max-w-6xl mx-auto pb-24">
+      {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          Changes saved successfully!
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Clustering Analysis Saved Successfully</p>
         </div>
       )}
-
-      {/* Error Toast */}
+      
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          Error: {errorText}
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText}</p>
         </div>
       )}
 
-      {/* Header with Edit and Generate New Buttons */}
-      <div className="pb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Idea Clustering and Idea Cards Report</h1>
-        <div className="flex gap-3">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Idea Clustering
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Strategic Synthesis & Ranking
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           {projectId && onSave && (
-            <button
-              onClick={handleEditToggle}
-              disabled={isEditMode}
-              className="px-6 py-2 font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Edit
-            </button>
+            <>
+              {!isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
+                >
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
           {onGenerateNew && (
             <button
+              type="button"
               onClick={onGenerateNew}
-              className="px-6 py-2 font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors rounded-lg"
+              disabled={isEditMode}
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Generate New
             </button>
@@ -223,82 +185,56 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
         </div>
       </div>
 
-      {/* Edit Mode Banner */}
-      {isEditMode && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-              <span className="font-semibold text-blue-900">Edit Mode Active</span>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 text-gray-700 hover:bg-white rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Project Context */}
+      {/* Foundation Context */}
       {reportData.project_context && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Project Context</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Foundation Analysis</h2>
           
-          <div className="space-y-4">
+          <div className="flex flex-col gap-10">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Prioritized Pain Point</h3>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Prioritized Pain Point</label>
               {isEditMode ? (
                 <textarea
                   value={reportData.project_context.prioritized_pain_point || ''}
                   onChange={(e) => updateTextAtPath(['project_context', 'prioritized_pain_point'], e.target.value)}
+                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
                 />
               ) : (
-                <p className="text-base leading-relaxed pl-4 break-words whitespace-normal">
-                  {reportData.project_context.prioritized_pain_point || 'N/A'}
+                <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">
+                  {reportData.project_context.prioritized_pain_point}
                 </p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
               <div>
-                <h3 className="text-lg font-semibold mb-2">Target Extreme User</h3>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Extreme User</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.project_context.target_extreme_user || ''}
                     onChange={(e) => updateTextAtPath(['project_context', 'target_extreme_user'], e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-base pl-4 break-words whitespace-normal">
-                    {reportData.project_context.target_extreme_user || 'N/A'}
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">
+                    {reportData.project_context.target_extreme_user}
                   </p>
                 )}
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">Geographic Focus</h3>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Geographic Focus</label>
                 {isEditMode ? (
                   <textarea
                     value={reportData.project_context.geographic_focus || ''}
                     onChange={(e) => updateTextAtPath(['project_context', 'geographic_focus'], e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   />
                 ) : (
-                  <p className="text-base pl-4 break-words whitespace-normal">
-                    {reportData.project_context.geographic_focus || 'N/A'}
+                  <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">
+                    {reportData.project_context.geographic_focus}
                   </p>
                 )}
               </div>
@@ -307,421 +243,224 @@ export const IdeaClusteringReportViewer = ({ data, onGenerateNew, projectId, onS
         </section>
       )}
 
-      {/* Clusters */}
-      {reportData.clusters && reportData.clusters.length > 0 && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Idea Clusters</h2>
-          <p className="text-sm text-gray-600 mb-6">Click on any cluster to expand/collapse ideas</p>
-
-          <div className="space-y-6">
-            {reportData.clusters.map((cluster: any, idx: number) => (
-              <div key={cluster.cluster_id}>
-                {/* Cluster Header */}
-                <button
-                  onClick={() => toggleCluster(cluster.cluster_id)}
-                  onMouseEnter={() => handleClusterMouseEnter(cluster.cluster_id)}
-                  onMouseLeave={() => handleMouseLeave()}
-                  className="w-full px-4 py-3 bg-gray-200 text-left hover:bg-gray-300 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold">Cluster {cluster.cluster_id}</span>
-                      <span className="text-lg font-semibold">{cluster.cluster_name}</span>
-                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        Score: {cluster.weighted_innovation_score}
-                      </span>
-                    </div>
-                    <span className="text-xl">{expandedClusters[cluster.cluster_id] ? '−' : '+'}</span>
-                  </div>
-                </button>
-
-                {/* Cluster Details */}
-                {expandedClusters[cluster.cluster_id] && (
-                  <div className="p-4 bg-white">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-bold mb-2">Core Function:</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={cluster.core_function || ''}
-                            onChange={(e) => updateTextAtPath(['clusters', idx, 'core_function'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{cluster.core_function}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold mb-2">Included Ideas ({cluster.included_ideas?.length || 0}):</h4>
-                        <div className="space-y-2 pl-4">
-                          {cluster.included_ideas?.map((idea: any, i: number) => (
-                            <div key={idea.idea_id} className="p-2 bg-gray-50 rounded">
-                              <div className="flex items-start gap-2">
-                                <span className="font-bold text-sm flex-shrink-0">#{idea.idea_id}</span>
-                                <div className="flex-1">
-                                  {isEditMode ? (
-                                    <>
-                                      <input
-                                        type="text"
-                                        value={idea.idea_name || ''}
-                                        onChange={(e) => updateTextAtPath(['clusters', idx, 'included_ideas', i, 'idea_name'], e.target.value)}
-                                        className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                      />
-                                      <textarea
-                                        value={idea.hmw_statement || ''}
-                                        onChange={(e) => updateTextAtPath(['clusters', idx, 'included_ideas', i, 'hmw_statement'], e.target.value)}
-                                        rows={2}
-                                        className="w-full mt-2 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                      />
-                                    </>
-                                  ) : (
-                                    <>
-                                      <p className="font-semibold text-sm">{idea.idea_name}</p>
-                                      <p className="text-xs text-gray-600 mt-1">{idea.hmw_statement}</p>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {cluster.innovation_assessment && (
-                        <div>
-                          <h4 className="font-bold mb-2">Innovation Assessment:</h4>
-                          <div className="grid grid-cols-2 gap-3 pl-4">
-                              {Object.entries(cluster.innovation_assessment).map(([key, assessment]: [string, any], j: number) => (
-                                key !== 'score' && (
-                                  <div key={key} className="text-sm">
-                                    <span className="font-semibold capitalize">
-                                      {key.replace(/_/g, ' ')}:
-                                    </span>
-                                    {isEditMode ? (
-                                      <div className="mt-1 pl-2 space-y-2">
-                                        <input
-                                          type="number"
-                                          value={assessment.score ?? ''}
-                                          onChange={(e) => updateTextAtPath(['clusters', idx, 'innovation_assessment', key, 'score'], Number(e.target.value))}
-                                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                        />
-                                        <textarea
-                                          value={assessment.reasoning || ''}
-                                          onChange={(e) => updateTextAtPath(['clusters', idx, 'innovation_assessment', key, 'reasoning'], e.target.value)}
-                                          rows={2}
-                                          className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <span className="ml-2">{assessment.score}/100</span>
-                                        {assessment.reasoning && (
-                                          <p className="text-xs text-gray-600 mt-1">{assessment.reasoning}</p>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                )
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+      {/* Idea Clusters */}
+      <div className="space-y-6">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Solution Ideation Catalog</h2>
+        
+        {reportData.clusters?.map((cluster: any, idx: number) => (
+          <div key={cluster.cluster_id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <button
+              onClick={() => toggleCluster(cluster.cluster_id)}
+              className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">CLUSTER 0{cluster.cluster_id}</span>
+                <span className="text-sm font-medium">{cluster.cluster_name || 'Innovation Cluster'}</span>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <span className="text-xs">{expandedClusters[cluster.cluster_id] ? 'CLOSE' : 'EXPAND'}</span>
+            </button>
+            
+            {expandedClusters[cluster.cluster_id] && (
+              <div className="border-t border-gray-100 bg-white p-6 space-y-6">
+                <div>
+                  <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Strategic Function</label>
+                  {isEditMode ? (
+                    <textarea
+                      value={cluster.core_function || ''}
+                      onChange={(e) => updateTextAtPath(['clusters', idx, 'core_function'], e.target.value)}
+                      rows={2}
+                      className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium text-gray-900 pl-4 border-l-2 border-gray-900 leading-relaxed">{cluster.core_function}</p>
+                  )}
+                </div>
 
-      {/* Top 5 Clusters with Idea Cards */}
-      {reportData.top_5_clusters && reportData.top_5_clusters.length > 0 && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Top Ranked Clusters & Idea Cards</h2>
-          <p className="text-sm text-gray-600 mb-6">Click on any card to expand/collapse details</p>
-
-          <div className="space-y-6">
-            {reportData.top_5_clusters.map((cluster: any, idx: number) => (
-              <div key={cluster.rank}>
-                {/* Top Cluster Header */}
-                <button
-                  onClick={() => toggleIdeaCard(cluster.rank)}
-                  onMouseEnter={() => handleIdeaCardMouseEnter(cluster.rank)}
-                  onMouseLeave={() => handleMouseLeave()}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-100 to-blue-100 text-left hover:from-purple-200 hover:to-blue-200 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-lg font-bold text-purple-700">{cluster.rank}</span>
-                      <span className="text-lg font-semibold">{cluster.cluster_name}</span>
-                      <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">
-                        Final Score: {cluster.final_score}
-                      </span>
-                    </div>
-                    <span className="text-xl">{expandedIdeaCards[cluster.rank] ? '−' : '+'}</span>
-                  </div>
-                </button>
-
-                {/* Idea Card Details */}
-                {expandedIdeaCards[cluster.rank] && cluster.idea_card && (
-                  <div className="p-6 bg-white border-l-4 border-purple-500">
-                    <div className="space-y-6">
-                      {/* Need State */}
-                      <div>
-                        <h4 className="font-bold text-purple-700 mb-2">Need State:</h4>
-                        {isEditMode ? (
-                          <textarea
-                            value={cluster.idea_card.need_state || ''}
-                            onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'need_state'], e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                          />
-                        ) : (
-                          <p className="text-sm pl-4">{cluster.idea_card.need_state}</p>
-                        )}
-                      </div>
-
-                      {/* Features */}
-                      {cluster.idea_card.features && (
-                        <div>
-                          <h4 className="font-bold text-purple-700 mb-2">Key Features:</h4>
-                          {isEditMode ? (
-                            <div className="space-y-2 pl-4">
-                              {cluster.idea_card.features.map((feature: string, i: number) => (
-                                <textarea
-                                  key={i}
-                                  value={feature || ''}
-                                  onChange={(e) => updateArrayItemAtPath(['top_5_clusters', idx, 'idea_card', 'features'], i, e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <ul className="list-disc list-inside space-y-1 pl-4">
-                              {cluster.idea_card.features.map((feature: string, i: number) => (
-                                <li key={i} className="text-sm">{feature}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Innovations */}
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <h4 className="font-bold text-purple-700 mb-2">Primary Innovation:</h4>
-                          {isEditMode ? (
-                            <textarea
-                              value={cluster.idea_card.primary_innovation || ''}
-                              onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'primary_innovation'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-4">{cluster.idea_card.primary_innovation}</p>
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-purple-700 mb-2">Secondary Innovation:</h4>
-                          {isEditMode ? (
-                            <textarea
-                              value={cluster.idea_card.secondary_innovation || ''}
-                              onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'secondary_innovation'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-4">{cluster.idea_card.secondary_innovation}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Market Opportunity */}
-                      {cluster.idea_card.market_opportunity && (
-                        <div>
-                          <h4 className="font-bold text-purple-700 mb-2">Market Opportunity:</h4>
-                          <div className="grid grid-cols-3 gap-4 pl-4">
-                            <div className="text-sm">
-                              <span className="font-semibold">Target Market:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.market_opportunity.target_market || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'market_opportunity', 'target_market'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.market_opportunity.target_market}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold">Market Readiness:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.market_opportunity.market_readiness || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'market_opportunity', 'market_readiness'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.market_opportunity.market_readiness}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold">Competitive Advantage:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.market_opportunity.competitive_advantage || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'market_opportunity', 'competitive_advantage'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.market_opportunity.competitive_advantage}</p>
-                              )}
-                            </div>
+                <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-50 md:grid-cols-2 md:gap-6 md:border-t-0 md:pt-0">
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Included Concepts ({cluster.included_ideas?.length})</label>
+                    <div className="space-y-2">
+                      {cluster.included_ideas?.map((idea: any, i: number) => (
+                        <div key={i} className="flex gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                          <span className="text-[10px] font-bold text-gray-400 pt-1">#{idea.idea_id}</span>
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-gray-900 uppercase tracking-tight">{idea.idea_name}</p>
+                            <p className="text-[10px] text-gray-500 italic leading-snug">{idea.hmw_statement}</p>
                           </div>
                         </div>
-                      )}
-
-                      {/* Implementation Pathway */}
-                      {cluster.idea_card.implementation_pathway && (
-                        <div>
-                          <h4 className="font-bold text-purple-700 mb-2">Implementation Pathway:</h4>
-                          <div className="grid grid-cols-3 gap-4 pl-4">
-                            <div className="text-sm">
-                              <span className="font-semibold">Phase 1:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.implementation_pathway.phase_1 || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'implementation_pathway', 'phase_1'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.implementation_pathway.phase_1}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold">Phase 2:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.implementation_pathway.phase_2 || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'implementation_pathway', 'phase_2'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.implementation_pathway.phase_2}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold">Phase 3:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.implementation_pathway.phase_3 || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'implementation_pathway', 'phase_3'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-600 mt-1">{cluster.idea_card.implementation_pathway.phase_3}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Risk Assessment */}
-                      {cluster.idea_card.risk_assessment && (
-                        <div className="bg-red-50 p-4 rounded">
-                          <h4 className="font-bold text-red-700 mb-2">Risk Assessment:</h4>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="text-sm">
-                              <span className="font-semibold text-red-600">Primary Risk:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.risk_assessment.primary_risk || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'risk_assessment', 'primary_risk'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-700 mt-1">{cluster.idea_card.risk_assessment.primary_risk}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold text-red-600">Mitigation Strategy:</span>
-                              {isEditMode ? (
-                                <textarea
-                                  value={cluster.idea_card.risk_assessment.mitigation_strategy || ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'risk_assessment', 'mitigation_strategy'], e.target.value)}
-                                  rows={2}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-700 mt-1">{cluster.idea_card.risk_assessment.mitigation_strategy}</p>
-                              )}
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold text-green-600">Success Probability:</span>
-                              {isEditMode ? (
-                                <input
-                                  type="number"
-                                  value={cluster.idea_card.risk_assessment.success_probability ?? ''}
-                                  onChange={(e) => updateTextAtPath(['top_5_clusters', idx, 'idea_card', 'risk_assessment', 'success_probability'], Number(e.target.value))}
-                                  className="w-full mt-1 px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ) : (
-                                <p className="text-xs text-gray-700 mt-1">{cluster.idea_card.risk_assessment.success_probability}%</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                )}
+
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Innovation Assessment</label>
+                    <div className="grid grid-cols-1 gap-6">
+                      {Object.entries(cluster.innovation_assessment || {}).map(([key, assessment]: [string, any], j: number) => (
+                        key !== 'score' && (
+                          <div key={key} className="space-y-2">
+                            <div className="flex justify-between items-end">
+                              <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">{key.replace(/_/g, ' ')}</span>
+                              <span className="text-xs font-medium text-gray-400">{assessment.score}/100</span>
+                            </div>
+                            <div className="w-full h-1 bg-gray-100">
+                              <div className="h-full bg-black transition-all" style={{ width: `${assessment.score}%` }} />
+                            </div>
+                            <p className="text-[10px] text-gray-500 leading-relaxed pt-1">{assessment.reasoning}</p>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
+            )}
           </div>
-        </section>
-      )}
+        ))}
+      </div>
+
+      {/* Top Ranked Idea Cards */}
+      <div className="space-y-6">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Strategic Concept Cards</h2>
+        
+        {reportData.top_5_clusters?.map((cluster: any, idx: number) => (
+          <div key={cluster.rank} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <button
+              onClick={() => toggleIdeaCard(cluster.rank)}
+              className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-4xl font-light italic text-gray-300">0{cluster.rank}</span>
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-gray-900">{cluster.cluster_name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-500">Final Score</span>
+                    <span className="text-[10px] font-semibold text-gray-900">{cluster.final_score}</span>
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-gray-500">{expandedIdeaCards[cluster.rank] ? 'CLOSE' : 'EXPAND'}</span>
+            </button>
+
+            {expandedIdeaCards[cluster.rank] && cluster.idea_card && (
+              <div className="border-t border-gray-100 bg-white p-8 space-y-8">
+                <div className="space-y-6">
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Need State Definition</label>
+                    <p className="text-base font-medium text-gray-900 italic leading-relaxed border-l-2 border-gray-900 pl-4">"{cluster.idea_card.need_state}"</p>
+                  </div>
+                  
+                  <div>
+                    <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Key Features</label>
+                    <div className="space-y-2">
+                      {cluster.idea_card.features?.map((feature: string, i: number) => (
+                        <div key={i} className="flex gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                          <span className="text-[10px] font-bold text-gray-400 pt-1">#{i+1}</span>
+                          <p className="text-xs text-gray-600 leading-relaxed">{feature}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-50 md:grid-cols-2 md:gap-6 md:border-t-0 md:pt-0">
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Primary Innovation</label>
+                      <p className="text-sm text-gray-600 pl-4 border-l border-gray-200 leading-relaxed">{cluster.idea_card.primary_innovation}</p>
+                    </div>
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Secondary Innovation</label>
+                      <p className="text-sm text-gray-600 pl-4 border-l border-gray-200 leading-relaxed">{cluster.idea_card.secondary_innovation}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {[
+                      { label: 'Target Segment', value: cluster.idea_card.market_opportunity?.target_market },
+                      { label: 'Market Readiness', value: cluster.idea_card.market_opportunity?.market_readiness },
+                      { label: 'Competitive Edge', value: cluster.idea_card.market_opportunity?.competitive_advantage }
+                    ].map((m, mi) => (
+                      <div key={mi} className="space-y-2">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">{m.label}</span>
+                        <p className="text-xs text-gray-600 leading-relaxed">{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6 pt-4 border-t border-gray-50 md:grid-cols-2 md:border-t-0 md:pt-0">
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Pathway</label>
+                      <div className="space-y-3">
+                        {[
+                          { phase: '01', label: 'Initial Integration', value: cluster.idea_card.implementation_pathway?.phase_1 },
+                          { phase: '02', label: 'Expansion & Scale', value: cluster.idea_card.implementation_pathway?.phase_2 },
+                          { phase: '03', label: 'System Maturity', value: cluster.idea_card.implementation_pathway?.phase_3 }
+                        ].map((p, pi) => (
+                          <div key={pi} className="space-y-1">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">{p.phase} — {p.label}</span>
+                            <p className="text-xs text-gray-600 leading-relaxed pl-4 border-l border-gray-100">{p.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500 flex items-center gap-2">
+                        <FiShield className="w-3 h-3" /> Risk Assessment
+                      </label>
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Primary Risk</span>
+                          <p className="text-xs text-gray-600 pl-4 border-l border-gray-100 leading-relaxed">{cluster.idea_card.risk_assessment?.primary_risk}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Mitigation</span>
+                          <p className="text-xs text-gray-600 pl-4 border-l border-gray-100 leading-relaxed">{cluster.idea_card.risk_assessment?.mitigation_strategy}</p>
+                        </div>
+                        <div className="pt-2 border-t border-gray-100 mt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-tight">Success Probability</span>
+                            <span className="text-sm font-medium text-gray-900">{cluster.idea_card.risk_assessment?.success_probability}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Portfolio Analysis */}
       {reportData.portfolio_analysis && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Portfolio Analysis</h2>
-
-          <div className="grid grid-cols-2 gap-6">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Portfolio Strategic Synthesis</h2>
+          
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Portfolio Balance</h3>
-              <p className="text-sm pl-4">{reportData.portfolio_analysis.portfolio_balance}</p>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Portfolio Balance</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.portfolio_balance}</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Risk Distribution</h3>
-              <p className="text-sm pl-4">{reportData.portfolio_analysis.risk_distribution}</p>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Risk Distribution</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.risk_distribution}</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Implementation Sequence</h3>
-              <p className="text-sm pl-4">{reportData.portfolio_analysis.implementation_sequence}</p>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Sequence</label>
+              <p className="text-sm text-gray-600 leading-relaxed pl-4 border-l border-gray-200">{reportData.portfolio_analysis.implementation_sequence}</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Primary Prototype Recommendation</h3>
-              <p className="text-sm pl-4">{reportData.portfolio_analysis.primary_prototype_recommendation}</p>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Primary Prototype Recommendation</label>
+              <p className="text-sm font-medium text-gray-900 leading-relaxed pl-4 border-l-2 border-gray-900">{reportData.portfolio_analysis.primary_prototype_recommendation}</p>
             </div>
           </div>
         </section>
       )}
 
-      {/* Report Metadata */}
+      {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-sm text-gray-500 text-center pt-4">
-          Report generated on {new Date(data.generated_at).toLocaleString()}
+        <div className="text-xs text-gray-500 text-center pt-8 border-t border-gray-100 uppercase tracking-widest">
+          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()}
         </div>
       )}
     </div>

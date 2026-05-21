@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Project } from '@/types/project';
 import { useAuth } from '@/contexts/AuthContext';
-import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
+import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { PresentableSlideCard } from '@/components/project/PresentableSlideCard';
@@ -20,6 +20,25 @@ export default function ProjectCanvasPage() {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [presentableSlide, setPresentableSlide] = useState<any>(null);
+  const lastRemoteCanvasKey = useRef<string | null>(null);
+
+  const mergeElementsById = (localElements: any[], remoteElements: any[]) => {
+    const localMap = new Map<string, any>();
+    localElements.forEach((el) => {
+      if (el?.id) localMap.set(el.id, el);
+    });
+
+    const merged = [...localElements];
+    let added = 0;
+    remoteElements.forEach((el) => {
+      if (el?.id && !localMap.has(el.id)) {
+        merged.push(el);
+        added += 1;
+      }
+    });
+
+    return { merged, added };
+  };
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -42,6 +61,62 @@ export default function ProjectCanvasPage() {
     };
     if (id) fetchProject();
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`project-canvas-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'projects',
+          filter: `id=eq.${id}`,
+        },
+        (payload: any) => {
+          const updatedCanvas = payload?.new?.canvas;
+          if (!updatedCanvas) return;
+
+          const remoteKey = `${payload?.new?.updated_at || ''}-${updatedCanvas?.elements?.length || 0}`;
+          if (lastRemoteCanvasKey.current === remoteKey) return;
+          lastRemoteCanvasKey.current = remoteKey;
+
+          if (!excalidrawAPI) {
+            setCanvasData(updatedCanvas);
+            return;
+          }
+
+          const currentElements = excalidrawAPI.getSceneElements
+            ? excalidrawAPI.getSceneElements()
+            : [];
+          const remoteElements = Array.isArray(updatedCanvas.elements)
+            ? updatedCanvas.elements
+            : [];
+
+          const { merged, added } = mergeElementsById(currentElements, remoteElements);
+
+          if (added > 0) {
+            excalidrawAPI.updateScene({
+              elements: merged,
+              appState: excalidrawAPI.getAppState ? excalidrawAPI.getAppState() : undefined,
+            });
+            setCanvasData((prev: any) => ({
+              ...updatedCanvas,
+              elements: merged,
+              appState: prev?.appState || updatedCanvas?.appState,
+              files: prev?.files || updatedCanvas?.files,
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, excalidrawAPI]);
 
   const handleSave = async () => {
     if (!project || !excalidrawAPI) return;

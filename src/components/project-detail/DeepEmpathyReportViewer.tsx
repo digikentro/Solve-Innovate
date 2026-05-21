@@ -1,4 +1,6 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 interface DeepEmpathyReportViewerProps {
   data: any;
@@ -8,15 +10,17 @@ interface DeepEmpathyReportViewerProps {
 }
 
 export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave }: DeepEmpathyReportViewerProps) => {
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
-  const [hoverSectionKey, setHoverSectionKey] = useState<string | null>(null);
-  const [hoverTimer, setHoverTimer] = useState<number | null>(null);
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    observation: true,
+    immersion: false,
+    roleplaying: false,
+    shadowing: false,
+    conversation: false
+  });
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
-  const [originalData, setOriginalData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
@@ -26,34 +30,19 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
   const handleEditToggle = () => {
     if (!isEditMode) {
       const dataToEdit = data?.content || data;
-      setOriginalData(structuredClone(dataToEdit));
       setEditedData(structuredClone(dataToEdit));
       setIsEditMode(true);
+    } else {
+      setIsEditMode(false);
+      setEditedData(null);
     }
   };
 
-  const handleCancel = () => {
-    setShowCancelDialog(true);
-  };
-
-  const confirmCancel = () => {
-    setEditedData(null);
-    setOriginalData(null);
-    setIsEditMode(false);
-    setShowCancelDialog(false);
-  };
-
-  const handleSave = () => {
-    setShowSaveDialog(true);
-  };
-
-  const confirmSave = async () => {
-    setShowSaveDialog(false);
+  const handleSave = async () => {
     setIsSaving(true);
     try {
       if (onSave) {
         await onSave(editedData);
-        setOriginalData(null);
         setIsEditMode(false);
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
@@ -70,32 +59,54 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
 
   const updateTextAtPath = (path: string[], value: string) => {
     setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return updated;
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, path);
     });
   };
 
   const updateArrayItemAtPath = (path: string[], index: number, value: string) => {
     setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length; i++) {
-        current = current[path[i]];
-      }
-      current[index] = value;
-      return updated;
+      const fullPath = [...path, index];
+      const cloneObj = (obj: any, p: (string | number)[]): any => {
+        if (p.length === 0) return value;
+        const head = p[0];
+        const rest = p.slice(1);
+        if (Array.isArray(obj)) {
+          const arr = [...obj];
+          arr[head as number] = cloneObj(obj[head as number], rest);
+          return arr;
+        } else if (obj !== null && typeof obj === 'object') {
+          return {
+            ...obj,
+            [head]: cloneObj(obj[head], rest)
+          };
+        }
+        return obj;
+      };
+      return cloneObj(prev, fullPath);
     });
   };
 
   if (!reportData) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No Deep Empathy Research data available</p>
+      <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-100">
+        <div className="w-8 h-8 text-gray-200 mb-4">⚠</div>
+        <p className="text-xs text-gray-400 uppercase tracking-widest">No Deep Empathy Research Data</p>
       </div>
     );
   }
@@ -104,139 +115,102 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSectionMouseEnter = (key: string) => {
-    setHoverSectionKey(key);
-    // Auto-expand the section after a brief hover to preview content
-    const timer = window.setTimeout(() => {
-      setExpandedSections(prev => ({ ...prev, [key]: true }));
-    }, 500);
-    setHoverTimer(timer);
-  };
+  const renderEditableList = (items: string[] | undefined, path: string[], label: string) => {
+    if (!items || items.length === 0) return null;
 
-  const handleSectionMouseLeave = (key: string) => {
-    setHoverSectionKey(prev => (prev === key ? null : prev));
-    if (hoverTimer) {
-      window.clearTimeout(hoverTimer);
-      setHoverTimer(null);
-    }
-  };
-
-  const renderList = (items: string[] | undefined, path: string[], emptyMessage: string = 'No items available') => {
-    if (!items || items.length === 0) {
-      return <p className="text-sm text-gray-500 italic pl-4">{emptyMessage}</p>;
-    }
-    
-    if (isEditMode) {
-      return (
-        <div className="space-y-2 pl-4">
-          {items.map((item: string, i: number) => (
-            <textarea
-              key={i}
-              value={item || ''}
-              onChange={(e) => updateArrayItemAtPath(path, i, e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-            />
-          ))}
-        </div>
-      );
-    }
-    
     return (
-      <ul className="list-disc list-inside space-y-1 pl-4">
-        {items.map((item: string, i: number) => (
-          <li key={i} className="text-sm">{item}</li>
-        ))}
-      </ul>
+      <div>
+        <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">{label}</label>
+        <ul className="space-y-3 border-l border-gray-200 pl-4">
+          {items.map((item: string, i: number) => (
+            <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+              {isEditMode ? (
+                <textarea
+                  value={item || ''}
+                  onChange={(e) => updateArrayItemAtPath(path, i, e.target.value)}
+                  rows={2}
+                  className="w-full bg-white border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-900 transition-colors resize-none rounded-lg"
+                />
+              ) : (
+                <>
+                  <span className="mt-1.5 w-1 h-1 bg-gray-900 rounded-md flex-shrink-0" />
+                  <span className="leading-relaxed">{item}</span>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     );
   };
 
   return (
-    <div className="space-y-8">
-      {/* Confirmation Dialogs */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Save Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to save these changes to the Deep Empathy Research report?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSave}
-                className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md transition-colors"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCancelDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Discard Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to discard all changes? This action cannot be undone.</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCancelDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={confirmCancel}
-                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="flex flex-col gap-8">
       {/* Toast Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>Changes saved successfully!</span>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Report saved successfully</p>
         </div>
       )}
 
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          <span>{errorText || 'Failed to save changes'}</span>
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText || 'Failed to save changes'}</p>
         </div>
       )}
 
-      {/* Header with Edit and Generate New Buttons */}
-      <div className="pb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Deep Empathy Research Report</h1>
-        <div className="flex items-center gap-3">
-          {!isEditMode && projectId && onSave && (
-            <button
-              onClick={handleEditToggle}
-              className="px-6 py-2 text-[0.85rem] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-md"
-            >
-              Edit
-            </button>
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Deep Empathy Research</h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">Phase 02 · Qualitative Exploration Guide</p>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+          {projectId && onSave && (
+            <>
+              {!isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
+                >
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-1.5 inline size-3 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
           )}
           {onGenerateNew && (
             <button
+              type="button"
               onClick={onGenerateNew}
-              className="px-6 py-2 text-[0.85rem] font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors rounded-md"
+              disabled={isEditMode}
+              className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               Generate New
             </button>
@@ -244,378 +218,189 @@ export const DeepEmpathyReportViewer = ({ data, onGenerateNew, projectId, onSave
         </div>
       </div>
 
-      {/* Edit Mode Banner */}
-      {isEditMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-            <span className="text-blue-800 font-medium">Edit Mode - Click on text fields to edit</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 text-[0.85rem] font-semibold bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-md"
-              disabled={isSaving}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-[0.85rem] font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors rounded-md"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Research Context Analysis */}
+      {/* Research Context */}
       {reportData.researchContextAnalysis && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Research Context</h2>
-          
-          <div className="space-y-4">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Research Context</h2>
+
+          <div className="flex flex-col gap-10">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Pain Point</h3>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Core Pain Point</label>
               {isEditMode ? (
-                <input
-                  type="text"
+                <textarea
                   value={reportData.researchContextAnalysis.painPoint || ''}
                   onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'painPoint'], e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                  className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                  rows={3}
                 />
               ) : (
-                <p className="text-base pl-4">{reportData.researchContextAnalysis.painPoint}</p>
+                <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.painPoint}</p>
               )}
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.researchContextAnalysis.description || ''}
-                  onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'description'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-4 leading-relaxed">{reportData.researchContextAnalysis.description}</p>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Target Extreme User</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.researchContextAnalysis.extremeUser || ''}
-                  onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'extremeUser'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-4 leading-relaxed">{reportData.researchContextAnalysis.extremeUser}</p>
-              )}
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Contextual Description</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.researchContextAnalysis.description || ''}
+                    onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'description'], e.target.value)}
+                    rows={4}
+                    className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                  />
+                ) : (
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.description}</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Extreme User</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.researchContextAnalysis.extremeUser || ''}
+                    onChange={(e) => updateTextAtPath(['researchContextAnalysis', 'extremeUser'], e.target.value)}
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                  />
+                ) : (
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">{reportData.researchContextAnalysis.extremeUser}</p>
+                )}
+              </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* Technique 1: Observation */}
-      {reportData.empathyTechnique1Observation && (
-        <section className="p-6 bg-gray-50">
-          <button
-            onClick={() => toggleSection('observation')}
-            onMouseEnter={() => handleSectionMouseEnter('observation')}
-            onMouseLeave={() => handleSectionMouseLeave('observation')}
-            className={`w-full text-left mb-4 px-4 py-3 transition-all duration-200 ${hoverSectionKey === 'observation' ? 'bg-gray-200 shadow-md scale-[1.01]' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold pb-2">Technique 1: Observation</h2>
-              <span className={`text-2xl transition-transform duration-200 ${hoverSectionKey === 'observation' ? 'translate-y-[-1px]' : ''}`}>{expandedSections['observation'] ? '−' : '+'}</span>
-            </div>
-          </button>
+      {/* Empathy Techniques */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-8">
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-gray-500">Empathy Methodologies</h2>
 
-          {expandedSections['observation'] && (
-            <div className="space-y-4 pl-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Focus Areas</h3>
-                {renderList(reportData.empathyTechnique1Observation.observationFocusAreas, ['empathyTechnique1Observation', 'observationFocusAreas'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">What to Document</h3>
-                {renderList(reportData.empathyTechnique1Observation.whatToDocument, ['empathyTechnique1Observation', 'whatToDocument'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Key Questions for Observation</h3>
-                {renderList(reportData.empathyTechnique1Observation.keyQuestionsForObservation, ['empathyTechnique1Observation', 'keyQuestionsForObservation'])}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Technique 2: Immersion */}
-      {reportData.empathyTechnique2Immersion && (
-        <section className="p-6 bg-gray-50">
-          <button
-            onClick={() => toggleSection('immersion')}
-            onMouseEnter={() => handleSectionMouseEnter('immersion')}
-            onMouseLeave={() => handleSectionMouseLeave('immersion')}
-            className={`w-full text-left mb-4 px-4 py-3 transition-all duration-200 ${hoverSectionKey === 'immersion' ? 'bg-gray-200 shadow-md scale-[1.01]' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold pb-2">Technique 2: Immersion</h2>
-              <span className={`text-2xl transition-transform duration-200 ${hoverSectionKey === 'immersion' ? 'translate-y-[-1px]' : ''}`}>{expandedSections['immersion'] ? '−' : '+'}</span>
-            </div>
-          </button>
-
-          {expandedSections['immersion'] && (
-            <div className="space-y-4 pl-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Immersion Activities</h3>
-                {renderList(reportData.empathyTechnique2Immersion.immersionActivities, ['empathyTechnique2Immersion', 'immersionActivities'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">What to Experience</h3>
-                {renderList(reportData.empathyTechnique2Immersion.whatToExperience, ['empathyTechnique2Immersion', 'whatToExperience'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Documentation Guidelines</h3>
-                {renderList(reportData.empathyTechnique2Immersion.immersionDocumentation, ['empathyTechnique2Immersion', 'immersionDocumentation'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Key Insights to Capture</h3>
-                {renderList(reportData.empathyTechnique2Immersion.keyInsightsToCapture, ['empathyTechnique2Immersion', 'keyInsightsToCapture'])}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Technique 3: Role-Playing */}
-      {reportData.empathyTechnique3RolePlaying && (
-        <section className="p-6 bg-gray-50">
-          <button
-            onClick={() => toggleSection('roleplaying')}
-            onMouseEnter={() => handleSectionMouseEnter('roleplaying')}
-            onMouseLeave={() => handleSectionMouseLeave('roleplaying')}
-            className={`w-full text-left mb-4 px-4 py-3 transition-all duration-200 ${hoverSectionKey === 'roleplaying' ? 'bg-gray-200 shadow-md scale-[1.01]' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold pb-2">Technique 3: Role-Playing</h2>
-              <span className={`text-2xl transition-transform duration-200 ${hoverSectionKey === 'roleplaying' ? 'translate-y-[-1px]' : ''}`}>{expandedSections['roleplaying'] ? '−' : '+'}</span>
-            </div>
-          </button>
-
-          {expandedSections['roleplaying'] && (
-            <div className="space-y-4 pl-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Scenarios to Role-Play</h3>
-                {renderList(reportData.empathyTechnique3RolePlaying.rolePlayingScenarios, ['empathyTechnique3RolePlaying', 'rolePlayingScenarios'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Variables to Test</h3>
-                {renderList(reportData.empathyTechnique3RolePlaying.rolePlayingVariables, ['empathyTechnique3RolePlaying', 'rolePlayingVariables'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Documentation Focus</h3>
-                {renderList(reportData.empathyTechnique3RolePlaying.documentationFocus, ['empathyTechnique3RolePlaying', 'documentationFocus'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Key Questions</h3>
-                {renderList(reportData.empathyTechnique3RolePlaying.keyQuestionsForRolePlaying, ['empathyTechnique3RolePlaying', 'keyQuestionsForRolePlaying'])}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Technique 4: Shadowing */}
-      {reportData.empathyTechnique4Shadowing && (
-        <section className="p-6 bg-gray-50">
-          <button
-            onClick={() => toggleSection('shadowing')}
-            onMouseEnter={() => handleSectionMouseEnter('shadowing')}
-            onMouseLeave={() => handleSectionMouseLeave('shadowing')}
-            className={`w-full text-left mb-4 px-4 py-3 transition-all duration-200 ${hoverSectionKey === 'shadowing' ? 'bg-gray-200 shadow-md scale-[1.01]' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold pb-2">Technique 4: Shadowing</h2>
-              <span className={`text-2xl transition-transform duration-200 ${hoverSectionKey === 'shadowing' ? 'translate-y-[-1px]' : ''}`}>{expandedSections['shadowing'] ? '−' : '+'}</span>
-            </div>
-          </button>
-
-          {expandedSections['shadowing'] && (
-            <div className="space-y-4 pl-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Focus Areas</h3>
-                {renderList(reportData.empathyTechnique4Shadowing.shadowingFocusAreas, ['empathyTechnique4Shadowing', 'shadowingFocusAreas'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">What to Shadow</h3>
-                {renderList(reportData.empathyTechnique4Shadowing.whatToShadow, ['empathyTechnique4Shadowing', 'whatToShadow'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Documentation Guidelines</h3>
-                {renderList(reportData.empathyTechnique4Shadowing.shadowingDocumentation, ['empathyTechnique4Shadowing', 'shadowingDocumentation'])}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Key Insights</h3>
-                {renderList(reportData.empathyTechnique4Shadowing.keyInsightsFromShadowing, ['empathyTechnique4Shadowing', 'keyInsightsFromShadowing'])}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Technique 5: Deep Conversation */}
-      {reportData.empathyTechnique5Conversation?.deepInterviewQuestions && (
-        <section className="p-6 bg-gray-50">
-          <button
-            onClick={() => toggleSection('conversation')}
-            onMouseEnter={() => handleSectionMouseEnter('conversation')}
-            onMouseLeave={() => handleSectionMouseLeave('conversation')}
-            className={`w-full text-left mb-4 px-4 py-3 transition-all duration-200 ${hoverSectionKey === 'conversation' ? 'bg-gray-200 shadow-md scale-[1.01]' : ''}`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold pb-2">Technique 5: Deep Conversation</h2>
-              <span className={`text-2xl transition-transform duration-200 ${hoverSectionKey === 'conversation' ? 'translate-y-[-1px]' : ''}`}>{expandedSections['conversation'] ? '−' : '+'}</span>
-            </div>
-          </button>
-
-          {expandedSections['conversation'] && (
-            <div className="space-y-4 pl-4">
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Opening Questions</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'openingQuestions'])}
+        <div className="flex flex-col gap-4">
+          {/* Methodology Sections */}
+          {[
+            {
+              key: 'observation', label: 'Technique 01: Observation', data: reportData.empathyTechnique1Observation,
+              fields: [
+                { label: 'Focus Areas', path: ['empathyTechnique1Observation', 'observationFocusAreas'], items: reportData.empathyTechnique1Observation?.observationFocusAreas },
+                { label: 'Documentation Requirements', path: ['empathyTechnique1Observation', 'whatToDocument'], items: reportData.empathyTechnique1Observation?.whatToDocument },
+                { label: 'Critical Observation Questions', path: ['empathyTechnique1Observation', 'keyQuestionsForObservation'], items: reportData.empathyTechnique1Observation?.keyQuestionsForObservation }
+              ]
+            },
+            {
+              key: 'immersion', label: 'Technique 02: Immersion', data: reportData.empathyTechnique2Immersion,
+              fields: [
+                { label: 'Immersion Activities', path: ['empathyTechnique2Immersion', 'immersionActivities'], items: reportData.empathyTechnique2Immersion?.immersionActivities },
+                { label: 'Experience Parameters', path: ['empathyTechnique2Immersion', 'whatToExperience'], items: reportData.empathyTechnique2Immersion?.whatToExperience },
+                { label: 'Insights to Capture', path: ['empathyTechnique2Immersion', 'keyInsightsToCapture'], items: reportData.empathyTechnique2Immersion?.keyInsightsToCapture }
+              ]
+            },
+            {
+              key: 'roleplaying', label: 'Technique 03: Role-Playing', data: reportData.empathyTechnique3RolePlaying,
+              fields: [
+                { label: 'Scenarios', path: ['empathyTechnique3RolePlaying', 'rolePlayingScenarios'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingScenarios },
+                { label: 'Variable Parameters', path: ['empathyTechnique3RolePlaying', 'rolePlayingVariables'], items: reportData.empathyTechnique3RolePlaying?.rolePlayingVariables },
+                { label: 'Key Research Questions', path: ['empathyTechnique3RolePlaying', 'keyQuestionsForRolePlaying'], items: reportData.empathyTechnique3RolePlaying?.keyQuestionsForRolePlaying }
+              ]
+            },
+            {
+              key: 'shadowing', label: 'Technique 04: Shadowing', data: reportData.empathyTechnique4Shadowing,
+              fields: [
+                { label: 'Focus Areas', path: ['empathyTechnique4Shadowing', 'shadowingFocusAreas'], items: reportData.empathyTechnique4Shadowing?.shadowingFocusAreas },
+                { label: 'Documentation Guidelines', path: ['empathyTechnique4Shadowing', 'shadowingDocumentation'], items: reportData.empathyTechnique4Shadowing?.shadowingDocumentation },
+                { label: 'Expected Critical Insights', path: ['empathyTechnique4Shadowing', 'keyInsightsFromShadowing'], items: reportData.empathyTechnique4Shadowing?.keyInsightsFromShadowing }
+              ]
+            }
+          ].map((section) => section.data && (
+            <div key={section.key} className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                onClick={() => toggleSection(section.key)}
+                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections[section.key] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections[section.key] ? 'opacity-70' : 'text-gray-500'}`}>{section.label}</span>
+                </div>
+                <span className="text-xs">{expandedSections[section.key] ? 'CLOSE' : 'EXPAND'}</span>
+              </button>
+              {expandedSections[section.key] && (
+                <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    {section.fields.map((field, fIdx) => (
+                      <div key={fIdx}>
+                        {renderEditableList(field.items, field.path, field.label)}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
+          ))}
 
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.beliefUncoveringQuestions && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Belief-Uncovering Questions</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.beliefUncoveringQuestions, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'beliefUncoveringQuestions'])}
+          {/* Technique 5: Deep Conversation - Specialized Layout */}
+          {reportData.empathyTechnique5Conversation?.deepInterviewQuestions && (
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                onClick={() => toggleSection('conversation')}
+                className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedSections['conversation'] ? 'bg-gray-900 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-medium uppercase tracking-wide ${expandedSections['conversation'] ? 'opacity-70' : 'text-gray-500'}`}>Technique 05: Deep Conversation</span>
                 </div>
-              )}
+                <span className="text-xs">{expandedSections['conversation'] ? 'CLOSE' : 'EXPAND'}</span>
+              </button>
 
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.behaviorExploringQuestions && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Behavior-Exploring Questions</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.behaviorExploringQuestions, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'behaviorExploringQuestions'])}
-                </div>
-              )}
-
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.contextDeepeningQuestions && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Context-Deepening Questions</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.contextDeepeningQuestions, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'contextDeepeningQuestions'])}
-                </div>
-              )}
-
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.innovationOpportunityQuestions && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Innovation Opportunity Questions</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.innovationOpportunityQuestions, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'innovationOpportunityQuestions'])}
-                </div>
-              )}
-
-              {reportData.empathyTechnique5Conversation.deepInterviewQuestions.followUpProbes && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Follow-Up Probes</h3>
-                  {renderList(reportData.empathyTechnique5Conversation.deepInterviewQuestions.followUpProbes, ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'followUpProbes'])}
+              {expandedSections['conversation'] && (
+                <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                    {[
+                      { label: 'Opening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'openingQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.openingQuestions },
+                      { label: 'Belief-Uncovering Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'beliefUncoveringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.beliefUncoveringQuestions },
+                      { label: 'Behavior-Exploring Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'behaviorExploringQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.behaviorExploringQuestions },
+                      { label: 'Context-Deepening Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'contextDeepeningQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.contextDeepeningQuestions },
+                      { label: 'Innovation Opportunity Questions', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'innovationOpportunityQuestions'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.innovationOpportunityQuestions },
+                      { label: 'Critical Follow-Up Probes', path: ['empathyTechnique5Conversation', 'deepInterviewQuestions', 'followUpProbes'], items: reportData.empathyTechnique5Conversation.deepInterviewQuestions.followUpProbes }
+                    ].map((field, idx) => field.items && (
+                      <div key={idx} className="space-y-4">
+                        {renderEditableList(field.items, field.path, field.label)}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Research Execution Guidance */}
       {reportData.researchExecutionGuidance && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Research Execution Guidance</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Execution Guidance</h2>
 
-          <div className="space-y-4">
-            {reportData.researchExecutionGuidance.preResearchPreparation && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Pre-Research Preparation</h3>
-                {renderList(reportData.researchExecutionGuidance.preResearchPreparation, ['researchExecutionGuidance', 'preResearchPreparation'])}
-              </div>
-            )}
-
-            {reportData.researchExecutionGuidance.duringResearchBestPractices && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">During Research Best Practices</h3>
-                {renderList(reportData.researchExecutionGuidance.duringResearchBestPractices, ['researchExecutionGuidance', 'duringResearchBestPractices'])}
-              </div>
-            )}
-
-            {reportData.researchExecutionGuidance.postResearchAnalysis && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Post-Research Analysis</h3>
-                {renderList(reportData.researchExecutionGuidance.postResearchAnalysis, ['researchExecutionGuidance', 'postResearchAnalysis'])}
-              </div>
-            )}
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+            {renderEditableList(reportData.researchExecutionGuidance.preResearchPreparation, ['researchExecutionGuidance', 'preResearchPreparation'], 'Pre-Research Preparation')}
+            {renderEditableList(reportData.researchExecutionGuidance.duringResearchBestPractices, ['researchExecutionGuidance', 'duringResearchBestPractices'], 'During Research Best Practices')}
+            {renderEditableList(reportData.researchExecutionGuidance.postResearchAnalysis, ['researchExecutionGuidance', 'postResearchAnalysis'], 'Post-Research Analysis')}
           </div>
         </section>
       )}
 
       {/* Insight Synthesis Framework */}
       {reportData.insightSynthesisFramework && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Insight Synthesis Framework</h2>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Synthesis Framework</h2>
 
-          <div className="space-y-4">
-            {reportData.insightSynthesisFramework.beliefInsights && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Belief Insights</h3>
-                {renderList(reportData.insightSynthesisFramework.beliefInsights, ['insightSynthesisFramework', 'beliefInsights'])}
-              </div>
-            )}
-
-            {reportData.insightSynthesisFramework.behavioralInsights && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Behavioral Insights</h3>
-                {renderList(reportData.insightSynthesisFramework.behavioralInsights, ['insightSynthesisFramework', 'behavioralInsights'])}
-              </div>
-            )}
-
-            {reportData.insightSynthesisFramework.innovationOpportunities && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Innovation Opportunities</h3>
-                {renderList(reportData.insightSynthesisFramework.innovationOpportunities, ['insightSynthesisFramework', 'innovationOpportunities'])}
-              </div>
-            )}
-
-            {reportData.insightSynthesisFramework.designImplications && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Design Implications</h3>
-                {renderList(reportData.insightSynthesisFramework.designImplications, ['insightSynthesisFramework', 'designImplications'])}
-              </div>
-            )}
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+            {renderEditableList(reportData.insightSynthesisFramework.beliefInsights, ['insightSynthesisFramework', 'beliefInsights'], 'Expected Belief Insights')}
+            {renderEditableList(reportData.insightSynthesisFramework.behavioralInsights, ['insightSynthesisFramework', 'behavioralInsights'], 'Expected Behavioral Insights')}
+            {renderEditableList(reportData.insightSynthesisFramework.innovationOpportunities, ['insightSynthesisFramework', 'innovationOpportunities'], 'Innovation Opportunities')}
+            {renderEditableList(reportData.insightSynthesisFramework.designImplications, ['insightSynthesisFramework', 'designImplications'], 'Strategic Design Implications')}
           </div>
         </section>
       )}
 
-      {/* Report Metadata */}
+      {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-sm text-gray-500 text-center pt-4">
-          Report generated on {new Date(data.generated_at).toLocaleString()}
+        <div className="text-[10px] text-gray-400 text-center pt-8 border-t border-gray-100 uppercase tracking-[0.3em]">
+          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()} — Advanced Research Logic
         </div>
       )}
     </div>

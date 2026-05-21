@@ -1,36 +1,43 @@
-import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useParams, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch } from 'react-icons/fi';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { FiArrowLeft, FiPlus, FiInfo, FiTrendingUp, FiMap, FiUsers, FiHeart, FiMessageCircle, FiActivity, FiTarget, FiZap, FiMenu, FiX, FiSearch, FiLock, FiMonitor, FiFileText, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useProjectData } from '@/hooks/useProjectData';
 import { useResearchData } from '@/hooks/useResearchData';
-import { ProjectInfo } from '@/components/project-detail/ProjectInfo';
-import { PresentableSlideSection } from '@/components/project-detail/PresentableSlideSection';
-import { ProjectCanvasSection } from '@/components/project-detail/ProjectCanvasSection';
-import { ProjectAnalysisSection } from '@/components/project-detail/ProjectAnalysisSection';
-import { AsIsMapSection } from '@/components/project-detail/AsIsMapSection';
-import { ResearchGeneratorSection } from '@/components/project-detail/ResearchGeneratorSection';
-import { GenericReportViewer } from '@/components/project-detail/GenericReportViewer';
-import { AsIsMapReportViewer } from '@/components/project-detail/AsIsMapReportViewer';
-import { ExtremeUserReportViewer } from '@/components/project-detail/ExtremeUserReportViewer';
-import { DeepEmpathyReportViewer } from '@/components/project-detail/DeepEmpathyReportViewer';
-import { PsychologicalAnalysisReportViewer } from '@/components/project-detail/PsychologicalAnalysisReportViewer';
-
+import { ProjectService } from '@/services/projectService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { PainPointSelectionModal } from '@/components/project-detail/PainPointSelectionModal';
 import { ExtremeUserSelectionModal } from '@/components/project-detail/ExtremeUserSelectionModal';
+import { HorizontalModal } from '@/components/ui/Modal';
+import { AssessmentProblemDetailedView } from '@/components/ui/AssessmentProblemDetailedView';
 
-import { OutcomeToBehaviorHMWReportViewer } from '@/components/project-detail/OutcomeToBehaviorHMWReportViewer';
-import { HMWIdeationFrameworkReportViewer } from '@/components/project-detail/HMWIdeationFrameworkReportViewer';
-import { IdeaClusteringReportViewer } from '@/components/project-detail/IdeaClusteringReportViewer';
-import { EmbeddedChatSection } from '@/components/project-detail/EmbeddedChatSection';
-import { PrototypingToolsSection } from '@/components/project-detail/PrototypingToolsSection';
-import { TestingSection } from '@/components/project-detail/TestingSection';
-import { MarketSearchSection } from '@/components/project-detail/MarketSearchSection';
-import { TransformationFrameworkSection } from '@/components/project-detail/TransformationFrameworkSection';
+const ProjectInfo = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.ProjectInfo })));
+const SecondaryResearchSection = lazy(() => import('@/components/project-detail/ProjectInfo').then((mod) => ({ default: mod.SecondaryResearchSection })));
+const ProjectAnalysisSection = lazy(() => import('@/components/project-detail/ProjectAnalysisSection').then((mod) => ({ default: mod.ProjectAnalysisSection })));
+const AsIsMapSection = lazy(() => import('@/components/project-detail/AsIsMapSection').then((mod) => ({ default: mod.AsIsMapSection })));
+const ResearchGeneratorSection = lazy(() => import('@/components/project-detail/ResearchGeneratorSection').then((mod) => ({ default: mod.ResearchGeneratorSection })));
+const GenericReportViewer = lazy(() => import('@/components/project-detail/GenericReportViewer').then((mod) => ({ default: mod.GenericReportViewer })));
+const AsIsMapReportViewer = lazy(() => import('@/components/project-detail/AsIsMapReportViewer').then((mod) => ({ default: mod.AsIsMapReportViewer })));
+const ExtremeUserReportViewer = lazy(() => import('@/components/project-detail/ExtremeUserReportViewer').then((mod) => ({ default: mod.ExtremeUserReportViewer })));
+const DeepEmpathyReportViewer = lazy(() => import('@/components/project-detail/DeepEmpathyReportViewer').then((mod) => ({ default: mod.DeepEmpathyReportViewer })));
+const PsychologicalAnalysisReportViewer = lazy(() => import('@/components/project-detail/PsychologicalAnalysisReportViewer').then((mod) => ({ default: mod.PsychologicalAnalysisReportViewer })));
+const OutcomeToBehaviorHMWReportViewer = lazy(() => import('@/components/project-detail/OutcomeToBehaviorHMWReportViewer').then((mod) => ({ default: mod.OutcomeToBehaviorHMWReportViewer })));
+const HMWIdeationFrameworkReportViewer = lazy(() => import('@/components/project-detail/HMWIdeationFrameworkReportViewer').then((mod) => ({ default: mod.HMWIdeationFrameworkReportViewer })));
+const IdeaClusteringReportViewer = lazy(() => import('@/components/project-detail/IdeaClusteringReportViewer').then((mod) => ({ default: mod.IdeaClusteringReportViewer })));
+const EmbeddedChatSection = lazy(() => import('@/components/project-detail/EmbeddedChatSection').then((mod) => ({ default: mod.EmbeddedChatSection })));
+const PrototypingToolsSection = lazy(() => import('@/components/project-detail/PrototypingToolsSection').then((mod) => ({ default: mod.PrototypingToolsSection })));
+const TestingSection = lazy(() => import('@/components/project-detail/TestingSection').then((mod) => ({ default: mod.TestingSection })));
+const MarketSearchSection = lazy(() => import('@/components/project-detail/MarketSearchSection').then((mod) => ({ default: mod.MarketSearchSection })));
+const TransformationFrameworkSection = lazy(() => import('@/components/project-detail/TransformationFrameworkSection').then((mod) => ({ default: mod.TransformationFrameworkSection })));
+const PresentationSection = lazy(() => import('@/components/presentation/PresentationSection').then((mod) => ({ default: mod.PresentationSection })));
 
 // Section navigation items
 const SECTIONS = [
   { id: 'project-info', label: 'Project Information', icon: FiInfo },
+  { id: 'secondary-research', label: 'Secondary Research', icon: FiFileText },
   { id: 'as-is-map', label: 'As-Is Map', icon: FiMap },
   { id: 'extreme-user', label: 'Extreme User Generator', icon: FiUsers },
   { id: 'deep-empathy', label: 'Deep Empathy Research', icon: FiHeart },
@@ -43,19 +50,47 @@ const SECTIONS = [
   { id: 'prototyping-tools', label: 'Prototyping Tools', icon: FiTrendingUp },
   { id: 'testing', label: 'Testing', icon: FiActivity },
   { id: 'market-search', label: 'Market Search', icon: FiSearch },
+  { id: 'presentation', label: 'Presentation', icon: FiMonitor },
 ];
 
 export const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { setTopBarTitle, setActiveProjectScore, setActiveProjectAssessment } = useWorkspace();
 
   // Active section state
   const [activeSection, setActiveSection] = useState('project-info');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [presentationViewMode, setPresentationViewMode] = useState<'list' | 'editor'>('list');
+  const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
+  const [headerActionsNode, setHeaderActionsNode] = useState<HTMLElement | null>(null);
 
-  // State for presentable slide
-  const [presentableSlide, setPresentableSlide] = useState<any | null>(null);
+  useEffect(() => {
+    // We delay slightly to ensure the node is rendered by SidebarLayout
+    const timer = setTimeout(() => {
+      setHeaderActionsNode(document.getElementById('project-header-actions'));
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  // Track sections with no generate button (chat, prototyping-tools) — visiting completes them
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`visitedSections_${id}`);
+      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`visitedSections_${id}`, JSON.stringify(Array.from(visitedSections)));
+    }
+  }, [visitedSections, id]);
 
   // Pain Point Modal state
   const [isPainPointModalOpen, setIsPainPointModalOpen] = useState(false);
@@ -89,6 +124,9 @@ export const ProjectDetailPage = () => {
     painPointInvestigated: '',
     extremeUserType: ''
   });
+
+  const [contentVisible, setContentVisible] = useState(false);
+
 
   const [hmwIdeationForm, setHmwIdeationForm] = useState({
     painPointInvestigated: '',
@@ -169,6 +207,30 @@ export const ProjectDetailPage = () => {
   // Custom hooks
   const { project, setProject, isLoading, error, handleDelete, refetchProject } = useProjectData(id, user.id);
 
+  // Sync content visible state
+  useEffect(() => {
+    if (!isLoading && project) {
+      const timer = setTimeout(() => setContentVisible(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, project]);
+
+  // Set Topbar Title and Assessment Data
+  useEffect(() => {
+    if (project?.title) {
+      setTopBarTitle(project.title);
+      setActiveProjectScore(project.score || project.iosAssessment?.overallScore || null);
+      setActiveProjectAssessment(project.iosAssessment || null);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      setTopBarTitle('New Project');
+      setActiveProjectScore(null);
+      setActiveProjectAssessment(null);
+    };
+  }, [project?.title, setTopBarTitle, setActiveProjectScore, setActiveProjectAssessment, project?.score, project?.iosAssessment]);
+
   // Populate Deep Empathy form from research_data when project loads
   useEffect(() => {
     if (project?.research_data) {
@@ -230,6 +292,7 @@ export const ProjectDetailPage = () => {
 
 
 
+
   // Function to extract Target Users from As-Is Map and populate Extreme User form
   const populateTargetUserFromAsIsMap = () => {
     if (!asIsMapData) return;
@@ -249,6 +312,48 @@ export const ProjectDetailPage = () => {
     }
   };
 
+  // Maps a section ID to whether it is "completed" (data generated or always-complete)
+  // Used to decide whether the NEXT section should be unlocked.
+  const isSectionCompleted = (sectionId: string): boolean => {
+    const hasData = (d: any) =>
+      d !== null && d !== undefined &&
+      typeof d === 'object' && Object.keys(d).length > 0;
+    switch (sectionId) {
+      case 'project-info':             return true; // info only, always complete
+      case 'secondary-research':       return true; // always complete to prevent hiding other sections
+      case 'as-is-map':                return hasData(asIsMapData);
+      case 'extreme-user':             return hasData(extremeUserData);
+      case 'deep-empathy':             return hasData(deepEmpathyData);
+      case 'chat':                     return true; // always complete to prevent hiding psychological analysis
+      case 'psychological':            return hasData(psychologicalAnalysisData);
+      case 'transformation-framework': return hasData(transformationFrameworkData);
+      case 'hmw-framework':            return hasData(hmwFrameworkData);
+      case 'hmw-ideation':             return hasData(hmwIdeationData);
+      case 'idea-clustering':          return hasData(ideaClusteringData);
+      case 'prototyping-tools':        return true; // always complete to prevent hiding testing/market search
+      case 'testing':                  return hasData(testingData);
+      case 'market-search':            return hasData(marketSearchData);
+      case 'presentation':             return true; // last section
+      default:                         return false;
+    }
+  };
+
+  // Navigation logic
+  const currentIndex = SECTIONS.findIndex(s => s.id === activeSection);
+  const prevSection = currentIndex > 0 ? SECTIONS[currentIndex - 1] : null;
+  const nextSection = currentIndex < SECTIONS.length - 1 ? SECTIONS[currentIndex + 1] : null;
+  const isNextUnlocked = nextSection ? isSectionCompleted(activeSection) : false;
+
+  const goToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    setVisitedSections(prev => new Set([...prev, sectionId]));
+    // Scroll content area to top
+    const contentArea = document.getElementById('project-detail-content');
+    if (contentArea) {
+      contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // Function to sync Extreme User data to Deep Empathy (called on Generate)
   const syncExtremeUserToDeepEmpathy = () => {
     if (extremeUserForm.painPointStep && extremeUserForm.painPointDescription) {
@@ -260,11 +365,19 @@ export const ProjectDetailPage = () => {
     }
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - removed spinning buffer for smoother feel
+  if (isLoading && !project) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="h-full flex bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 animate-pulse">
+        {/* Sidebar Skeleton */}
+        <aside className="hidden lg:block w-64 bg-white/50 border-r border-gray-200" />
+        
+        {/* Content Skeleton */}
+        <div className="flex-1 p-8 space-y-6">
+          <div className="h-8 bg-gray-200 rounded-lg w-1/4"></div>
+          <div className="h-64 bg-gray-100 rounded-3xl"></div>
+          <div className="h-48 bg-gray-50 rounded-3xl"></div>
+        </div>
       </div>
     );
   }
@@ -288,109 +401,161 @@ export const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/projects')}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-                type="button"
-                aria-label="Back to Projects"
-              >
-                <FiArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-                <p className="text-sm text-gray-600">Project Detail</p>
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200"
-            >
-              {isMobileSidebarOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
-            </button>
-          </div>
+    <Suspense
+      fallback={
+        <div className="h-full flex items-center justify-center bg-[#faf8f5] text-sm text-gray-500">
+          Loading project details...
         </div>
-      </div>
-
-      {/* Two-column layout */}
-      <div className="flex">
-        {/* Left Sidebar - 17% */}
-        <aside className={`
-          fixed lg:sticky top-16 left-0 h-[calc(100vh-4rem)] w-56 lg:w-[17%]
-          bg-white/80 backdrop-blur-sm border-r border-gray-200
-          transition-transform duration-300 ease-in-out z-30
-          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <nav className="h-full overflow-y-auto p-4 space-y-2">
-            {SECTIONS.map((section) => {
+      }
+    >
+      <div className="h-full flex bg-[#faf8f5] overflow-hidden font-sans">
+      {/* Left Sidebar - relative instead of fixed to stay inside the layout flow */}
+      <aside className={`
+        absolute lg:relative top-0 left-0 h-full flex-shrink-0
+        bg-[#f5f3ef] border-r border-gray-200/50
+        transition-all duration-300 ease-in-out z-30 flex flex-col
+        ${isMobileSidebarOpen ? 'translate-x-0 w-64' : (
+          (activeSection === 'presentation' && presentationViewMode === 'editor')
+            ? '-translate-x-full lg:translate-x-0 w-0 overflow-hidden border-none' 
+            : (isDesktopSidebarCollapsed ? '-translate-x-full lg:translate-x-0 w-20' : '-translate-x-full lg:translate-x-0 w-64')
+        )}
+      `}>
+        {/* Sidebar Collapse Toggle - Gray, rounded, non-intrusive */}
+        <div className="absolute -right-2.5 top-[30%] z-40 hidden lg:block">
+          <button
+            onClick={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+            className="w-5 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded flex items-center justify-center transition-colors shadow-sm"
+            title={isDesktopSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isDesktopSidebarCollapsed ? (
+              <FiChevronRight className="w-3.5 h-3.5 text-gray-500" />
+            ) : (
+              <FiChevronLeft className="w-3.5 h-3.5 text-gray-500" />
+            )}
+          </button>
+        </div>
+        <nav className={`flex-1 overflow-y-auto py-4 ${isDesktopSidebarCollapsed ? 'px-2' : 'px-4'} space-y-3 custom-scrollbar`}>
+            {SECTIONS.map((section, index) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
+              const isUnlocked =
+                section.id === 'presentation' ||
+                index === 0 ||
+                isSectionCompleted(SECTIONS[index - 1].id);
+
+              if (isActive) {
+                return (
+                  <Button
+                    key={section.id}
+                    variant="default"
+                    className="w-full justify-start bg-[#0f121f] text-white hover:bg-[#0f121f]/90 transition-all duration-200 shadow-sm h-11 px-4"
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      setVisitedSections(prev => new Set([...prev, section.id]));
+                      setIsMobileSidebarOpen(false);
+                    }}
+                  >
+                    <Icon className={`w-4 h-4 ${isDesktopSidebarCollapsed ? '' : 'mr-2'} flex-shrink-0`} />
+                    {!isDesktopSidebarCollapsed && <span className="truncate flex-1 text-left">{section.label}</span>}
+                  </Button>
+                );
+              }
 
               return (
-                <button
-                  key={section.id}
-                  onClick={() => {
-                    setActiveSection(section.id);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                      transition-all duration-200
-                      ${isActive
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                      : 'text-gray-700 hover:bg-gray-100'
-                    }
+                  <Button
+                    key={section.id}
+                    variant="ghost"
+                    disabled={!isUnlocked}
+                    onClick={() => {
+                      if (!isUnlocked) return;
+                      setActiveSection(section.id);
+                      setVisitedSections(prev => new Set([...prev, section.id]));
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className={`
+                      w-full ${isDesktopSidebarCollapsed ? 'justify-center' : 'justify-start'} h-10 px-4 border-none shadow-none
+                      transition-all duration-200 bg-transparent hover:bg-transparent
+                      ${!isUnlocked
+                        ? 'text-gray-300 opacity-50'
+                        : 'text-gray-500 hover:text-[#0f121f] font-normal'
+                      }
                     `}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                  <span className="truncate">{section.label}</span>
-                </button>
+                  >
+                    <Icon className={`w-4 h-4 ${isDesktopSidebarCollapsed ? '' : 'mr-3'} flex-shrink-0 ${!isUnlocked ? 'text-gray-300' : 'text-gray-400'}`} />
+                    {!isDesktopSidebarCollapsed && <span className="truncate flex-1 text-left">{section.label}</span>}
+                    {!isUnlocked && !isDesktopSidebarCollapsed && <FiLock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300 ml-2" />}
+                  </Button>
               );
             })}
-          </nav>
-        </aside>
+        </nav>
+      </aside>
 
-        {/* Overlay for mobile */}
-        {isMobileSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-            onClick={() => setIsMobileSidebarOpen(false)}
-          />
-        )}
 
-        {/* Right Content Area - 83% */}
-        <main className="flex-1 lg:w-[83%] min-h-screen">
-          <div className="p-4 sm:p-6 lg:p-8">
+      {/* Overlay for mobile */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sources Button Portal */}
+      {headerActionsNode && createPortal(
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsSourcesModalOpen(true)}
+          className="flex items-center gap-2 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 border-gray-200"
+        >
+          <FiFileText className="w-4 h-4" />
+          Sources
+        </Button>,
+        headerActionsNode
+      )}
+
+      {/* Sources Modal */}
+      {isSourcesModalOpen && (
+        <AssessmentProblemDetailedView
+          open={isSourcesModalOpen}
+          onClose={() => setIsSourcesModalOpen(false)}
+          assessment={
+            project?.analysis && project.analysis.length > 0 
+              ? [...project.analysis].sort((x, y) => {
+                  const d1 = new Date(x.createdAt || x.updatedAt || 0).getTime();
+                  const d2 = new Date(y.createdAt || y.updatedAt || 0).getTime();
+                  return d2 - d1;
+                })[0] 
+              : undefined
+          }
+          problemTitle={project?.title || 'Project'}
+          viewType="assessment"
+        />
+      )}
+
+      {/* Right Side - Content area */}
+      <div id="project-detail-content" className={`flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar relative`}>
+        <main className="flex-1 pb-24">
+          <div className={`p-4 sm:p-6 lg:p-10 mx-auto transition-all duration-300 ${(activeSection === 'presentation' && presentationViewMode === 'editor') || isDesktopSidebarCollapsed ? 'max-w-full' : 'max-w-7xl'}`}>
             {/* Project Information */}
             {activeSection === 'project-info' && (
-              <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col gap-10">
                 <ProjectInfo project={project} />
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-                  <div className="p-8">
-                    <dl className="space-y-8">
-                      <PresentableSlideSection
-                        project={project}
-                        presentableSlide={presentableSlide}
-                        setPresentableSlide={setPresentableSlide}
-                      />
-                      <ProjectCanvasSection project={project} />
-                    </dl>
-                  </div>
-                </div>
-                <ProjectAnalysisSection project={project} setProject={setProject} />
               </div>
+            )}
+
+            {/* Secondary Research */}
+            {activeSection === 'secondary-research' && (
+              <SecondaryResearchSection
+                projectId={project.id}
+                userId={user.id}
+                secondaryresearch={project.secondaryresearch}
+                onRefreshProject={refetchProject}
+              />
             )}
 
             {/* As-Is Map */}
             {activeSection === 'as-is-map' && (
-              <div className="animate-fadeIn">
+              <div>
                 <AsIsMapSection
                   project={project}
                   asIsMapData={asIsMapData}
@@ -402,7 +567,6 @@ export const ProjectDetailPage = () => {
                       onGenerateNew={onGenerateNew}
                       projectId={project?.id}
                       onSave={async (updatedData) => {
-                        const { ProjectService } = await import('@/services/projectService');
                         await ProjectService.updateProject(
                           project!.id,
                           { as_is_map: updatedData },
@@ -419,7 +583,7 @@ export const ProjectDetailPage = () => {
 
             {/* Extreme User Generator */}
             {activeSection === 'extreme-user' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Extreme User Generator"
                   description="Generate extreme user personas to identify edge cases and design opportunities for your project. This helps you understand the full spectrum of user needs."
@@ -427,6 +591,7 @@ export const ProjectDetailPage = () => {
                   gradientTo="pink-50"
                   iconBgFrom="purple-500"
                   iconBgTo="pink-600"
+                  variant="asIs"
                   formFields={[
                     {
                       type: 'inline',
@@ -479,7 +644,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { extreme_user_data: updatedData }, user?.id);
                       setExtremeUserData(updatedData);
                       refetchProject();
@@ -491,7 +655,7 @@ export const ProjectDetailPage = () => {
 
             {/* Deep Empathy Research */}
             {activeSection === 'deep-empathy' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Deep Empathy Research Generator"
                   description="Generate universal deep empathy insights for primary research, mirroring the Extreme User workflow. Pain points will be automatically copied from the Extreme User Generator when you click 'Generate' above. You can edit any field as needed."
@@ -541,7 +705,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { deep_empathy_data: updatedData }, user?.id);
                       setDeepEmpathyData(updatedData);
                       refetchProject();
@@ -553,14 +716,20 @@ export const ProjectDetailPage = () => {
 
             {/* Chat Section */}
             {activeSection === 'chat' && (
-              <div className="animate-fadeIn">
-                <EmbeddedChatSection projectId={project.id} extremeUserData={extremeUserData} project={project} userId={user.id} />
+              <div>
+                <EmbeddedChatSection
+                  projectId={project.id}
+                  extremeUserData={extremeUserData}
+                  project={project}
+                  userId={user.id}
+                  onRefreshProject={refetchProject}
+                />
               </div>
             )}
 
             {/* Psychological Analysis */}
             {activeSection === 'psychological' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Psychological Analysis"
                   description="Transform unprocessed research data into deep behavioral insights through psychological analysis. This helps you understand the underlying motivations and patterns in user behavior."
@@ -582,7 +751,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { psychological_analysis: updatedData }, user?.id);
                       setPsychologicalAnalysisData(updatedData);
                       refetchProject();
@@ -594,14 +762,13 @@ export const ProjectDetailPage = () => {
 
             {/* Transformation Framework */}
             {activeSection === 'transformation-framework' && (
-              <div className="animate-fadeIn">
+              <div>
                 <TransformationFrameworkSection
                   project={project}
                   transformationFrameworkData={transformationFrameworkData}
                   setTransformationFrameworkData={setTransformationFrameworkData}
                   onRefreshProject={refetchProject}
                   onSaveData={async (updatedData) => {
-                    const { ProjectService } = await import('@/services/projectService');
                     await ProjectService.updateProject(project!.id, { transformation_framework: updatedData }, user?.id);
                     setTransformationFrameworkData(updatedData);
                     refetchProject();
@@ -612,7 +779,7 @@ export const ProjectDetailPage = () => {
 
             {/* HMW Framework */}
             {activeSection === 'hmw-framework' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Outcome-to-Behavior HMW Framework"
                   description="Convert insights into actionable HMW (How Might We) questions tailored to the project. This helps you create a structured approach to problem-solving and innovation."
@@ -634,7 +801,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { Behaviour_Framework: updatedData }, user?.id);
                       setHmwFrameworkData(updatedData);
                       refetchProject();
@@ -646,7 +812,7 @@ export const ProjectDetailPage = () => {
 
             {/* HMW Ideation Framework */}
             {activeSection === 'hmw-ideation' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="HMW Ideation Framework"
                   description="Generate comprehensive ideation solutions using four distinct creative approaches: Simple Ideas, Outside Category Inspiration, Feature Addition, and Feature Removal. Each approach provides unique perspectives for solving the identified pain points."
@@ -673,7 +839,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { HMW_Ideation_Framework: updatedData }, user?.id);
                       setHmwIdeationData(updatedData);
                       refetchProject();
@@ -685,7 +850,7 @@ export const ProjectDetailPage = () => {
 
             {/* Idea Clustering and Idea Cards */}
             {activeSection === 'idea-clustering' && (
-              <div className="animate-fadeIn">
+              <div>
                 <ResearchGeneratorSection
                   title="Idea Clustering and Idea Cards"
                   description="Generate idea clusters and detailed idea cards from your ideation framework. This analysis groups related ideas, evaluates innovation potential, and provides actionable implementation pathways for the most promising concepts."
@@ -710,7 +875,6 @@ export const ProjectDetailPage = () => {
                     onGenerateNew={onGenerateNew}
                     projectId={project?.id}
                     onSave={async (updatedData) => {
-                      const { ProjectService } = await import('@/services/projectService');
                       await ProjectService.updateProject(project!.id, { Idea_Clustering_and_Idea_Cards: updatedData }, user?.id);
                       setIdeaClusteringData(updatedData);
                       refetchProject();
@@ -722,7 +886,7 @@ export const ProjectDetailPage = () => {
 
             {/* Prototyping Tools */}
             {activeSection === 'prototyping-tools' && (
-              <div className="animate-fadeIn">
+              <div>
                 <PrototypingToolsSection
                   ideaClusteringData={ideaClusteringData}
                   project={project}
@@ -733,7 +897,7 @@ export const ProjectDetailPage = () => {
 
             {/* Testing */}
             {activeSection === 'testing' && (
-              <div className="animate-fadeIn">
+              <div>
                 <TestingSection
                   project={project}
                   asIsMapData={asIsMapData}
@@ -749,7 +913,7 @@ export const ProjectDetailPage = () => {
 
             {/* Market Search */}
             {activeSection === 'market-search' && (
-              <div className="animate-fadeIn">
+              <div>
                 <MarketSearchSection
                   project={project}
                   asIsMapData={asIsMapData}
@@ -763,6 +927,55 @@ export const ProjectDetailPage = () => {
                 />
               </div>
             )}
+
+            {/* Presentation */}
+            {activeSection === 'presentation' && (
+              <div className="animate-fadeIn">
+                <PresentationSection
+                  project={project}
+                  onRefreshProject={refetchProject}
+                  onViewModeChange={setPresentationViewMode}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Section Navigation Arrowheads */}
+          <div className="sticky bottom-10 left-0 right-0 pointer-events-none z-40">
+            <div className={`mx-auto transition-all duration-300 flex justify-between px-6 sm:px-10 items-center ${(activeSection === 'presentation' && presentationViewMode === 'editor') || isDesktopSidebarCollapsed ? 'max-w-full' : 'max-w-7xl'}`}>
+              <div className="pointer-events-auto">
+                {prevSection && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => goToSection(prevSection.id)}
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white shadow-xl border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+                    title={`Previous: ${prevSection.label}`}
+                  >
+                    <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="pointer-events-auto">
+                {nextSection && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!isNextUnlocked}
+                    onClick={() => goToSection(nextSection.id)}
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white shadow-xl border-gray-200 transition-all duration-200 ${
+                      isNextUnlocked 
+                        ? 'hover:bg-gray-50 hover:text-gray-900' 
+                        : 'opacity-50 cursor-not-allowed grayscale'
+                    }`}
+                    title={isNextUnlocked ? `Next: ${nextSection.label}` : 'Complete current section to unlock next'}
+                  >
+                    <FiChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -785,5 +998,6 @@ export const ProjectDetailPage = () => {
         extremeUserData={extremeUserData}
       />
     </div>
+    </Suspense>
   );
 };

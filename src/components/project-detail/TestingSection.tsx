@@ -1,8 +1,14 @@
+import { Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiActivity, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import type { Project } from '@/types/project';
 import { TestingReportViewer } from './TestingReportViewer';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface TestingSectionProps {
     project: Project;
@@ -155,14 +161,9 @@ export const TestingSection = ({
 
             console.log('Testing Request Body:', requestBody);
 
-            const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/testing', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
+            const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/testing';
+
+            const response = await postN8nWebhook(targetUrl, requestBody);
 
             if (!response.ok) {
                 console.error('API Response not ok:', response.status, response.statusText);
@@ -204,188 +205,222 @@ export const TestingSection = ({
         setTestingData(null);
     };
 
-    const DataCard = ({ title, content, isEmpty }: { title: string; content: React.ReactNode; isEmpty?: boolean }) => (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-                {isEmpty ? (
-                    <FiAlertCircle className="w-4 h-4 text-amber-500" />
-                ) : (
-                    <FiCheck className="w-4 h-4 text-green-500" />
-                )}
-                <h4 className="text-sm font-semibold text-gray-700">{title}</h4>
-            </div>
-            <div className="text-sm text-gray-600">
-                {isEmpty ? <span className="italic text-gray-400">No data available</span> : content}
-            </div>
-        </div>
-    );
+    const DataCard = ({ title, content, isEmpty }: { title: string; content: React.ReactNode; isEmpty?: boolean }) => null;
 
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-                <TestingReportViewer
-                    data={testingData}
-                    onGenerateNew={handleGenerateNew}
-                    projectId={project.id}
-                />
-            </div>
+            <TestingReportViewer
+                data={testingData}
+                onGenerateNew={handleGenerateNew}
+                projectId={project.id}
+            />
         );
     }
 
     // Show form if no data
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-3xl shadow-lg p-6">
-                <div className="flex items-start gap-3">
-                    <div className="p-3 rounded-2xl bg-white/10">
-                        <FiActivity className="w-6 h-6" />
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <FiActivity className="size-5 shrink-0 text-gray-400" />
+                    Testing
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Generate comprehensive testing scenarios
+                </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="flex flex-col gap-8 px-6 pb-6 pt-6">
+                {/* User Input Section */}
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-sm font-medium text-gray-900">Your Input</h3>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="productName" className="text-sm font-medium text-gray-900">
+                        Product Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        id="productName"
+                        type="text"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        placeholder="Enter your product name..."
+                      />
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold">Testing</h2>
-                        <p className="text-sm text-cyan-100 mt-1">
-                            Generate comprehensive testing scenarios for your prototype. Product details are auto-filled from your project data.
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="specificFocus" className="text-sm font-medium text-gray-900">
+                        Specific Focus Areas <span className="text-xs font-normal text-gray-500">(Optional)</span>
+                      </label>
+                      <Textarea
+                        id="specificFocus"
+                        value={specificFocus}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpecificFocus(e.target.value)}
+                        placeholder="Any specific concerns, edge cases, or areas to focus on during testing..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Auto-Populated Data Preview */}
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Auto-Populated from Project Data</h3>
+                    <p className="mt-1 text-xs text-gray-500">(Read-only)</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {autoPopulatedData.problemStatement ? (
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          ) : (
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                          )}
+                          <h4 className="text-xs font-medium text-gray-700">Problem Statement</h4>
+                        </div>
+                        <p className="line-clamp-3 text-xs text-gray-600">
+                          {autoPopulatedData.problemStatement || <span className="italic text-gray-500">No data available</span>}
                         </p>
-                    </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {autoPopulatedData.targetUsers ? (
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          ) : (
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                          )}
+                          <h4 className="text-xs font-medium text-gray-700">Target Users</h4>
+                        </div>
+                        <p className="line-clamp-3 text-xs text-gray-600">
+                          {autoPopulatedData.targetUsers || <span className="italic text-gray-500">No data available</span>}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {autoPopulatedData.keyFeatures.length > 0 ? (
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          ) : (
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                          )}
+                          <h4 className="text-xs font-medium text-gray-700">Key Features</h4>
+                        </div>
+                        {autoPopulatedData.keyFeatures.length > 0 ? (
+                          <ul className="flex flex-col gap-1">
+                            {autoPopulatedData.keyFeatures.slice(0, 3).map((f, i) => (
+                              <li key={i} className="line-clamp-1 text-xs text-gray-600">• {f}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs italic text-gray-500">No data available</span>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {autoPopulatedData.userScenarios.length > 0 ? (
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          ) : (
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                          )}
+                          <h4 className="text-xs font-medium text-gray-700">User Scenarios</h4>
+                        </div>
+                        {autoPopulatedData.userScenarios.length > 0 ? (
+                          <ul className="flex flex-col gap-1">
+                            {autoPopulatedData.userScenarios.slice(0, 3).map((s, i) => (
+                              <li key={i} className="line-clamp-1 text-xs text-gray-600">• {s}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs italic text-gray-500">No data available</span>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          <h4 className="text-xs font-medium text-gray-700">Design Stage</h4>
+                        </div>
+                        <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${autoPopulatedData.designStage === 'Refined Prototype'
+                          ? 'bg-green-100 text-green-700'
+                          : autoPopulatedData.designStage === 'Rough Prototype'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                          }`}>
+                          {autoPopulatedData.designStage}
+                        </span>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-2 px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {autoPopulatedData.prototypeArtifacts.sketch || autoPopulatedData.prototypeArtifacts.image ? (
+                            <FiCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+                          ) : (
+                            <FiAlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                          )}
+                          <h4 className="text-xs font-medium text-gray-700">Prototype Artifacts</h4>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {autoPopulatedData.prototypeArtifacts.sketch && (
+                            <span className="rounded-md bg-purple-100 px-2 py-1 text-xs text-purple-700">Sketch ✓</span>
+                          )}
+                          {autoPopulatedData.prototypeArtifacts.image && (
+                            <span className="rounded-md bg-blue-100 px-2 py-1 text-xs text-blue-700">Image ✓</span>
+                          )}
+                          {!autoPopulatedData.prototypeArtifacts.sketch && !autoPopulatedData.prototypeArtifacts.image && (
+                            <span className="text-xs italic text-gray-500">None generated yet</span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {autoPopulatedData.featureDescriptions.length > 0 && (
+                    <Card className="border border-gray-200 bg-gray-50 shadow-none">
+                      <CardContent className="flex flex-col gap-3 px-4 py-3">
+                        <h4 className="text-xs font-medium text-gray-700">Feature Descriptions</h4>
+                        <ul className="flex flex-col gap-2">
+                          {autoPopulatedData.featureDescriptions.map((desc, i) => (
+                            <li key={i} className="text-xs text-gray-600">• {desc}</li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-            </div>
 
-            {/* User Input Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Input</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label htmlFor="productName" className="block text-sm font-medium text-gray-700 mb-2">
-                            Product Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="productName"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                            placeholder="Enter your product name..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="specificFocus" className="block text-sm font-medium text-gray-700 mb-2">
-                            Specific Focus Areas <span className="text-gray-400">(Optional)</span>
-                        </label>
-                        <textarea
-                            id="specificFocus"
-                            value={specificFocus}
-                            onChange={(e) => setSpecificFocus(e.target.value)}
-                            placeholder="Any specific concerns, edge cases, or areas to focus on during testing..."
-                            rows={3}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none transition-all duration-200"
-                        />
-                    </div>
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating || !productName.trim()}
+                    >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Testing Scenarios'
+                        )}
+                    </Button>
                 </div>
-            </div>
-
-            {/* Auto-Populated Data Preview */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Auto-Populated from Project Data
-                    <span className="text-sm font-normal text-gray-500 ml-2">(Read-only)</span>
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DataCard
-                        title="Problem Statement"
-                        content={<p className="line-clamp-3">{autoPopulatedData.problemStatement}</p>}
-                        isEmpty={!autoPopulatedData.problemStatement}
-                    />
-
-                    <DataCard
-                        title="Target Users"
-                        content={<p className="line-clamp-3">{autoPopulatedData.targetUsers}</p>}
-                        isEmpty={!autoPopulatedData.targetUsers}
-                    />
-
-                    <DataCard
-                        title="Key Features"
-                        content={
-                            <ul className="list-disc list-inside space-y-1">
-                                {autoPopulatedData.keyFeatures.slice(0, 5).map((f, i) => (
-                                    <li key={i} className="line-clamp-1">{f}</li>
-                                ))}
-                            </ul>
-                        }
-                        isEmpty={autoPopulatedData.keyFeatures.length === 0}
-                    />
-
-                    <DataCard
-                        title="User Scenarios"
-                        content={
-                            <ul className="list-disc list-inside space-y-1">
-                                {autoPopulatedData.userScenarios.map((s, i) => (
-                                    <li key={i} className="line-clamp-1">{s}</li>
-                                ))}
-                            </ul>
-                        }
-                        isEmpty={autoPopulatedData.userScenarios.length === 0}
-                    />
-
-                    <DataCard
-                        title="Design Stage"
-                        content={
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${autoPopulatedData.designStage === 'Refined Prototype'
-                                ? 'bg-green-100 text-green-700'
-                                : autoPopulatedData.designStage === 'Rough Prototype'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                {autoPopulatedData.designStage}
-                            </span>
-                        }
-                    />
-
-                    <DataCard
-                        title="Prototype Artifacts"
-                        content={
-                            <div className="flex gap-2">
-                                {autoPopulatedData.prototypeArtifacts.sketch && (
-                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Sketch ✓</span>
-                                )}
-                                {autoPopulatedData.prototypeArtifacts.image && (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Image ✓</span>
-                                )}
-                                {!autoPopulatedData.prototypeArtifacts.sketch && !autoPopulatedData.prototypeArtifacts.image && (
-                                    <span className="text-gray-400 italic">None generated yet</span>
-                                )}
-                            </div>
-                        }
-                    />
-                </div>
-
-                {autoPopulatedData.featureDescriptions.length > 0 && (
-                    <div className="mt-4">
-                        <DataCard
-                            title="Feature Descriptions"
-                            content={
-                                <ul className="space-y-2">
-                                    {autoPopulatedData.featureDescriptions.map((desc, i) => (
-                                        <li key={i} className="text-sm">{desc}</li>
-                                    ))}
-                                </ul>
-                            }
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* Generate Button */}
-            <div className="flex justify-end">
-                <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !productName.trim()}
-                    className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                    {isGenerating ? 'Generating Testing Scenarios...' : 'Generate Testing Scenarios'}
-                </button>
-            </div>
-        </div>
+              </CardContent>
+            </Card>
     );
 };

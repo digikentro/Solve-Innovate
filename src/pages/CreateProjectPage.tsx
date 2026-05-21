@@ -6,7 +6,7 @@ import { ProblemStatement } from '@/services/iosFramework';
 import { IOSFrameworkService } from '@/services/iosFramework';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info, ArrowUp, Paperclip } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { SourceVerificationInfo } from '@/components/ui/SourceVerificationInfo';
 import { SourceVerificationService } from '@/services/sourceVerificationService';
@@ -249,6 +249,7 @@ export default function CreateProjectPage() {
   const [interestMatchReasoning, setInterestMatchReasoning] = useState<{ problemId: string; reasoning: string } | null>(null);
   const [showInterestMatchModal, setShowInterestMatchModal] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [showHmwGuidelinesModal, setShowHmwGuidelinesModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -607,29 +608,8 @@ export default function CreateProjectPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-7xl mx-auto">
-        {/* Breadcrumb Navigation */}
-        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <span className="text-gray-500 ">Create New Project</span>
-          {projectType && (
-            <>
-              <span>/</span>
-              <span className="text-gray-500">
-                {projectType === 'social-impact' ? 'Social Impact' : 'Business'}
-              </span>
-            </>
-          )}
-          {selectedSector && (
-            <>
-              <span>/</span>
-              <span className="text-gray-500">
-                {getSectorName(selectedSector)}
-              </span>
-            </>
-          )}
-        </nav>
-
-
-        <div className="flex items-center gap-3 mb-8">
+        {/* Breadcrumb Navigation with back button */}
+        <div className="flex items-center gap-2 mb-8">
           <button
             onClick={() => {
               if (projectType) {
@@ -645,13 +625,31 @@ export default function CreateProjectPage() {
                 navigate('/projects');
               }
             }}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-indigo-700 shadow hover:bg-indigo-50 hover:text-indigo-900 transition border border-indigo-200"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-800 transition border border-indigo-200 flex-shrink-0"
             type="button"
             aria-label="Back"
           >
-            <FiArrowLeft className="w-6 h-6" />
+            <FiArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-3xl font-bold m-0 ">Create New Project</h1>
+          <nav className="flex items-center space-x-2 text-sm text-gray-500">
+            <span className="text-gray-500">Create New Project</span>
+            {projectType && (
+              <>
+                <span>/</span>
+                <span className="text-gray-500">
+                  {projectType === 'social-impact' ? 'Social Impact' : 'Business'}
+                </span>
+              </>
+            )}
+            {selectedSector && (
+              <>
+                <span>/</span>
+                <span className="text-gray-500">
+                  {getSectorName(selectedSector)}
+                </span>
+              </>
+            )}
+          </nav>
         </div>
 
         {/* Project Type Selection */}
@@ -701,56 +699,99 @@ export default function CreateProjectPage() {
         {/* Problem Input Section */}
         {projectType && generatedProblems.length === 0 && (
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">2. Define Your Problem</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Define Your Problem</h2>
+              <button
+                type="button"
+                onClick={() => setShowHmwGuidelinesModal(true)}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                <Info className="w-3.5 h-3.5" />
+                <span>View HMW Framework Guidelines</span>
+              </button>
+            </div>
 
             {/* Custom Problem Description */}
             <div className="mb-6">
-              <h3 className="text-lg font-medium mb-3 text-gray-700">Write your own problem:</h3>
-              <div className="mb-3">
-                <details className="text-xs text-gray-500">
-                  <summary className="cursor-pointer hover:text-gray-700">View HMW Framework Guidelines</summary>
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md space-y-2">
-                    <p><strong>Good HMW examples:</strong></p>
-                    <ul className="list-disc list-inside space-y-1">
+              {/* HMW Guidelines modal */}
+              <Modal open={showHmwGuidelinesModal} onClose={() => setShowHmwGuidelinesModal(false)}>
+                <h2 className="text-xl font-bold mb-4">HMW Framework Guidelines</h2>
+                <div className="space-y-4 text-sm text-gray-700">
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">Good HMW examples:</p>
+                    <ul className="list-disc list-inside space-y-1 text-gray-600">
                       <li>"How might we help remote teams stay connected and informed?"</li>
                       <li>"How might we reduce food waste in urban households?"</li>
                       <li>"How might we improve access to mental health resources for students?"</li>
                     </ul>
-                    <p className="mt-2"><strong>Key principles:</strong></p>
-                    <ul className="list-disc list-inside space-y-1">
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">Key principles:</p>
+                    <ul className="list-disc list-inside space-y-1 text-gray-600">
                       <li>Focus on human problems, not technical solutions</li>
                       <li>Broad enough for discovery, specific enough to be actionable</li>
                       <li>Address genuine pain points experienced by real people</li>
                     </ul>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    💡 <strong>Tip:</strong> Frame your problem as a "How Might We" statement for better results.
-                    Focus on the human experience and avoid prescribing solutions.
-                  </p>
-                </details>
-              </div>
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                    <p className="text-indigo-800"><strong>💡 Tip:</strong> Frame your problem as a "How Might We" statement for better results. Focus on the human experience and avoid prescribing solutions.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">Three HMW prompt types:</p>
+                    <div className="space-y-2">
+                      <div className="p-2 bg-indigo-50 rounded-md"><span className="font-medium text-indigo-700">Human-Centred:</span> <span className="text-gray-600">"How might we help [target group] to [do / feel / understand X]?"</span></div>
+                      <div className="p-2 bg-blue-50 rounded-md"><span className="font-medium text-blue-700">System-Focused:</span> <span className="text-gray-600">"How might we redesign [system component] to [deliver systemic outcome]?"</span></div>
+                      <div className="p-2 bg-green-50 rounded-md"><span className="font-medium text-green-700">Pure-Business:</span> <span className="text-gray-600">"How might we [business action] to [achieve quantified outcome] within [timeframe]?"</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-6">
+                  <Button onClick={() => setShowHmwGuidelinesModal(false)}>Got it</Button>
+                </div>
+              </Modal>
 
-              {/* Enhanced Text Input with PDF Upload */}
-              <div className={`border-2 rounded-lg overflow-hidden transition-all duration-200 focus-within:ring-4 ${inputMode === 'custom'
-                ? 'border-indigo-500 ring-indigo-200 bg-white'
-                : 'border-gray-300 focus-within:border-indigo-400 focus-within:ring-indigo-100 bg-white'
-                }`}>
+              {/* Claude/ChatGPT-style textarea card */}
+              <div className={`relative rounded-2xl shadow-md border bg-white transition-all duration-200 focus-within:shadow-lg ${
+                inputMode === 'custom' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-200 focus-within:border-gray-300'
+              }`}>
+                {/* Uploaded file chips (Claude-style) */}
+                {uploadedPdfs.length > 0 && (
+                  <div className="flex flex-wrap gap-2 px-4 pt-3">
+                    {uploadedPdfs.map((pdf, index) => (
+                      <div key={index} className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 max-w-[200px] transition-colors">
+                        <Paperclip className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                        <span className="truncate">{pdf.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removePdf(index)}
+                          className="flex-shrink-0 text-gray-400 hover:text-gray-700 transition-colors ml-0.5"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Textarea */}
                 <textarea
                   placeholder="How might we help [specific group] [achieve specific outcome] in [specific context]?"
                   value={problemDescription}
                   onChange={(e) => {
                     setProblemDescription(e.target.value);
                     setInputMode('custom');
-                    // Auto-resize the textarea
                     e.target.style.height = 'auto';
                     e.target.style.height = Math.min(e.target.scrollHeight, 300) + 'px';
                   }}
-                  className="w-full min-h-[80px] max-h-[300px] p-4 text-base resize-none border-0 focus:outline-none bg-transparent"
-                  style={{ fontSize: '16px' }}
+                  className="w-full min-h-[56px] max-h-[300px] px-4 pt-3 pb-2 text-base resize-none border-0 focus:outline-none bg-transparent placeholder-gray-400 text-gray-800 leading-relaxed"
                 />
-                {/* Toolbar: PDF Upload (System/Business toggles removed) */}
-                <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 flex items-center gap-4 mt-1">
-                  <label className="cursor-pointer flex items-center gap-2">
+
+                {/* Bottom toolbar */}
+                <div className="flex items-center justify-between px-3 pb-3 pt-1">
+                  {/* Left: Add Context (hover-expand) */}
+                  <div className="flex items-center gap-2">
                     <input
                       type="file"
                       multiple
@@ -759,112 +800,68 @@ export default function CreateProjectPage() {
                       className="hidden"
                       id="pdf-upload"
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                      size="sm"
                       disabled={isProcessingPdf}
-                      className="flex items-center gap-2 w-auto rounded-full p-2 bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400"
                       onClick={() => document.getElementById('pdf-upload')?.click()}
+                      className="group flex items-center gap-0 hover:gap-1.5 overflow-hidden rounded-full p-2 hover:px-3 border border-gray-200 bg-gray-50 hover:bg-white hover:border-gray-300 transition-all duration-200 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                      title="Add context (PDF)"
                     >
                       {isProcessingPdf ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                       ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
+                        <Paperclip className="w-4 h-4 flex-shrink-0" />
                       )}
-                      <span className="text-sm text-gray-700">Add Context</span>
-                    </Button>
-                  </label>
+                      <span className="text-xs font-medium max-w-0 group-hover:max-w-[80px] overflow-hidden transition-all duration-200 whitespace-nowrap">
+                        Add Context
+                      </span>
+                    </button>
+                    {isProcessingPdf && (
+                      <span className="text-xs text-gray-500">Processing…</span>
+                    )}
+                  </div>
+
+                  {/* Right: Arrow send button */}
+                  {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) ? (
+                    <button
+                      type="button"
+                      disabled={isGenerating}
+                      title="Generate Problem"
+                      onClick={async () => {
+                        if (inputMode === 'custom') {
+                          const wordCount = problemDescription.trim().split(/\s+/).length;
+                          if (wordCount < 10) { toast.error('Please describe more.'); return; }
+                        }
+                        setLastHmwType('human');
+                        await generateHMW('human');
+                      }}
+                      className="group flex items-center gap-0 hover:gap-2 overflow-hidden rounded-full p-2 hover:px-3 bg-[#232323] hover:bg-[#111] text-white transition-all duration-200 disabled:opacity-50 justify-center flex-shrink-0"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+                      ) : (
+                        <ArrowUp className="w-4 h-4 flex-shrink-0" />
+                      )}
+                      <span className="text-xs font-medium max-w-0 group-hover:max-w-[120px] overflow-hidden whitespace-nowrap transition-all duration-200">
+                        {isGenerating ? 'Generating…' : 'Generate Problem'}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <ArrowUp className="w-4 h-4 text-gray-300" />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Uploaded PDFs Display */}
-              {uploadedPdfs.length > 0 && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-green-800">
-                      📎 {uploadedPdfs.length} PDF(s) uploaded
-                    </span>
-                    <span className="text-xs text-green-600">
-                      Context will be included in problem generation
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    {uploadedPdfs.map((pdf, index) => (
-                      <div key={index} className="flex items-center justify-between text-xs">
-                        <span className="text-green-700 truncate flex-1">{pdf.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removePdf(index)}
-                          className="text-red-500 hover:text-red-700 p-1 h-6"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
 
-            {/* Generate Problem Button - Positioned before OR divider */}
-            {generatedProblems.length === 0 && (
-              <div className="flex justify-end mt-8 mb-8">
-                {((inputMode === 'predefined' && selectedSector) || (inputMode === 'custom' && problemDescription.trim())) ? (
-                  <Button
-                    onClick={async () => {
-                      // Validate word count for custom input
-                      if (inputMode === 'custom') {
-                        const wordCount = problemDescription.trim().split(/\s+/).length;
-                        if (wordCount < 10) {
-                          toast.error('Please describe more.');
-                          return;
-                        }
-                      }
-                      setIsGenerating(true);
-                      setLastHmwType('human');
-                      try {
-                        await generateHMW('human');
-                      } finally {
-                        setIsGenerating(false);
-                      }
-                    }}
-                    disabled={isGenerating}
-                    className="shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-indigo-200 hover:border-indigo-300 bg-white"
-                    size="lg"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Generating Problem...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Generate Problem
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <div className="text-gray-400 text-sm font-medium py-3 px-4">
-                    ↑ Enter the idea to generate
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Big OR Separator */}
-            <div className="flex items-center my-12">
-              <div className="flex-grow border-t-2 border-gray-300"></div>
-              <span className="mx-10 text-3xl font-extrabold text-gray-500 bg-white rounded-full shadow px-5 py-1 select-none flex items-center justify-center" style={{ letterSpacing: '0.2em', border: '4px solid #e5e7eb' }}>OR</span>
-              <div className="flex-grow border-t-2 border-gray-300"></div>
+
+            {/* Simple separator */}
+            <div className="my-8">
+              <p className="text-sm text-gray-400">or use our prompts</p>
             </div>
 
             {/* Predefined Sectors */}
@@ -1189,7 +1186,7 @@ export default function CreateProjectPage() {
                     }
                   }}
                   disabled={isGenerating}
-                  className="px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition flex items-center gap-2"
+                  className="px-8 py-3 text-lg font-semibold bg-[#232323] text-white rounded-full shadow hover:bg-[#111] transition flex items-center gap-2"
                 >
                   {isGenerating ? (
                     <>

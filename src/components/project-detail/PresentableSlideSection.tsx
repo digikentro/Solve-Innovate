@@ -1,7 +1,10 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { FiTrendingUp } from 'react-icons/fi';
+import { FiMonitor } from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/types/project';
 
@@ -33,41 +36,57 @@ export const PresentableSlideSection = ({ project, presentableSlide, setPresenta
   };
 
   return (
-    <div className="group">
-      <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Presentable Slide</dt>
-      <dd className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <FiTrendingUp className="w-5 h-5 text-white" />
+    <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+      <CardHeader className="border-b border-gray-100">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+          <FiMonitor className="size-5 shrink-0 text-gray-400" />
+          Presentable Slide
+        </CardTitle>
+        <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+          Professional Presentation Format
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="px-6 pb-6 pt-6">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
+              <FiMonitor className="size-5 text-gray-400" />
             </div>
             <div>
-              <p className="text-gray-900 font-medium">
-                {presentableSlide ? 'Slide generated and ready for viewing' : 'No slide generated yet'}
+              <p className="text-sm font-medium text-gray-900">
+                {presentableSlide ? 'Ready for viewing' : 'No slide generated yet'}
               </p>
-              <p className="text-sm text-gray-600">Create professional presentations</p>
             </div>
           </div>
           {project && project.id && (
             presentableSlide ? (
-              <button
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+              <Button
                 onClick={() => navigate(`/projects/${project.id}/slide`)}
+                className="w-full sm:w-auto"
               >
                 View Slide
-              </button>
+              </Button>
             ) : (
-              <button
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50"
+              <Button
+                variant="outline"
                 onClick={handleGenerateSlide}
                 disabled={isGenerating}
+                className="w-full sm:w-auto"
               >
-                {isGenerating ? 'Generating...' : 'Generate Slide'}
-              </button>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 inline size-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Slide'
+                )}
+              </Button>
             )
           )}
         </div>
-      </dd>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.git/
+.pytest_cache/
+app.db
+container.db
+app_data/
+tmp/
+*.log
+# We copy uv.lock in Dockerfile, but ignore local venv
+node_modules/
+dist/
+build/

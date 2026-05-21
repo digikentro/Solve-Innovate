@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -13,13 +13,15 @@ import { IOSDashboard } from '@/components/dashboard/IOSDashboard';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import { Layout } from '@/components/layout/Layout';
+import { SidebarLayout } from '@/components/layout/SidebarLayout';
+import { WorkspacePage } from '@/pages/WorkspacePage';
+
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import ProjectEditPage from '@/pages/ProjectEditPage';
 import { EditProfilePage } from '@/pages/ProfilePage';
 import ProjectSlidePage from '@/pages/ProjectSlidePage';
-import ProjectCanvasPage from '@/pages/ProjectCanvasPage';
 import SearchPage from '@/pages/SearchPage';
 import UniversalDeepEmpathyPage from '@/pages/UniversalDeepEmpathyPage';
 import { ChatPage } from '@/pages/ChatPage';
@@ -28,10 +30,16 @@ import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminProjectsPage } from '@/pages/admin/AdminProjectsPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { WorkspaceProvider } from '@/contexts/WorkspaceContext';
+import { NavigationProvider } from '@/contexts/NavigationContext';
+
+const ProjectCanvasPage = lazy(() => import('@/pages/ProjectCanvasPage'));
 
 // Dashboard component (protected route)
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuth(); 
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -169,6 +177,12 @@ const SetupProfile = () => {
   );
 };
 
+
+const RootRoute = () => {
+  const { user } = useAuth();
+  return user ? <Navigate to="/workspace" replace /> : <HomePage />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -177,115 +191,44 @@ function App() {
           <Toaster position="top-right" />
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
+              <Route index element={<RootRoute />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
-              <Route
-                path="profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="profile/edit"
-                element={
-                  <ProtectedRoute>
-                    <EditProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="projects"
-                element={
-                  <ProtectedRoute>
-                    <ProjectsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="projects/new"
-                element={
-                  <ProtectedRoute>
-                    <CreateProjectPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="projects/:id"
-                element={
-                  <ProtectedRoute>
-                    <ProjectDetailPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="projects/:id/edit"
-                element={
-                  <ProtectedRoute>
-                    <ProjectEditPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="projects/:id/slide"
-                element={
-                  <ProtectedRoute>
-                    <ProjectSlidePage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
+            </Route>
+
+            {/* Authenticated Routes with SidebarLayout */}
+            <Route element={
+              <ProtectedRoute>
+                <NavigationProvider>
+                  <WorkspaceProvider>
+                    <SidebarLayout />
+                  </WorkspaceProvider>
+                </NavigationProvider>
+              </ProtectedRoute>
+            }>
+              <Route path="workspace" element={<WorkspacePage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="profile/edit" element={<EditProfilePage />} />
+              <Route path="projects" element={<ProjectsPage />} />
+              <Route path="projects/new" element={<WorkspacePage />} />
+              <Route path="projects/:id" element={<ProjectDetailPage />} />
+              <Route path="projects/:id/edit" element={<ProjectEditPage />} />
+              <Route path="projects/:id/slide" element={<ProjectSlidePage />} />
               <Route
                 path="projects/:id/canvas"
                 element={
-                  <ProtectedRoute>
+                  <Suspense fallback={<div className="p-6">Loading canvas…</div>}>
                     <ProjectCanvasPage />
-                  </ProtectedRoute>
+                  </Suspense>
                 }
               />
-
-              <Route
-                path="projects/:id/deep_empathy"
-                element={
-                  <ProtectedRoute>
-                    <UniversalDeepEmpathyPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="projects/:id/chat"
-                element={
-                  <ProtectedRoute>
-                    <ChatPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="setup-profile"
-                element={
-                  <ProtectedRoute>
-                    <SetupProfile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="search"
-                element={
-                  <ProtectedRoute>
-                    <SearchPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="projects/:id/deep_empathy" element={<UniversalDeepEmpathyPage />} />
+              <Route path="projects/:id/chat" element={<ChatPage />} />
+              <Route path="dashboard" element={<Navigate to="/workspace" replace />} />
+              <Route path="setup-profile" element={<SetupProfile />} />
+              <Route path="search" element={<SearchPage />} />
             </Route>
 
             {/* Admin Routes */}

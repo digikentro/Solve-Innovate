@@ -1,0 +1,845 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDrag } from '@use-gesture/react';
+import ReactECharts from 'echarts-for-react';
+
+import { LightweightWysiwyg } from '@/components/presentation/LightweightWysiwyg';
+import type {
+  SlideData,
+  SpatialBlock,
+  SpatialChartBlock,
+  SpatialChartDataPoint,
+  SpatialImageBlock,
+  SpatialTextBlock,
+  Theme,
+} from '@/types/presentation';
+
+// ─── Fixed Reference Canvas ───────────────────────────────────────────────────
+// All slides are authored at 960×540 (16:9) and scaled via CSS transform to fit
+// any container. This ensures pixel-perfect consistency across screen sizes.
+export const SLIDE_REFERENCE_WIDTH = 960;
+export const SLIDE_REFERENCE_HEIGHT = 540;
+
+interface SlideRendererProps {
+  slide: SlideData;
+  theme: Theme;
+  className?: string;
+  logoUrl?: string;
+  logoPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  role?: 'viewer' | 'thumbnail' | 'measure';
+  selectedBlockIds?: string[];
+  onSelectBlocks?: (ids: string[]) => void;
+  onSlideChange?: (nextSlide: SlideData) => void;
+  onBlockSelect?: (blockId: string | null) => void;
+}
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return value;
+};
+
+const getNormalizedPosition = (
+  block: SpatialBlock,
+  fallbackIndex: number
+): { x: number; y: number; width: number; height: number } => {
+  const position = (block as any).position || {};
+  const width = clamp(toFiniteNumber(position.width, 80), 4, 100);
+  const height = clamp(toFiniteNumber(position.height, 18), 4, 100);
+  const x = clamp(toFiniteNumber(position.x, 10), 0, 100 - width);
+  const y = clamp(toFiniteNumber(position.y, 8 + fallbackIndex * 6), 0, 100 - height);
+  return { x, y, width, height };
+};
+
+const pxToPercent = (px: number, total: number): number => {
+  if (!total) return 0;
+  return (px / total) * 100;
+};
+
+// Font sizes relative to the 960×540 reference canvas.
+// They will scale proportionally via CSS transform: scale() at runtime.
+const VARIANT_FONT_SIZES: Record<string, number> = {
+  title: 38,
+  subtitle: 26,
+  heading: 28,
+  body: 18,
+  bullets: 18,
+  caption: 13,
+};
+
+// ─── Scaled Slide Canvas ───────────────────────────────────────────────────────
+// Wraps the slide in a fixed 960×540 div and applies a CSS transform scale
+// so the slide fills its parent container while maintaining perfect proportions.
+
+interface ScaledSlideCanvasProps {
+  children: React.ReactNode;
+  className?: string;
+  fillHeight?: boolean;
+}
+
+const ScaledSlideCanvas = ({ children, className = '', fillHeight = false }: ScaledSlideCanvasProps) => {
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  const computeScale = useCallback(() => {
+    if (!outerRef.current) return;
+    const { width, height } = outerRef.current.getBoundingClientRect();
+    if (!width || !height) return;
+    setScale(Math.min(width / SLIDE_REFERENCE_WIDTH, height / SLIDE_REFERENCE_HEIGHT));
+  }, []);
+
+  useEffect(() => {
+    computeScale();
+    const observer = new ResizeObserver(computeScale);
+    if (outerRef.current) observer.observe(outerRef.current);
+    return () => observer.disconnect();
+  }, [computeScale]);
+
+  // fillHeight=true: used in the editor viewer. Fills parent width+height,
+  // slides are centered. No aspect-ratio overflow issue.
+  if (fillHeight) {
+    return (
+      <div
+        ref={outerRef}
+        className={`relative w-full h-full overflow-hidden ${className}`}
+      >
+        <div
+          style={{
+            width: SLIDE_REFERENCE_WIDTH,
+            height: SLIDE_REFERENCE_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: -(SLIDE_REFERENCE_HEIGHT / 2),
+            marginLeft: -(SLIDE_REFERENCE_WIDTH / 2),
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // fillHeight=false: used in thumbnails. Keeps w-full + aspect-ratio.
+  return (
+    <div
+      ref={outerRef}
+      className={`relative w-full overflow-hidden ${className}`}
+      style={{ aspectRatio: `${SLIDE_REFERENCE_WIDTH} / ${SLIDE_REFERENCE_HEIGHT}` }}
+    >
+      <div
+        style={{
+          width: SLIDE_REFERENCE_WIDTH,
+          height: SLIDE_REFERENCE_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const toChartPoints = (raw: unknown): SpatialChartDataPoint[] => {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => {
+        const point = item as Record<string, unknown>;
+        const label = typeof point.label === 'string' ? point.label : '';
+        const value = typeof point.value === 'number' ? point.value : Number(point.value || 0);
+        return { label: label || 'Item', value: Number.isFinite(value) ? value : 0 };
+      })
+      .filter((point) => point.label.trim().length > 0);
+  }
+  if (raw && typeof raw === 'object') {
+    const candidate = raw as { headers?: unknown; rows?: unknown };
+    if (Array.isArray(candidate.rows)) {
+      return candidate.rows
+        .map((row) => {
+          if (!Array.isArray(row) || row.length < 2) return null;
+          const label = String(row[0] ?? 'Item');
+          const value = Number(row[1] ?? 0);
+          return { label, value: Number.isFinite(value) ? value : 0 };
+        })
+        .filter((point): point is SpatialChartDataPoint => Boolean(point));
+    }
+  }
+  return [];
+};
+
+const buildChartOption = (block: SpatialChartBlock, primary: string) => {
+  const points = toChartPoints((block as unknown as { data?: unknown }).data);
+  const labels = points.map((p: SpatialChartDataPoint) => p.label);
+  const values = points.map((p: SpatialChartDataPoint) => p.value);
+
+  if (block.chart_type === 'pie' || block.chart_type === 'donut') {
+    return {
+      animation: false,
+      tooltip: { trigger: 'item' },
+      series: [{
+        type: 'pie',
+        radius: block.chart_type === 'donut' ? ['45%', '70%'] : '70%',
+        data: points.map((p) => ({ value: p.value, name: p.label })),
+        itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
+      }],
+    };
+  }
+  if (block.chart_type === 'line' || block.chart_type === 'area') {
+    return {
+      animation: false,
+      xAxis: { type: 'category', data: labels },
+      yAxis: { type: 'value' },
+      series: [{
+        data: values,
+        type: 'line',
+        areaStyle: block.chart_type === 'area' ? {} : undefined,
+        smooth: true,
+        lineStyle: { width: 3, color: block.color || primary },
+        itemStyle: { color: block.color || primary },
+      }],
+      grid: { left: 32, right: 16, top: 24, bottom: 28 },
+    };
+  }
+  return {
+    animation: false,
+    xAxis: { type: 'category', data: labels },
+    yAxis: { type: 'value' },
+    series: [{
+      data: values,
+      type: 'bar',
+      itemStyle: { color: block.color || primary, borderRadius: [8, 8, 0, 0] },
+    }],
+    grid: { left: 32, right: 16, top: 24, bottom: 28 },
+  };
+};
+
+// ─── Resize Handle ──────────────────────────────────────────────────────────
+
+type ResizeHandleDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
+interface ResizeHandleDivProps {
+  direction: ResizeHandleDirection;
+  blockPosition: { x: number; y: number; width: number; height: number };
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  isInteractive: boolean;
+  onSizeChange: (pos: { x: number; y: number; width: number; height: number }) => void;
+  onDragStateChange: (dragging: boolean) => void;
+  style: React.CSSProperties;
+  className: string;
+}
+
+const ResizeHandleDiv = ({
+  direction,
+  blockPosition,
+  stageRef,
+  isInteractive,
+  onSizeChange,
+  onDragStateChange,
+  style,
+  className,
+}: ResizeHandleDivProps) => {
+  const resizeStartPos = useRef({ ...blockPosition });
+
+  const bind = useDrag(
+    ({ first, last, movement: [mx, my], event }) => {
+      if (!isInteractive) return;
+      event?.stopPropagation();
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      if (first) {
+        resizeStartPos.current = { ...blockPosition };
+        onDragStateChange(true);
+      }
+      if (last) {
+        onDragStateChange(false);
+        return;
+      }
+
+      const dxPct = (mx / rect.width) * 100;
+      const dyPct = (my / rect.height) * 100;
+      const start = resizeStartPos.current;
+
+      let newX = start.x;
+      let newY = start.y;
+      let newWidth = start.width;
+      let newHeight = start.height;
+
+      if (direction.includes('e')) {
+        newWidth = clamp(start.width + dxPct, 4, 100 - start.x);
+      }
+      if (direction.includes('w')) {
+        const maxDx = start.width - 4;
+        const actualDx = clamp(dxPct, -start.x, maxDx);
+        newX = start.x + actualDx;
+        newWidth = start.width - actualDx;
+      }
+      if (direction.includes('s')) {
+        newHeight = clamp(start.height + dyPct, 4, 100 - start.y);
+      }
+      if (direction.includes('n')) {
+        const maxDy = start.height - 4;
+        const actualDy = clamp(dyPct, -start.y, maxDy);
+        newY = start.y + actualDy;
+        newHeight = start.height - actualDy;
+      }
+
+      onSizeChange({ x: newX, y: newY, width: newWidth, height: newHeight });
+    },
+    {
+      filterTaps: true,
+      threshold: 2,
+      pointer: { keys: false },
+      from: () => [0, 0],
+    }
+  );
+
+  return (
+    <div
+      {...bind()}
+      className={className}
+      style={{ ...style, touchAction: 'none' }}
+    />
+  );
+};
+
+// ─── Draggable Block ─────────────────────────────────────────────────────────
+
+interface DraggableBlockProps {
+  block: SpatialBlock;
+  blockIndex: number;
+  theme: Theme;
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  isSelected: boolean;
+  isEditing: boolean;
+  isInteractive: boolean;
+  isDragging: boolean;
+  onSelect: (blockId: string, shiftKey: boolean) => void;
+  onBlockSelect: (blockId: string | null) => void;
+  onPositionChange: (blockId: string, x: number, y: number) => void;
+  onSizeChange: (blockId: string, position: { x: number; y: number; width: number; height: number }) => void;
+  onDoubleClick: (blockId: string) => void;
+  onTextChange: (value: string) => void;
+  onTextBlur: () => void;
+  onChartRef: (instance: ReactECharts | null) => void;
+  onDragStateChange: (dragging: boolean) => void;
+}
+
+const DraggableBlock = ({
+  block,
+  blockIndex,
+  theme,
+  stageRef,
+  isSelected,
+  isEditing,
+  isInteractive,
+  isDragging,
+  onSelect,
+  onBlockSelect,
+  onPositionChange,
+  onSizeChange,
+  onDoubleClick,
+  onTextChange,
+  onTextBlur,
+  onChartRef,
+  onDragStateChange,
+}: DraggableBlockProps) => {
+  const position = getNormalizedPosition(block, blockIndex);
+  const dragStartPos = useRef({ x: position.x, y: position.y });
+
+  const bind = useDrag(
+    ({ first, last, movement: [mx, my], event }) => {
+      // Don't drag while editing text
+      if (!isInteractive || isEditing) return;
+      event?.stopPropagation();
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      if (first) {
+        dragStartPos.current = { x: position.x, y: position.y };
+        onDragStateChange(true);
+      }
+      if (last) {
+        onDragStateChange(false);
+        return;
+      }
+
+      const dxPct = (mx / rect.width) * 100;
+      const dyPct = (my / rect.height) * 100;
+      const newX = clamp(dragStartPos.current.x + dxPct, 0, 100 - position.width);
+      const newY = clamp(dragStartPos.current.y + dyPct, 0, 100 - position.height);
+      onPositionChange(block.id, newX, newY);
+    },
+    {
+      filterTaps: true,
+      threshold: 3,
+      pointer: { keys: false },
+      from: () => [0, 0],
+    }
+  );
+
+  const HANDLE_SIZE = 8;
+  const HANDLE_OFFSET = -HANDLE_SIZE / 2;
+
+  const handleSharedProps = {
+    blockPosition: position,
+    stageRef,
+    isInteractive,
+    onSizeChange: (pos: { x: number; y: number; width: number; height: number }) =>
+      onSizeChange(block.id, pos),
+    onDragStateChange,
+  };
+
+  const handleBase = 'absolute bg-white border-2 border-sky-500 rounded-sm z-20';
+
+  return (
+    <div
+      {...bind()}
+      data-block-id={block.id}
+      className={`canvas-block absolute rounded-lg transition-shadow ${
+        isSelected ? 'ring-2 ring-sky-500 shadow-lg' : ''
+      } ${isInteractive && !isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      style={{
+        // left/top % are relative to the parent (stage) — correct for our position system
+        left: `${position.x}%`,
+        top: `${position.y}%`,
+        width: `${position.width}%`,
+        height: `${position.height}%`,
+        zIndex: block.z_index ?? 0,
+        transform: `rotate(${block.rotation || 0}deg)`,
+        transformOrigin: 'center',
+        border: isInteractive ? '1px dashed rgba(71,85,105,0.25)' : 'none',
+        background: block.type === 'text' ? 'rgba(255,255,255,0.06)' : 'transparent',
+        // overflow:visible when selected so resize handles render outside bounds,
+        // and when editing so the Tiptap editor is not clipped
+        overflow: isSelected || isEditing ? 'visible' : 'hidden',
+        touchAction: 'none',
+      }}
+      onMouseDown={(e) => {
+        if (!isInteractive) return;
+        e.stopPropagation();
+        onBlockSelect(block.id);
+        onSelect(block.id, e.shiftKey);
+      }}
+      onDoubleClick={() => {
+        if (block.type === 'text' && isInteractive) {
+          onDoubleClick(block.id);
+        }
+      }}
+    >
+      <BlockBody
+        block={block}
+        theme={theme}
+        isDragging={isDragging}
+        isEditing={isEditing}
+        onTextChange={onTextChange}
+        onTextBlur={onTextBlur}
+        onChartRef={onChartRef}
+      />
+
+      {/* Resize handles — only when selected and not editing text */}
+      {isSelected && isInteractive && !isEditing && (
+        <>
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="n"
+            className={`${handleBase} cursor-n-resize`}
+            style={{ left: '50%', top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateX(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="s"
+            className={`${handleBase} cursor-s-resize`}
+            style={{ left: '50%', bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateX(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="e"
+            className={`${handleBase} cursor-e-resize`}
+            style={{ right: HANDLE_OFFSET, top: '50%', width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateY(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="w"
+            className={`${handleBase} cursor-w-resize`}
+            style={{ left: HANDLE_OFFSET, top: '50%', width: HANDLE_SIZE, height: HANDLE_SIZE, transform: 'translateY(-50%)' }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="ne"
+            className={`${handleBase} cursor-ne-resize`}
+            style={{ right: HANDLE_OFFSET, top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="nw"
+            className={`${handleBase} cursor-nw-resize`}
+            style={{ left: HANDLE_OFFSET, top: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="se"
+            className={`${handleBase} cursor-se-resize`}
+            style={{ right: HANDLE_OFFSET, bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+          <ResizeHandleDiv
+            {...handleSharedProps}
+            direction="sw"
+            className={`${handleBase} cursor-sw-resize`}
+            style={{ left: HANDLE_OFFSET, bottom: HANDLE_OFFSET, width: HANDLE_SIZE, height: HANDLE_SIZE }}
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── Slide Renderer ──────────────────────────────────────────────────────────
+
+export const SlideRenderer = ({
+  slide,
+  theme,
+  className = '',
+  logoUrl,
+  logoPosition = 'top-right',
+  role = 'viewer',
+  selectedBlockIds = [],
+  onSelectBlocks,
+  onSlideChange,
+  onBlockSelect,
+}: SlideRendererProps) => {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const chartRefs = useRef<Map<string, ReactECharts>>(new Map());
+
+  const [editingTextBlockId, setEditingTextBlockId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isInteractive = role === 'viewer' && !!onSlideChange;
+  const slideBlocks = Array.isArray(slide.blocks) ? slide.blocks : [];
+
+  useEffect(() => {
+    if (!stageRef.current) return;
+    const observer = new ResizeObserver(() => {
+      chartRefs.current.forEach((chart) => {
+        chart.getEchartsInstance().resize();
+      });
+    });
+    observer.observe(stageRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const commitBlocks = (updater: (blocks: SpatialBlock[]) => SpatialBlock[]) => {
+    if (!onSlideChange) return;
+    onSlideChange({ ...slide, blocks: updater(slideBlocks) });
+  };
+
+  const updateBlock = (blockId: string, updater: (block: SpatialBlock) => SpatialBlock) => {
+    commitBlocks((blocks) =>
+      blocks.map((block) => (block.id === blockId ? updater(block) : block))
+    );
+  };
+
+  const handlePositionChange = (blockId: string, x: number, y: number) => {
+    updateBlock(blockId, (block) => ({
+      ...block,
+      position: { ...getNormalizedPosition(block, 0), x, y },
+    }));
+  };
+
+  const handleSizeChange = (
+    blockId: string,
+    position: { x: number; y: number; width: number; height: number }
+  ) => {
+    updateBlock(blockId, (block) => ({ ...block, position }));
+  };
+
+  const handleSelect = (blockId: string, shiftKey: boolean) => {
+    if (!onSelectBlocks) return;
+    const isSelected = selectedBlockIds.includes(blockId);
+    
+    // Unmount editor if we switch focus to a different block
+    if (editingTextBlockId && editingTextBlockId !== blockId) {
+      setEditingTextBlockId(null);
+    }
+    
+    if (shiftKey) {
+      const next = isSelected
+        ? selectedBlockIds.filter((id) => id !== blockId)
+        : [...selectedBlockIds, blockId];
+      onSelectBlocks(next);
+    } else {
+      onSelectBlocks([blockId]);
+    }
+  };
+
+  const logoStyle: Record<string, string> = {
+    top: logoPosition.startsWith('top') ? '2%' : 'auto',
+    left: logoPosition.endsWith('left') ? '2%' : 'auto',
+    right: logoPosition.endsWith('right') ? '2%' : 'auto',
+    bottom: logoPosition.startsWith('bottom') ? '2%' : 'auto',
+  };
+
+  // The slide canvas — fixed 960×540, CSS-scaled to fit any container.
+  const slideCanvas = (
+    <div
+      ref={stageRef}
+      className="relative"
+      style={{
+        width: SLIDE_REFERENCE_WIDTH,
+        height: SLIDE_REFERENCE_HEIGHT,
+        background: theme.colors.bg,
+        color: theme.colors.text,
+        fontFamily: theme.fonts.body,
+      }}
+      onMouseDown={() => {
+        if (isInteractive && onSelectBlocks) {
+          onSelectBlocks([]);
+          onBlockSelect?.(null);
+          setEditingTextBlockId(null);
+        }
+      }}
+    >
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="Logo"
+          className="absolute object-contain z-[999]"
+          style={{
+            width: '8%',
+            height: '8%',
+            ...logoStyle,
+          }}
+        />
+      ) : null}
+
+      {slideBlocks.map((block, blockIndex) => {
+        const isSelected = selectedBlockIds.includes(block.id);
+        const isEditing = editingTextBlockId === block.id;
+
+        return (
+          <DraggableBlock
+            key={block.id}
+            block={block}
+            blockIndex={blockIndex}
+            theme={theme}
+            stageRef={stageRef}
+            isSelected={isSelected}
+            isEditing={isEditing}
+            isInteractive={isInteractive}
+            isDragging={isDragging}
+            onSelect={handleSelect}
+            onBlockSelect={(id) => onBlockSelect?.(id)}
+            onPositionChange={handlePositionChange}
+            onSizeChange={handleSizeChange}
+            onDoubleClick={(id) => setEditingTextBlockId(id)}
+            onTextChange={(value) => {
+              updateBlock(block.id, (target) => ({
+                ...(target as SpatialTextBlock),
+                content: value,
+              }));
+            }}
+            onTextBlur={() => {
+              // Do not unmount automatically on blur so that external toolbars can maintain the editor instance
+            }}
+            onChartRef={(instance) => {
+              if (instance) {
+                chartRefs.current.set(block.id, instance);
+              } else {
+                chartRefs.current.delete(block.id);
+              }
+            }}
+            onDragStateChange={setIsDragging}
+          />
+        );
+      })}
+    </div>
+  );
+
+  // For 'measure' role (used in print), return the raw fixed-size canvas.
+  // The PrintablePresentation component applies its own print-scale transform.
+  if (role === 'measure') {
+    return slideCanvas;
+  }
+
+  return (
+    <ScaledSlideCanvas className={`rounded-2xl ${className}`} fillHeight={role === 'viewer'}>
+      {slideCanvas}
+    </ScaledSlideCanvas>
+  );
+};
+
+// ─── Block Body ───────────────────────────────────────────────────────────────
+
+interface BlockBodyProps {
+  block: SpatialBlock;
+  theme: Theme;
+  isDragging: boolean;
+  isEditing: boolean;
+  onTextChange: (value: string) => void;
+  onTextBlur: () => void;
+  onChartRef: (instance: ReactECharts | null) => void;
+}
+
+const BlockBody = ({
+  block,
+  theme,
+  isDragging,
+  isEditing,
+  onTextChange,
+  onTextBlur,
+  onChartRef,
+}: BlockBodyProps) => {
+  if (block.type === 'text') {
+    // Font sizes are fixed px values relative to the 960×540 reference canvas.
+    // They scale automatically via the CSS transform: scale() in ScaledSlideCanvas.
+    const variantFontSize = VARIANT_FONT_SIZES[block.style?.variant || 'body'] ?? 18;
+    const textStyle: React.CSSProperties = {
+      textAlign: block.style?.align || 'left',
+      color: block.style?.color || theme.colors.text,
+      fontWeight: block.style?.emphasis === 'strong' ? 700 : 400,
+      fontSize: block.style?.font_size ? `${block.style.font_size}px` : `${variantFontSize}px`,
+    };
+
+    if (isEditing) {
+      return (
+        // Wrapper applies the same visual style as the non-editing view,
+        // so the editor feels truly inline (Canva-style)
+        <div className="h-full w-full" style={textStyle}>
+          <LightweightWysiwyg
+            value={block.content}
+            onChange={onTextChange}
+            placeholder="Type here..."
+            minHeight={20}
+            compact
+            transparent
+            readOnly={isDragging}
+            onBlur={onTextBlur}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="h-full w-full px-3 py-2 whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+        style={textStyle}
+        dangerouslySetInnerHTML={{ __html: block.content }}
+      />
+    );
+  }
+
+  if (block.type === 'image') {
+    const imageSrc = block.prompt || '';
+    return (
+      <div className="h-full w-full bg-white/10 rounded-md overflow-hidden">
+        {imageSrc ? (
+          <img
+            draggable={false}
+            src={imageSrc}
+            alt={block.caption || 'Slide image'}
+            className="h-full w-full select-none"
+            style={{ objectFit: (block.object_fit || 'cover') as 'cover' | 'contain' }}
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center text-sm opacity-80">
+            Image
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (block.type === 'icon') {
+    return (
+      <div className="h-full w-full flex items-center justify-center pointer-events-none">
+        <img 
+          src={block.icon_query} 
+          alt="icon" 
+          className="h-full w-full"
+          style={{ objectFit: 'contain', filter: block.color ? `drop-shadow(0 0 0 ${block.color})` : 'none' }} 
+        />
+      </div>
+    );
+  }
+
+  if (block.type === 'shape') {
+    const shapeStyle: React.CSSProperties = {
+      backgroundColor: block.color || theme.colors.primary,
+      width: '100%',
+      height: '100%',
+    };
+    
+    if (block.shape_type === 'circle') {
+      shapeStyle.borderRadius = '50%';
+    } else if (block.shape_type === 'triangle') {
+      shapeStyle.backgroundColor = 'transparent';
+      shapeStyle.borderLeft = '50px solid transparent';
+      shapeStyle.borderRight = '50px solid transparent';
+      shapeStyle.borderBottom = `100px solid ${block.color || theme.colors.primary}`; // CSS trick
+    } else if (block.shape_type === 'line') {
+      shapeStyle.height = '4px';
+      shapeStyle.marginTop = 'auto';
+      shapeStyle.marginBottom = 'auto';
+    }
+
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div style={shapeStyle}></div>
+      </div>
+    );
+  }
+
+  if (block.type === 'table') {
+    const defaultColor = block.color || theme.colors.primary;
+    return (
+      <div className="h-full w-full bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+        <table className="w-full text-left border-collapse" style={{ fontSize: '11px' }}>
+          <thead>
+            <tr style={{ backgroundColor: `${defaultColor}15` }}>
+              {block.data.headers.map((h: string, i: number) => (
+                <th key={i} className="p-2 font-semibold border-b border-slate-200" style={{ color: defaultColor }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.data.rows.map((row: string[], rIdx: number) => (
+              <tr key={rIdx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                {row.map((cell: string, cIdx: number) => (
+                  <td key={cIdx} className="p-2 text-slate-700">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const chartBlock = block as SpatialChartBlock;
+  if (!chartBlock.chart_type) return null;
+  const chartOption = buildChartOption(chartBlock, theme.colors.primary);
+  return (
+    <div className="h-full w-full rounded-md bg-white/80">
+      <ReactECharts
+        ref={onChartRef}
+        option={chartOption}
+        notMerge
+        lazyUpdate
+        style={{ width: '100%', height: '100%' }}
+      />
+    </div>
+  );
+};

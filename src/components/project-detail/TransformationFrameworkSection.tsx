@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { FiTarget, FiLoader } from 'react-icons/fi';
+import { Target, Loader2 } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { TransformationFrameworkReportViewer } from './TransformationFrameworkReportViewer';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { postN8nWebhook } from '@/services/n8nWebhook';
 
 interface TransformationFrameworkSectionProps {
     project: Project;
@@ -36,14 +39,9 @@ export const TransformationFrameworkSection = ({
                 project_id: project.id,
             };
 
-            const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/Transformation_Framework', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
+            const targetUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/Transformation_Framework';
+
+            const response = await postN8nWebhook(targetUrl, requestBody);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -79,76 +77,54 @@ export const TransformationFrameworkSection = ({
     // Show report viewer if data exists
     if (hasData) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-                <TransformationFrameworkReportViewer
-                    data={transformationFrameworkData}
-                    onGenerateNew={handleGenerateNew}
-                    projectId={project.id}
-                    onSave={onSaveData}
-                />
-            </div>
+            <TransformationFrameworkReportViewer
+                data={transformationFrameworkData}
+                onGenerateNew={handleGenerateNew}
+                projectId={project.id}
+                onSave={onSaveData}
+            />
         );
     }
 
     // Show generate button only
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-3xl shadow-lg p-8">
-                <div className="flex items-start gap-4">
-                    <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
-                        <FiTarget className="w-8 h-8" />
-                    </div>
-                    <div className="flex-1">
-                        <h2 className="text-3xl font-bold">Transformation Framework</h2>
-                        <p className="text-indigo-100 mt-2 text-lg">
-                            Generate psychological transformation insights that bridge behavior patterns to actionable outcomes.
-                            This framework identifies irrationality clusters and provides outcome-driven solutions.
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+            <CardHeader className="border-b border-gray-100">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+                    <Target className="size-5 shrink-0 text-gray-400" />
+                    Transformation Framework
+                </CardTitle>
+                <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+                    Psychological transformation insights
+                </CardDescription>
+            </CardHeader>
 
-            {/* Generate Button */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-                <div className="text-center space-y-6">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100">
-                        <FiTarget className="w-10 h-10 text-indigo-600" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            Generate Transformation Framework
-                        </h3>
-                        <p className="text-gray-600 max-w-md mx-auto">
-                            Analyze irrationality clusters and psychological patterns to create outcome-driven transformation insights for your project.
-                        </p>
-                    </div>
-                    <button
+            <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+                <p className="text-sm leading-relaxed text-gray-600">
+                    Generate psychological transformation insights that bridge behavior patterns to actionable outcomes.
+                    This framework identifies irrationality clusters and provides outcome-driven solutions.
+                </p>
+
+                <div className="flex justify-start">
+                    <Button
+                        type="button"
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className={`
-                            inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg
-                            transition-all duration-200 shadow-lg
-                            ${isGenerating
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white hover:shadow-xl transform hover:-translate-y-0.5'
-                            }
-                        `}
                     >
                         {isGenerating ? (
                             <>
-                                <FiLoader className="w-5 h-5 animate-spin" />
-                                Generating Framework...
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                Generating...
                             </>
                         ) : (
                             <>
-                                <FiTarget className="w-5 h-5" />
-                                Generate Transformation Framework
+                                <Target className="mr-2 size-4" />
+                                Generate Framework
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 };

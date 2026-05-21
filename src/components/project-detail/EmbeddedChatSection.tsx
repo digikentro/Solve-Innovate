@@ -1,15 +1,41 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiSend, FiUser, FiMessageCircle, FiUserPlus, FiUsers, FiX, FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
+import {
+  FiSend,
+  FiMessageCircle,
+  FiUserPlus,
+  FiUsers,
+  FiX,
+  FiInfo,
+  FiRefreshCw,
+  FiMic,
+  FiUploadCloud,
+} from 'react-icons/fi';
 import { ProjectService } from '@/services/projectService';
 import { ExtremeUserSelectionModal } from './ExtremeUserSelectionModal';
+import { Input } from '@/components/ui/input';
+import { buttonVariants } from '@/components/ui/button';
+import { postN8nWebhook } from '@/services/n8nWebhook';
+import { CheckCheck } from 'lucide-react';
 
-interface Message {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
 }
+
+interface ExtremeUserEntry {
+  name: string;
+  created_at: string;
+  messages: Array<{ user: string; assistant: string; generated_at: string }>;
+  /** Full extreme-user brief; sent to n8n on every message so the model stays in persona */
+  persona_summary?: string;
+}
+
+type ExtremeUserMap = Record<string, ExtremeUserEntry>;
 
 interface CustomExtremeUser {
   name: string;
@@ -18,189 +44,451 @@ interface CustomExtremeUser {
   description: string;
 }
 
+type ActiveThread = null | { kind: 'extreme'; key: string } | { kind: 'provided' } | { kind: 'audio'; key: string };
+
 interface EmbeddedChatSectionProps {
   projectId: string;
   extremeUserData?: any;
   project?: any;
   userId?: string;
+  /** Refetch project after n8n persists chat so `chatbox_extreuser` / `chatbox` stay in sync */
+  onRefreshProject?: () => void | Promise<void>;
 }
 
-export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userId }: EmbeddedChatSectionProps) => {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseExtremeUserMap(raw: any): ExtremeUserMap {
+  if (!raw) return {};
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as ExtremeUserMap;
+  } catch {
+    return {};
+  }
+}
+
+function messagesFromEntry(entry: ExtremeUserEntry): ChatMessage[] {
+  return (entry.messages ?? []).flatMap((m, idx) => [
+    {
+      id: `u-${idx}`,
+      text: m.user,
+      isUser: true,
+      timestamp: new Date(m.generated_at),
+    },
+    {
+      id: `a-${idx}`,
+      text: m.assistant,
+      isUser: false,
+      timestamp: new Date(m.generated_at),
+    },
+  ]);
+}
+
+function messagesFromRows(
+  rows: Array<{ user: string; assistant: string; generated_at: string }>
+): ChatMessage[] {
+  return rows.flatMap((m, idx) => [
+    {
+      id: `u-${idx}`,
+      text: m.user,
+      isUser: true,
+      timestamp: new Date(m.generated_at),
+    },
+    {
+      id: `a-${idx}`,
+      text: m.assistant,
+      isUser: false,
+      timestamp: new Date(m.generated_at),
+    },
+  ]);
+}
+
+function mergePreferLongerHistory(local: ChatMessage[], fromServer: ChatMessage[]): ChatMessage[] {
+  if (fromServer.length >= local.length) return fromServer;
+  return local;
+}
+
+// ─── Primary button (matches AsIsMapReportViewer) ───────────────────────────
+
+const btnPrimary = buttonVariants({ variant: "default", size: "sm" });
+
+const btnOutline = buttonVariants({ variant: "outline", size: "sm" });
+
+const dotColors = [
+  'bg-blue-500',
+  'bg-green-500',
+  'bg-purple-500',
+  'bg-yellow-500',
+  'bg-orange-500',
+  'bg-cyan-500',
+  'bg-teal-500',
+  'bg-indigo-500',
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export const EmbeddedChatSection = ({
+  projectId,
+  extremeUserData,
+  project,
+  userId,
+  onRefreshProject,
+}: EmbeddedChatSectionProps) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const effectiveUserId = userId || user?.id || '';
+
+  const extremeUserMap = useMemo<ExtremeUserMap>(
+    () => parseExtremeUserMap(project?.chatbox_extreuser),
+    [project?.chatbox_extreuser]
+  );
+
+  const sortedUserKeys = useMemo(() => {
+    return Object.keys(extremeUserMap).sort((a, b) => {
+      const ta = new Date(extremeUserMap[a]?.created_at || 0).getTime();
+      const tb = new Date(extremeUserMap[b]?.created_at || 0).getTime();
+      return tb - ta;
+    });
+  }, [extremeUserMap]);
+
+  const audioUserMap = useMemo<ExtremeUserMap>(
+    () => parseExtremeUserMap(project?.chatbox_audio_users),
+    [project?.chatbox_audio_users]
+  );
+
+  const sortedAudioKeys = useMemo(() => {
+    return Object.keys(audioUserMap).sort((a, b) => {
+      const ta = new Date(audioUserMap[a]?.created_at || 0).getTime();
+      const tb = new Date(audioUserMap[b]?.created_at || 0).getTime();
+      return tb - ta;
+    });
+  }, [audioUserMap]);
+
+  const researchExtremeMeta = useMemo(() => {
+    if (!project?.research_data) return { threadKey: undefined as string | undefined, chatExtremeUser: '' };
+    try {
+      const rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data || {};
+      return {
+        threadKey: typeof rd.chatExtremeUserThreadKey === 'string' ? rd.chatExtremeUserThreadKey : undefined,
+        chatExtremeUser: typeof rd.chatExtremeUser === 'string' ? rd.chatExtremeUser : '',
+      };
+    } catch {
+      return { threadKey: undefined, chatExtremeUser: '' };
+    }
+  }, [project?.research_data]);
+
+  const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
+  const [activeThread, setActiveThread] = useState<ActiveThread>(null);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // User interaction states
   const [isCustomUserModalOpen, setIsCustomUserModalOpen] = useState(false);
   const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
+  const [isPersonaInfoOpen, setIsPersonaInfoOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState<'provided' | null>(null);
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
   const [customUser, setCustomUser] = useState<CustomExtremeUser>({
     name: '',
     age: '',
     location: '',
-    description: ''
+    description: '',
   });
 
-  // Chat mode state - only show chat after user selection
-  const [isChatMode, setIsChatMode] = useState(false);
-  const [selectedUserData, setSelectedUserData] = useState<string | null>(null);
-  const [userContextData, setUserContextData] = useState<string | null>(null);
-  const [userType, setUserType] = useState<'provided' | 'selected' | null>(null);
-  const [isFirstMessage, setIsFirstMessage] = useState(true);
-
-  // Saved state from Supabase (to show saved card instead of form button)
-  const [savedProvidedUser, setSavedProvidedUser] = useState<CustomExtremeUser | null>(null);
-  const [savedExtremeUser, setSavedExtremeUser] = useState<string | null>(null);
-
-  // Confirmation dialog for clearing a saved selection
-  const [confirmClear, setConfirmClear] = useState<'provided' | 'selected' | null>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // On mount: restore saved selections from research_data column
   useEffect(() => {
     if (!project) return;
-
-    let researchData: Record<string, any> = {};
+    let rd: Record<string, any> = {};
     try {
-      researchData = typeof project.research_data === 'string'
-        ? JSON.parse(project.research_data)
-        : (project.research_data || {});
-    } catch { researchData = {}; }
-
-    if (researchData.chatProvidedUser) {
-      setSavedProvidedUser(researchData.chatProvidedUser);
+      rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data || {};
+    } catch {
+      rd = {};
     }
-    if (researchData.chatExtremeUser) {
-      setSavedExtremeUser(researchData.chatExtremeUser);
-    }
+    if (rd.chatProvidedUser) setSavedProvidedUser(rd.chatProvidedUser);
   }, [project]);
 
-  // Fetch chat history when entering chat mode
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      if (!projectId || !user?.id || !isChatMode) return;
-
+  const loadExtremeThreadMessages = useCallback(
+    async (key: string) => {
       try {
-        setIsLoadingHistory(true);
-
-        // Use the correct column based on which flow opened the chat
-        const chatHistory = userType === 'selected'
-          ? await ProjectService.getProjectChatboxExtreUserHistory(projectId, user.id)
-          : await ProjectService.getProjectChatHistory(projectId, user.id);
-
-        // Convert chat history to Message format
-        const historyMessages: Message[] = chatHistory.flatMap((chat, index) => [
-          {
-            id: `user-${index}-${Date.now()}`,
-            text: chat.user,
-            isUser: true,
-            timestamp: new Date(chat.generated_at),
-          },
-          {
-            id: `assistant-${index}-${Date.now()}`,
-            text: chat.assistant,
-            isUser: false,
-            timestamp: new Date(chat.generated_at),
-          }
-        ]);
-
-        setMessages(historyMessages);
-      } catch (error) {
-        console.error('Error fetching chat history:', error);
-      } finally {
-        setIsLoadingHistory(false);
+        const rows = await ProjectService.getProjectChatboxExtreUserHistory(
+          projectId,
+          effectiveUserId,
+          key
+        );
+        if (rows.length > 0) {
+          setMessages(messagesFromRows(rows));
+          return;
+        }
+        const entry = extremeUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      } catch {
+        const entry = extremeUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
       }
-    };
+    },
+    [projectId, effectiveUserId, extremeUserMap]
+  );
 
-    fetchChatHistory();
-  }, [projectId, user?.id, isChatMode, userType]);
+  const loadAudioThreadMessages = useCallback(
+    async (key: string) => {
+      try {
+        const rows = await ProjectService.getProjectChatboxAudioHistory(
+          projectId,
+          effectiveUserId,
+          key
+        );
+        if (rows.length > 0) {
+          setMessages(messagesFromRows(rows));
+          return;
+        }
+        const entry = audioUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      } catch {
+        const entry = audioUserMap[key];
+        setMessages(entry ? messagesFromEntry(entry) : []);
+      }
+    },
+    [projectId, effectiveUserId, audioUserMap]
+  );
+
+  useEffect(() => {
+    if (!activeThread) {
+      setMessages([]);
+      return;
+    }
+    if (activeThread.kind === 'extreme') {
+      void loadExtremeThreadMessages(activeThread.key);
+      return;
+    }
+    if (activeThread.kind === 'audio') {
+      void loadAudioThreadMessages(activeThread.key);
+      return;
+    }
+    if (activeThread.kind === 'provided') {
+      let cancelled = false;
+      (async () => {
+        try {
+          const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
+          if (cancelled) return;
+          setMessages(
+            history.flatMap((chat, idx) => [
+              {
+                id: `u-${idx}`,
+                text: chat.user,
+                isUser: true,
+                timestamp: new Date(chat.generated_at),
+              },
+              {
+                id: `a-${idx}`,
+                text: chat.assistant,
+                isUser: false,
+                timestamp: new Date(chat.generated_at),
+              },
+            ])
+          );
+        } catch {
+          if (!cancelled) setMessages([]);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [activeThread, projectId, effectiveUserId, loadExtremeThreadMessages]);
+
+  const onRefreshRef = useRef(onRefreshProject);
+  onRefreshRef.current = onRefreshProject;
+  useEffect(() => {
+    void onRefreshRef.current?.();
+  }, [projectId, effectiveUserId]);
+
+  const enterExtremeUserChat = (key: string) => {
+    setActiveThread({ kind: 'extreme', key });
+  };
+
+  const enterProvidedChat = () => {
+    if (!savedProvidedUser) {
+      setIsCustomUserModalOpen(true);
+      return;
+    }
+    setActiveThread({ kind: 'provided' });
+  };
+
+  const enterAudioChat = (key: string) => {
+    setActiveThread({ kind: 'audio', key });
+  };
+
+  const handleAudioUploadSubmit = async () => {
+    if (!audioFile || !effectiveUserId) return;
+    setIsUploadingAudio(true);
+    try {
+      const audioUrl = await ProjectService.uploadAudioFile(audioFile, projectId, effectiveUserId);
+      const res = await postN8nWebhook('https://n8n.srv922914.hstgr.cloud/webhook/process_audio_conversation', {
+        project_id: projectId,
+        audio_url: audioUrl,
+        user_id: effectiveUserId
+      });
+      if (!res.ok) throw new Error(`Audio processing failed: HTTP ${res.status}`);
+
+      const raw = await res.text();
+      if (!raw.trim()) {
+        throw new Error(
+          'Audio workflow returned an empty response. Check that the n8n workflow is active and reaches the Respond to Webhook node.'
+        );
+      }
+
+      let data: { thread_key?: string; error?: string };
+      try {
+        data = JSON.parse(raw) as { thread_key?: string; error?: string };
+      } catch {
+        throw new Error(`Invalid JSON from audio workflow: ${raw.slice(0, 200)}`);
+      }
+
+      console.log('Audio workflow response:', data);
+
+      if (data.error) throw new Error(data.error);
+      if (!data.thread_key) {
+        throw new Error('n8n workflow did not return thread_key. Response: ' + raw);
+      }
+      
+      setIsAudioModalOpen(false);
+      setAudioFile(null);
+
+      // n8n directly updated the Supabase row. We just tell the frontend to refresh
+      // and immediately open the chat thread that n8n created.
+      await Promise.resolve(onRefreshProject?.());
+      setActiveThread({ kind: 'audio', key: data.thread_key });
+    } catch (e) {
+      console.error('Audio upload error:', e);
+      alert(`Failed to process audio file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
+      setIsUploadingAudio(false);
+    }
+  };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isTyping || !activeThread) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage,
-      isUser: true,
-      timestamp: new Date(),
-    };
+    if (activeThread.kind === 'extreme') {
+      const k = activeThread.key;
+      if (!k || k === 'undefined' || k.startsWith('temp_')) return;
+    }
 
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputMessage;
+    const text = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      text,
+      isUser: true,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
     try {
-      // Choose webhook URL and body based on user type
       let webhookUrl: string;
+      const threadKey = 'key' in activeThread ? activeThread.key : 'provided';
       const requestBody: Record<string, any> = {
         project_id: projectId,
-        user: currentInput,
+        user: text,
+        user_id: threadKey,
+        user_name: threadKey, // Fallback, updated below
       };
 
-      if (userType === 'selected' && userContextData) {
-        // "Select the User" flow → chatbox_extreuser webhook
+      if (activeThread.kind === 'extreme' || activeThread.kind === 'audio') {
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_extreuser';
-        requestBody.extreme_user_data = userContextData;
+        const key = activeThread.key;
+        const entry = activeThread.kind === 'audio' ? audioUserMap[key] : extremeUserMap[key] as ExtremeUserEntry | undefined;
+        requestBody.extreme_user_key = key;
+        requestBody.extremeUserKey = key;
+        requestBody.extreme_user_id = key;
+        requestBody.user_name = (entry?.name || key).trim();
+        requestBody.extreme_user_name = requestBody.user_name;
+        const persona =
+          (typeof entry?.persona_summary === 'string' ? entry.persona_summary : '').trim() ||
+          (researchExtremeMeta.threadKey === key ? researchExtremeMeta.chatExtremeUser : '').trim();
+        if (persona) {
+          requestBody.extreme_user_data = persona;
+          requestBody.extreme_user_persona = persona;
+          requestBody.extreme_user_summary = persona;
+          requestBody.persona_summary = persona;
+          requestBody.extremeUserPersona = persona;
+        }
       } else {
-        // "Provide Your Extreme User" flow → chatbox_userprovideinfo webhook
         webhookUrl = 'https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo';
-        if (userContextData) {
-          requestBody.provided_user_data = userContextData;
+        if (savedProvidedUser) {
+          requestBody.provided_user_data = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
+          requestBody.user_name = savedProvidedUser.name;
+          requestBody.extreme_user_data = requestBody.provided_user_data;
         }
       }
 
-      console.log('Sending chat request to:', webhookUrl, requestBody);
+      const res = await postN8nWebhook(webhookUrl, requestBody);
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      let reply = "I'm sorry, I couldn't process your message right now.";
+      if (Array.isArray(data) && data[0]?.Assistant) reply = data[0].Assistant;
+      else if (data.output) reply = data.output;
+
+      const assistantMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: reply,
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      await Promise.resolve(onRefreshProject?.());
+
+      if (activeThread.kind === 'extreme') {
+        const rows = await ProjectService.getProjectChatboxExtreUserHistory(
+          projectId,
+          effectiveUserId,
+          activeThread.key
+        );
+        const fromServer = messagesFromRows(rows);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      } else if (activeThread.kind === 'audio') {
+        const rows = await ProjectService.getProjectChatboxAudioHistory(
+          projectId,
+          effectiveUserId,
+          activeThread.key
+        );
+        const fromServer = messagesFromRows(rows);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      } else {
+        const history = await ProjectService.getProjectChatHistory(projectId, effectiveUserId);
+        const fromServer = messagesFromRows(history);
+        setMessages(prev => mergePreferLongerHistory(prev, fromServer));
+      }
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: 'Sorry, there was an error. Please try again.',
+          isUser: false,
+          timestamp: new Date(),
         },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Chat response:', data);
-
-      let assistantMessage = "I'm sorry, I couldn't process your message right now.";
-
-      if (Array.isArray(data) && data.length > 0 && data[0].Assistant) {
-        assistantMessage = data[0].Assistant;
-      } else if (data.output) {
-        assistantMessage = data.output;
-      }
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: assistantMessage,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Error sending chat message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I'm sorry, there was an error processing your message. Please try again.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      ]);
     } finally {
       setIsTyping(false);
     }
@@ -209,581 +497,667 @@ export const EmbeddedChatSection = ({ projectId, extremeUserData, project, userI
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      void handleSendMessage();
     }
   };
 
-  // Handle custom user form submission - POST to chatbox_userprovideinfo webhook, save to Supabase, then open chat
   const handleCustomUserSubmit = async () => {
-    if (!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()) return;
-
-    const userContext = `Custom User - Name: ${customUser.name}, Age: ${customUser.age}, Location: ${customUser.location}, Description: ${customUser.description}`;
-    const effectiveUserId = userId || user?.id;
+    if (
+      !customUser.name.trim() ||
+      !customUser.age.trim() ||
+      !customUser.location.trim() ||
+      !customUser.description.trim()
+    )
+      return;
 
     try {
-      // Send the provided user info to the dedicated webhook
-      const response = await fetch('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          name: customUser.name,
-          age: customUser.age,
-          location: customUser.location,
-          description: customUser.description,
-        })
+      await postN8nWebhook('https://n8n.srv922914.hstgr.cloud/webhook/chatbox_userprovideinfo', {
+        project_id: projectId,
+        ...customUser,
       });
-      if (!response.ok) console.warn('chatbox_userprovideinfo webhook responded with:', response.status);
-    } catch (error) {
-      console.error('Error sending user info to webhook:', error);
+    } catch {
+      /* non-critical */
     }
 
-    // Persist to Supabase so it survives page reload
     if (effectiveUserId) {
       await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, customUser);
       setSavedProvidedUser(customUser);
     }
 
-    // Open chat mode
-    setUserContextData(userContext);
-    setUserType('provided');
-    setSelectedUserData(`Custom User: ${customUser.name}`);
-    setIsCustomUserModalOpen(false);
     setCustomUser({ name: '', age: '', location: '', description: '' });
-    setIsFirstMessage(true);
-    setIsChatMode(true);
+    setIsCustomUserModalOpen(false);
+    setActiveThread({ kind: 'provided' });
+    void onRefreshProject?.();
   };
 
-  // Resume chat with the already-saved provided user
-  const handleResumeSavedProvidedUser = () => {
-    if (!savedProvidedUser) return;
-    const userContext = `Custom User - Name: ${savedProvidedUser.name}, Age: ${savedProvidedUser.age}, Location: ${savedProvidedUser.location}, Description: ${savedProvidedUser.description}`;
-    setUserContextData(userContext);
-    setUserType('provided');
-    setSelectedUserData(`Custom User: ${savedProvidedUser.name}`);
-    setIsFirstMessage(false);
-    setIsChatMode(true);
-  };
-
-  // Clear saved provided user — show confirmation first
-  const handleClearSavedProvidedUser = () => {
-    setConfirmClear('provided');
-  };
-
-  // Resume chat with the already-saved extreme user
-  const handleResumeSavedExtremeUser = () => {
-    if (!savedExtremeUser) return;
-    const userLabel = savedExtremeUser.split('\n')[0] || 'Selected Extreme User';
-    setUserContextData(savedExtremeUser);
-    setUserType('selected');
-    setSelectedUserData(userLabel);
-    setIsFirstMessage(false);
-    setIsChatMode(true);
-  };
-
-  // Clear saved extreme user — show confirmation first
-  const handleClearSavedExtremeUser = () => {
-    setConfirmClear('selected');
-  };
-
-  // Confirmed: actually clear the saved selection from Supabase
-  const handleConfirmClear = async () => {
-    const effectiveUserId = userId || user?.id;
-    if (confirmClear === 'provided') {
-      if (effectiveUserId) await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
-      setSavedProvidedUser(null);
-    } else if (confirmClear === 'selected') {
-      if (effectiveUserId) await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, null);
-      setSavedExtremeUser(null);
-    }
-    setConfirmClear(null);
-  };
-
-  // Handle extreme user selection from modal - save to Supabase, then open chat
   const handleExtremeUserSelect = async (userSummary: string) => {
+    if (!effectiveUserId) return;
     setIsSelectUserModalOpen(false);
-    const effectiveUserId = userId || user?.id;
+    const firstLine = userSummary.split('\n')[0]?.trim() || 'New AI user';
+    const threadKey = `eu_${crypto.randomUUID().replace(/-/g, '')}`;
 
-    // Persist to Supabase
-    if (effectiveUserId) {
-      await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary);
-      setSavedExtremeUser(userSummary);
+    await ProjectService.mergeExtremeUserChatboxThread(projectId, effectiveUserId, threadKey, {
+      name: firstLine,
+      persona_summary: userSummary,
+    });
+    await ProjectService.saveChatExtremeUser(projectId, effectiveUserId, userSummary, threadKey);
+
+    await Promise.resolve(onRefreshProject?.());
+    setActiveThread({ kind: 'extreme', key: threadKey });
+    void onRefreshProject?.();
+  };
+
+  const activeEntry =
+    (activeThread?.kind === 'extreme' || activeThread?.kind === 'audio') && activeThread.key
+      ? ((activeThread.kind === 'audio' ? audioUserMap[activeThread.key] : extremeUserMap[activeThread.key]) ?? null)
+      : null;
+
+  const activeUserLabel =
+    activeThread?.kind === 'extreme'
+      ? activeEntry?.name || activeThread.key || 'AI user'
+      : activeThread?.kind === 'audio'
+      ? activeEntry?.name || activeThread.key || 'Audio Persona'
+      : activeThread?.kind === 'provided'
+        ? savedProvidedUser
+          ? savedProvidedUser.name
+          : 'Your user'
+        : '';
+
+  const chatResearchSnippet = useMemo(() => {
+    if (!project?.research_data) return '';
+    try {
+      const rd =
+        typeof project.research_data === 'string'
+          ? JSON.parse(project.research_data)
+          : project.research_data;
+      const s = rd?.chatExtremeUser;
+      return typeof s === 'string' ? s.slice(0, 2000) : '';
+    } catch {
+      return '';
     }
+  }, [project?.research_data]);
 
-    setUserContextData(userSummary);
-    setUserType('selected');
-    const userLabel = userSummary.split('\n')[0] || 'Selected Extreme User';
-    setSelectedUserData(userLabel);
-    setIsFirstMessage(true);
-    setIsChatMode(true);
-  };
+  const showRightPane = activeThread !== null;
 
-  // Exit chat mode and return to button selection
-  const handleExitChat = () => {
-    setIsChatMode(false);
-    setSelectedUserData(null);
-    setUserContextData(null);
-    setUserType(null);
-    setMessages([]);
-    setIsFirstMessage(true);
-  };
+  const extremeThreadBroken =
+    activeThread?.kind === 'extreme' &&
+    (!activeThread.key || activeThread.key === 'undefined' || activeThread.key.startsWith('temp_'));
 
-  // Button selection view (before chat mode)
-  if (!isChatMode) {
-    return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <FiMessageCircle className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
-                Interact with User
-              </h3>
-              <p className="text-gray-600">Select or provide an extreme user to start chatting</p>
-            </div>
-          </div>
-
-          {/* Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            {/* Card 1: Provide Your Extreme User */}
-            {savedProvidedUser ? (
-              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FiUserPlus className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-bold text-base text-purple-800 block truncate">Provide Your Extreme User</span>
-                    <span className="text-xs text-purple-600 font-medium">Saved ✓</span>
-                  </div>
-                </div>
-                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700 space-y-1">
-                  <p><span className="font-semibold text-gray-800">Name:</span> {savedProvidedUser.name}</p>
-                  <p><span className="font-semibold text-gray-800">Age:</span> {savedProvidedUser.age} &nbsp;|&nbsp; <span className="font-semibold text-gray-800">Location:</span> {savedProvidedUser.location}</p>
-                  <p className="line-clamp-2 text-gray-600">{savedProvidedUser.description}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResumeSavedProvidedUser}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  >
-                    Continue Chat
-                  </button>
-                  <button
-                    onClick={handleClearSavedProvidedUser}
-                    title="Enter new user details"
-                    className="px-3 py-2.5 bg-white border-2 border-purple-200 text-purple-600 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsCustomUserModalOpen(true)}
-                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <FiUserPlus className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                  <span className="font-bold text-lg block">Provide Your Extreme User</span>
-                  <span className="text-sm text-white/80">Add custom user details</span>
-                </div>
-              </button>
-            )}
-
-            {/* Card 2: Select the User */}
-            {savedExtremeUser ? (
-              <div className="flex flex-col gap-3 px-5 py-5 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FiUsers className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-bold text-base text-cyan-800 block truncate">Select the User</span>
-                    <span className="text-xs text-cyan-600 font-medium">Saved ✓</span>
-                  </div>
-                </div>
-                <div className="bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-700">
-                  <p className="font-semibold text-gray-800 truncate">{savedExtremeUser.split('\n')[0]}</p>
-                  <p className="text-gray-500 text-xs mt-1 line-clamp-2">{savedExtremeUser.split('\n').slice(1).join(' ').trim()}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResumeSavedExtremeUser}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  >
-                    Continue Chat
-                  </button>
-                  <button
-                    onClick={handleClearSavedExtremeUser}
-                    title="Select a different user"
-                    className="px-3 py-2.5 bg-white border-2 border-cyan-200 text-cyan-600 rounded-xl hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsSelectUserModalOpen(true)}
-                className="flex items-center gap-3 px-5 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <FiUsers className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                  <span className="font-bold text-lg block">Select the User</span>
-                  <span className="text-sm text-white/80">Choose from generated users</span>
-                </div>
-              </button>
-            )}
-          </div>
-
-        </div>
-
-        {/* Confirmation Dialog — shown when user clicks Change */}
-        {confirmClear && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden">
-              {/* Header */}
-              <div className={`px-6 py-5 border-b border-gray-100 ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-50 to-pink-50' : 'bg-gradient-to-r from-cyan-50 to-blue-50'}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>
-                    <FiRefreshCw className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">Change User?</h3>
-                    <p className="text-sm text-gray-500">
-                      {confirmClear === 'provided' ? 'Provided Extreme User' : 'Selected Extreme User'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              {/* Body */}
-              <div className="px-6 py-5">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  This will remove your currently saved user and let you{' '}
-                  {confirmClear === 'provided' ? 'enter new details.' : 'select a different user.'}
-                  {' '}Are you sure?
-                </p>
-              </div>
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                <button
-                  onClick={() => setConfirmClear(null)}
-                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmClear}
-                  className={`px-6 py-2.5 text-white font-semibold rounded-xl hover:shadow-lg transition-all ${confirmClear === 'provided' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}
-                >
-                  Yes, Change
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Custom Extreme User Modal */}
-        {isCustomUserModalOpen && (
-
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
-              {/* Modal Header */}
-              <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                      <FiUserPlus className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">Provide Your Extreme User</h3>
-                      <p className="text-sm text-gray-600">Enter user details below</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsCustomUserModalOpen(false)}
-                    className="p-2 hover:bg-white/50 rounded-xl transition-colors"
-                  >
-                    <FiX className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={customUser.name}
-                    onChange={(e) => setCustomUser(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter user name"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Age *</label>
-                    <input
-                      type="text"
-                      value={customUser.age}
-                      onChange={(e) => setCustomUser(prev => ({ ...prev, age: e.target.value }))}
-                      placeholder="e.g., 25"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
-                    <input
-                      type="text"
-                      value={customUser.location}
-                      onChange={(e) => setCustomUser(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="e.g., Mumbai"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
-                  <textarea
-                    value={customUser.description}
-                    onChange={(e) => setCustomUser(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the user's characteristics, behaviors, needs..."
-                    rows={4}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 transition-colors resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => setIsCustomUserModalOpen(false)}
-                  className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCustomUserSubmit}
-                  disabled={!customUser.name.trim() || !customUser.age.trim() || !customUser.location.trim() || !customUser.description.trim()}
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  Start Chat
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Extreme User Selection Modal */}
-        <ExtremeUserSelectionModal
-          isOpen={isSelectUserModalOpen}
-          onClose={() => setIsSelectUserModalOpen(false)}
-          onSelectUser={handleExtremeUserSelect}
-          extremeUserData={extremeUserData}
-        />
-      </div>
-    );
-  }
-
-  // Chat Mode View
   return (
-    <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 overflow-hidden h-[75vh] flex flex-col relative">
-      {/* Decorative gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/30 via-blue-50/20 to-indigo-50/30 pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-cyan-200/20 to-transparent rounded-full blur-2xl"></div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-200/20 to-transparent rounded-full blur-xl"></div>
-
-      {/* Header */}
-      <div className="relative px-4 py-4 bg-gradient-to-r from-cyan-50/80 to-blue-50/80 backdrop-blur-sm border-b border-cyan-100/50 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleExitChat}
-              className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center shadow-md hover:shadow-lg transition-all text-gray-600 hover:text-gray-800"
-            >
-              <FiArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <FiMessageCircle className="w-7 h-7 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
-                Chat with Your Project
-              </h3>
-              <p className="text-sm text-gray-600 font-medium">{selectedUserData}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs font-semibold text-green-700">AI Online</span>
-          </div>
+    <div className="flex h-[calc(100vh-100px)] min-h-[600px] flex-col gap-3 overflow-hidden">
+      {/* Page header — tighter spacing to chat shell */}
+      <div className="flex shrink-0 flex-col gap-3 border-b border-gray-100 pb-3 xl:flex-row xl:items-end xl:justify-between xl:gap-4">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Interact with User
+          </h1>
+          <p className="mt-1 max-w-xl text-base leading-snug text-gray-500">
+            Chat with AI users or provide your own
+          </p>
         </div>
-      </div>
-
-      {/* Messages Area */}
-      <div className="relative flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4 pb-20">
-          {isLoadingHistory ? (
-            <div className="text-center py-8">
-              <div className="relative mx-auto w-16 h-16 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
-                  <FiMessageCircle className="w-8 h-8 text-white" />
-                </div>
-              </div>
-              <h4 className="text-xl font-bold text-gray-800 mb-3">Loading conversation...</h4>
-              <div className="flex justify-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="w-20 h-20 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                  <FiMessageCircle className="w-10 h-10 text-white" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-                Start Your Conversation
-              </h4>
-              <p className="text-gray-600 mb-6 leading-relaxed max-w-md mx-auto">
-                Ask questions about your project from the selected user's perspective.
-              </p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-              >
-                <div
-                  className={`flex max-w-[85%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'
-                    }`}
-                >
-                  <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${message.isUser
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white ml-3'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 border border-gray-200'
-                      }`}
-                  >
-                    {message.isUser ? <FiUser className="w-5 h-5" /> : <FiMessageCircle className="w-5 h-5" />}
-                  </div>
-                  <div className="space-y-1">
-                    <div
-                      className={`px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${message.isUser
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-300/30'
-                        : 'bg-white/80 text-gray-800 border-gray-200/50'
-                        }`}
-                    >
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{message.text}</div>
-                    </div>
-                    <p
-                      className={`text-xs px-2 ${message.isUser ? 'text-right text-cyan-600' : 'text-left text-gray-500'
-                        }`}
-                    >
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-
-          {isTyping && (
-            <div className="flex justify-start animate-fadeIn">
-              <div className="flex max-w-[85%]">
-                <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 mr-3 flex items-center justify-center shadow-lg border border-gray-200">
-                  <FiMessageCircle className="w-5 h-5" />
-                </div>
-                <div className="bg-white/80 text-gray-800 px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm border border-gray-200/50">
-                  <div className="flex space-x-2 items-center">
-                    <div className="flex space-x-1">
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">AI is thinking...</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="relative border-t border-cyan-100/50 bg-white/60 backdrop-blur-sm p-4 flex-shrink-0">
-        <div className="flex items-end space-x-4">
-          <div className="flex-1 relative">
-            <div className="relative">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask anything about your project..."
-                className="w-full px-6 py-4 bg-white/80 border-2 border-gray-200/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-400 transition-all duration-300 text-gray-800 placeholder-gray-500 font-medium shadow-lg backdrop-blur-sm hover:shadow-xl disabled:opacity-60"
-                disabled={isTyping}
-              />
-              {inputMessage && (
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-gray-500 font-medium">Ready to send</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Character count */}
-            {inputMessage && (
-              <div className="mt-2 flex justify-end">
-                <span className="text-xs text-gray-400">{inputMessage.length}/1000</span>
-              </div>
-            )}
-          </div>
-
+        <div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
           <button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isTyping}
-            className="relative px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 group"
+            type="button"
+            onClick={() => setIsSelectUserModalOpen(true)}
+            className={btnPrimary}
           >
-            <div className="flex items-center space-x-2">
-              <FiSend className={`w-5 h-5 transition-transform duration-200 ${isTyping ? 'animate-pulse' : 'group-hover:translate-x-0.5'}`} />
-              <span className="font-semibold">{isTyping ? 'Sending...' : 'Send'}</span>
-            </div>
-
-            {/* Loading indicator for sending state */}
-            {isTyping && (
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 rounded-2xl flex items-center justify-center">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            )}
+            <span className="inline-flex items-center gap-2">
+              <FiUsers className="size-4" />
+              New AI user
+            </span>
+          </button>
+          {!savedProvidedUser ? (
+            <button
+              type="button"
+              onClick={() => setIsCustomUserModalOpen(true)}
+              className={btnPrimary}
+            >
+              <span className="inline-flex items-center gap-2">
+                <FiUserPlus className="size-4" />
+                Provide Your Own User
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmClear('provided')}
+              className={btnPrimary}
+            >
+              <span className="inline-flex items-center gap-2">
+                <FiRefreshCw className="size-4" />
+                Replace saved user
+              </span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsAudioModalOpen(true)}
+            className={btnPrimary}
+          >
+             <span className="inline-flex items-center gap-2">
+              <FiMic className="size-4" />
+              Upload Audio Conversation
+            </span>
           </button>
         </div>
       </div>
+
+      {/* Master–detail shell */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex-row">
+        {/* Conversation list */}
+        <aside className="flex w-full shrink-0 flex-col overflow-hidden border-b border-gray-100 bg-white lg:w-[280px] lg:border-b-0 lg:border-r">
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <p className="px-2 pb-2 pl-3 pt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              Conversations
+            </p>
+            {sortedUserKeys.length === 0 && !savedProvidedUser && (
+              <p className="px-2 py-4 text-sm leading-relaxed text-gray-600">
+                No AI users yet. Use <span className="font-medium text-gray-900">New AI user</span> to
+                create one from your extreme user research.
+              </p>
+            )}
+            <ul className="flex flex-col gap-1.5">
+              {sortedUserKeys.map((key, index) => {
+                const entry = extremeUserMap[key];
+                const isActive = activeThread?.kind === 'extreme' && activeThread.key === key;
+                const count = entry?.messages?.length ?? 0;
+                return (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      onClick={() => enterExtremeUserChat(key)}
+                      className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'border-gray-900 bg-gray-50 text-gray-900'
+                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="line-clamp-2 flex items-center gap-2">
+                        <span className={`size-2.5 shrink-0 rounded-full ${dotColors[index % dotColors.length]}`} />
+                        {entry?.name || `User ${key.slice(0, 8)}`}
+                      </span>
+                      <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
+                        {count === 0 ? 'No messages yet' : `${count} exchange${count !== 1 ? 's' : ''}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {sortedAudioKeys.map((key, index) => {
+                const entry = audioUserMap[key];
+                const isActive = activeThread?.kind === 'audio' && activeThread.key === key;
+                const count = entry?.messages?.length ?? 0;
+                const dotColor = dotColors[(index + sortedUserKeys.length) % dotColors.length];
+                return (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      onClick={() => enterAudioChat(key)}
+                      className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'border-gray-900 bg-gray-50 text-gray-900'
+                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="line-clamp-2 flex items-center gap-2">
+                        <span className={`size-2.5 shrink-0 rounded-full ${dotColor}`} />
+                        <FiMic className="size-4 shrink-0 text-gray-600" />
+                        {entry?.name || `Audio ${key.slice(0, 8)}`}
+                      </span>
+                      <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
+                        {count === 0 ? 'No messages yet' : `${count} exchange${count !== 1 ? 's' : ''}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {savedProvidedUser && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => enterProvidedChat()}
+                    className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors ${
+                      activeThread?.kind === 'provided'
+                        ? 'border-gray-900 bg-gray-50 text-gray-900'
+                        : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="line-clamp-2 flex items-center gap-2">
+                      <span className={`size-2.5 shrink-0 rounded-full ${dotColors[(sortedUserKeys.length + sortedAudioKeys.length) % dotColors.length]}`} />
+                      <FiUserPlus className="size-4 shrink-0 text-gray-600" />
+                      {savedProvidedUser.name}
+                    </span>
+                    <span className="ml-[18px] mt-1 block text-xs font-normal text-gray-500">
+                      {savedProvidedUser.age} · {savedProvidedUser.location}
+                    </span>
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        </aside>
+
+        {/* Chat pane */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
+          {!showRightPane ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-16 text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-gray-100">
+                <FiMessageCircle className="size-7 text-gray-700" />
+              </div>
+              <p className="max-w-md text-base text-gray-600">
+                Choose a conversation on the left, start a{' '}
+                <button
+                  type="button"
+                  onClick={() => setIsSelectUserModalOpen(true)}
+                  className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-900"
+                >
+                  new AI user
+                </button>
+                , or use{' '}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomUserModalOpen(true)}
+                  className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-900"
+                >
+                  Provide Your Own User
+                </button>
+                .
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-6">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 sm:text-base">
+                    {activeUserLabel}
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    {activeThread?.kind === 'provided' ? 'Your profile' : 'AI persona'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPersonaInfoOpen(true)}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-700 transition-colors hover:bg-gray-50"
+                  aria-label="Persona details"
+                >
+                  <FiInfo className="size-5" />
+                </button>
+              </div>
+
+              <div className="relative min-h-0 flex-1 overflow-y-auto bg-gray-50/50">
+                <div className="space-y-4 p-4 sm:p-6">
+                  {messages.length === 0 && !isTyping ? (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center">
+                      <p className="text-sm text-gray-600">
+                        No messages yet. Type below to start the conversation.
+                      </p>
+                    </div>
+                  ) : (
+                    messages.map(msg => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`relative max-w-[min(100%,520px)] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                            msg.isUser
+                              ? 'bg-gray-200 text-gray-900 rounded-br-sm'
+                              : 'bg-white text-gray-900 border border-gray-200 rounded-bl-sm'
+                          }`}
+                        >
+                          <div className={msg.isUser ? 'pr-5' : ''}>{msg.text}</div>
+                          {msg.isUser && (
+                            <div className="absolute bottom-1 right-2 flex items-center justify-end">
+                              <CheckCheck className="size-4 text-green-500" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="flex max-w-[min(100%,520px)] items-center gap-2 rounded-2xl rounded-bl-sm border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+                        <div className="flex gap-1">
+                          {[0, 0.15, 0.3].map((delay, i) => (
+                            <div
+                              key={i}
+                              className="size-2 animate-bounce rounded-full bg-gray-400"
+                              style={{ animationDelay: `${delay}s` }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs uppercase tracking-wide text-gray-500">Typing</span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              <div className="shrink-0 border-t border-gray-100 bg-white p-4 sm:p-6">
+                {extremeThreadBroken && (
+                  <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    This thread uses an invalid legacy key, so messages are blocked. Use{' '}
+                    <button
+                      type="button"
+                      className="font-medium underline underline-offset-2"
+                      onClick={() => setIsSelectUserModalOpen(true)}
+                    >
+                      New AI user
+                    </button>{' '}
+                    to start a thread with a stable id and full persona text.
+                  </div>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <Input
+                    type="text"
+                    value={inputMessage}
+                    onChange={e => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Start typing"
+                    disabled={isTyping || extremeThreadBroken}
+                    className="min-h-11 flex-1 rounded-xl border-gray-200 text-sm focus-visible:ring-black/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleSendMessage()}
+                    disabled={!inputMessage.trim() || isTyping || extremeThreadBroken}
+                    className={`${btnPrimary} inline-flex h-11 shrink-0 items-center justify-center px-5 sm:w-auto`}
+                  >
+                    {isTyping ? (
+                      <span className="flex gap-1">
+                        {[0, 0.1, 0.2].map((d, i) => (
+                          <span
+                            key={i}
+                            className="size-1.5 animate-bounce rounded-full bg-white"
+                            style={{ animationDelay: `${d}s` }}
+                          />
+                        ))}
+                      </span>
+                    ) : (
+                      <FiSend className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <ExtremeUserSelectionModal
+        isOpen={isSelectUserModalOpen}
+        onClose={() => setIsSelectUserModalOpen(false)}
+        onSelectUser={userSummary => void handleExtremeUserSelect(userSummary)}
+        extremeUserData={extremeUserData}
+      />
+
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Change user?</h3>
+            <p className="mb-8 text-sm text-gray-600">This will clear the saved user profile.</p>
+            <div className="flex gap-4">
+              <button type="button" onClick={() => setConfirmClear(null)} className={`${btnOutline} flex-1`}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (effectiveUserId)
+                    await ProjectService.saveChatProvidedUser(projectId, effectiveUserId, null);
+                  setSavedProvidedUser(null);
+                  if (activeThread?.kind === 'provided') setActiveThread(null);
+                  setConfirmClear(null);
+                  void onRefreshProject?.();
+                }}
+                className={`${btnPrimary} flex-1`}
+              >
+                Yes, change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCustomUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Provide your extreme user</h3>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Enter user details below
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomUserModalOpen(false)}
+                  className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <FiX className="size-5" />
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[55vh] space-y-4 overflow-y-auto px-6 py-6">
+              {(['name', 'age', 'location'] as const).map(field => (
+                <div key={field} className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    {field}
+                  </label>
+                  <Input
+                    type="text"
+                    value={customUser[field]}
+                    onChange={e => setCustomUser(prev => ({ ...prev, [field]: e.target.value }))}
+                    placeholder={
+                      field === 'age' ? 'e.g. 25' : field === 'location' ? 'e.g. Mumbai' : 'Name'
+                    }
+                    className="rounded-xl border-gray-200 text-sm"
+                  />
+                </div>
+              ))}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  Description
+                </label>
+                <textarea
+                  value={customUser.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setCustomUser(prev => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder="Characteristics, behaviors, needs…"
+                  rows={4}
+                  className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              <button type="button" onClick={() => setIsCustomUserModalOpen(false)} className={btnOutline}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCustomUserSubmit()}
+                disabled={
+                  !customUser.name.trim() ||
+                  !customUser.age.trim() ||
+                  !customUser.location.trim() ||
+                  !customUser.description.trim()
+                }
+                className={btnPrimary}
+              >
+                Start chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPersonaInfoOpen && showRightPane && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900">Persona details</h3>
+                <p className="mt-1 truncate text-sm text-gray-600">{activeUserLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPersonaInfoOpen(false)}
+                className="rounded-xl p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
+              >
+                <FiX className="size-5" />
+              </button>
+            </div>
+            <div className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-6 text-sm leading-relaxed text-gray-700">
+              {activeThread?.kind === 'extreme' && activeEntry && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Created</p>
+                    <p className="mt-1 text-gray-900">
+                      {activeEntry.created_at
+                        ? new Date(activeEntry.created_at).toLocaleString()
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Exchanges stored</p>
+                    <p className="mt-1 text-gray-900">{activeEntry.messages?.length ?? 0}</p>
+                  </div>
+                  {(activeEntry.persona_summary || chatResearchSnippet) ? (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        {activeEntry.persona_summary ? 'Persona (stored on thread)' : 'Selection context'}
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {activeEntry.persona_summary || chatResearchSnippet}
+                      </pre>
+                    </div>
+                  ) : null}
+                </>
+              )}
+              {activeThread?.kind === 'extreme' && !activeEntry && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Status</p>
+                  <p className="mt-1 text-gray-900">
+                    Thread metadata is not in the loaded project yet (refresh if this persists), or the
+                    conversation key is invalid.
+                  </p>
+                  {researchExtremeMeta.threadKey === activeThread.key && researchExtremeMeta.chatExtremeUser ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Latest selection (research_data)
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {researchExtremeMeta.chatExtremeUser}
+                      </pre>
+                    </div>
+                  ) : chatResearchSnippet ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Selection context
+                      </p>
+                      <pre className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 font-sans text-xs text-gray-800">
+                        {chatResearchSnippet}
+                      </pre>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+              {activeThread?.kind === 'provided' && savedProvidedUser && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Age</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.age}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Location</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Description</p>
+                    <p className="mt-1 text-gray-900">{savedProvidedUser.description}</p>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="border-t border-gray-100 px-6 py-4">
+              <button type="button" onClick={() => setIsPersonaInfoOpen(false)} className={`${btnOutline} w-full`}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAudioModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="border-b border-gray-100 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upload Real-World Conversation</h3>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Provide an audio recording of your interview
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAudioModalOpen(false)}
+                  className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-gray-100"
+                  aria-label="Close"
+                  disabled={isUploadingAudio}
+                >
+                  <FiX className="size-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50">
+                <FiUploadCloud className="size-8 text-gray-400 mb-3" />
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={e => setAudioFile(e.target.files?.[0] || null)}
+                  className="mb-2 w-full max-w-xs text-sm"
+                  disabled={isUploadingAudio}
+                />
+                <p className="text-xs text-gray-500 text-center">Supports MP3, WAV, M4A up to 50MB</p>
+              </div>
+              {isUploadingAudio && (
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <FiRefreshCw className="size-4 animate-spin" />
+                  <span>Uploading and analyzing audio — this may take 1–2 minutes...</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setIsAudioModalOpen(false)}
+                className={btnOutline}
+                disabled={isUploadingAudio}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleAudioUploadSubmit()}
+                disabled={!audioFile || isUploadingAudio}
+                className={btnPrimary}
+              >
+                {isUploadingAudio ? 'Processing...' : 'Upload & Start Chat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

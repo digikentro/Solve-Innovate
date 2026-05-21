@@ -5,7 +5,19 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: '#faf8f5',
+        sidebar: '#f5f3ef',
+        primary: {
+          DEFAULT: '#0f121f',
+          foreground: '#ffffff',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'Outfit', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiMap } from 'react-icons/fi';
 import { AsIsMapForm } from '@/components/project/AsIsMap';
 import type { Project } from '@/types/project';
 import { hasDataContent } from '@/utils/dataHelpers';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 interface AsIsMapSectionProps {
   project: Project;
@@ -36,61 +37,49 @@ export const AsIsMapSection = ({ project, asIsMapData, setAsIsMapData, renderRep
   return (
     <>
       {!hasData ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                <FiPlus className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">As-Is Map</h3>
-                <p className="text-sm text-gray-600">Visualize the current state of your project or process</p>
-              </div>
-            </div>
-          </div>
+        <Card className="overflow-hidden border border-gray-200 bg-white shadow-none">
+          <CardHeader className="border-b border-gray-100">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-gray-900">
+              <FiMap className="size-5 shrink-0 text-gray-400" />
+              As-Is Map
+            </CardTitle>
+            <CardDescription className="text-xs uppercase tracking-wide text-gray-500">
+              Visualize the current state
+            </CardDescription>
+          </CardHeader>
           
-          <div className="p-8">
-            <div className="space-y-6">
-              <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  Generate an "As-Is Map" to visualize the current state of your project or process. This helps identify pain points and opportunities for improvement.
-                </p>
-              </div>
-              <AsIsMapForm
-                projectId={project?.id || ''}
-                prompt={asIsMapPrompt}
-                onPromptChange={setAsIsMapPrompt}
-                onGenerate={(data) => {
-                  setAsIsMapData(data);
-                  setAsIsMapPrompt('');
-                  setShowReport(true);
-                  // Refresh project data to get the latest from database
-                  if (onRefreshProject) {
-                    // Add a small delay to ensure backend has finished updating
-                    setTimeout(() => {
-                      onRefreshProject();
-                    }, 2000);
-                  }
-                }}
-                onGeneratingChange={setIsGeneratingAsIsMap}
-                isGenerating={isGeneratingAsIsMap}
-              />
+          <CardContent className="flex flex-col gap-6 px-6 pb-6 pt-6">
+            <div className="border-l-2 border-gray-900 py-2 pl-4">
+              <p className="max-w-2xl text-sm leading-relaxed text-gray-600">
+                Generate an "As-Is Map" to visualize the current state of your project or process. This helps identify pain points and opportunities for improvement.
+              </p>
             </div>
-          </div>
-        </div>
+            <AsIsMapForm
+              projectId={project?.id || ''}
+              prompt={asIsMapPrompt}
+              onPromptChange={setAsIsMapPrompt}
+              onGenerate={(data) => {
+                setAsIsMapData(data);
+                setAsIsMapPrompt('');
+                setShowReport(true);
+                if (onRefreshProject) {
+                  setTimeout(() => {
+                    onRefreshProject();
+                  }, 2000);
+                }
+              }}
+              onGeneratingChange={setIsGeneratingAsIsMap}
+              isGenerating={isGeneratingAsIsMap}
+            />
+          </CardContent>
+        </Card>
       ) : (
-        <div>
-          {/* Inline Report Display */}
-          {showReport && renderReport && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-fadeIn">
-              {renderReport(asIsMapData, () => {
-                // Trigger regeneration with current prompt
-                setIsGeneratingAsIsMap(true);
-                setShowReport(false);
-                setAsIsMapData(null);
-              })}
-            </div>
-          )}
+        <div className="animate-fadeIn">
+          {showReport && renderReport && renderReport(asIsMapData, () => {
+            setIsGeneratingAsIsMap(true);
+            setShowReport(false);
+            setAsIsMapData(null);
+          })}
         </div>
       )}
     </>

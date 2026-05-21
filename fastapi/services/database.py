@@ -1,0 +1,82 @@
+from collections.abc import AsyncGenerator
+import os
+import logging
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+)
+from sqlalchemy import inspect, text
+from sqlmodel import SQLModel
+
+from models.sql.async_presentation_generation_status import (
+    AsyncPresentationGenerationTaskModel,
+)
+from models.sql.image_asset import ImageAsset
+from models.sql.key_value import KeyValueSqlModel
+from models.sql.markdown_presentation import MarkdownPresentationModel
+from models.sql.ollama_pull_status import OllamaPullStatus
+from models.sql.presentation import PresentationModel
+from models.sql.project_presentation import ProjectPresentationModel
+from models.sql.project_presentation_revision import ProjectPresentationRevisionModel
+from models.sql.slide import SlideModel
+from models.sql.presentation_layout_code import PresentationLayoutCodeModel
+from models.sql.template import TemplateModel
+from models.sql.webhook_subscription import WebhookSubscription
+from utils.db_utils import get_database_url_and_connect_args
+
+
+database_url, connect_args = get_database_url_and_connect_args()
+
+sql_engine: AsyncEngine = create_async_engine(database_url, connect_args=connect_args)
+async_session_maker = async_sessionmaker(sql_engine, expire_on_commit=False)
+logger = logging.getLogger(__name__)
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
+        yield session
+
+
+def _ensure_markdown_presentation_visual_config_column(sync_conn) -> None:
+    """Backfill columns for existing databases where create_all won't alter tables."""
+    table_name = MarkdownPresentationModel.__tablename__
+    inspector = inspect(sync_conn)
+    existing_tables = set(inspector.get_table_names())
+    if table_name not in existing_tables:
+        return
+
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    if "visual_config" in columns:
+        return
+
+    sync_conn.execute(
+        text(f"ALTER TABLE {table_name} ADD COLUMN visual_config JSON")
+    )
+    logger.info("Added missing '%s.visual_config' column.", table_name)
+
+
+# Create Database and Tables
+async def create_db_and_tables():
+    async with sql_engine.begin() as conn:
+        await conn.run_sync(
+            lambda sync_conn: SQLModel.metadata.create_all(
+                sync_conn,
+                tables=[
+                    PresentationModel.__table__,
+                    SlideModel.__table__,
+                    KeyValueSqlModel.__table__,
+                    ImageAsset.__table__,
+                    PresentationLayoutCodeModel.__table__,
+                    TemplateModel.__table__,
+                    WebhookSubscription.__table__,
+                    AsyncPresentationGenerationTaskModel.__table__,
+                    MarkdownPresentationModel.__table__,
+                    ProjectPresentationModel.__table__,
+                    ProjectPresentationRevisionModel.__table__,
+                    OllamaPullStatus.__table__,
+                ],
+            )
+        )
+        await conn.run_sync(_ensure_markdown_presentation_visual_config_column)

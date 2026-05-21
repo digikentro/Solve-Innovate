@@ -12,10 +12,10 @@ export const ProjectCanvasSection = ({ project }: ProjectCanvasSectionProps) => 
   return (
     <div className="group">
       <dt className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Project Canvas</dt>
-      <dd className="bg-indigo-50/80 p-6 rounded-2xl border border-indigo-200">
+      <dd className="bg-indigo-50/80 p-6 rounded-md border border-indigo-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-md flex items-center justify-center">
               <FiPlus className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -27,7 +27,7 @@ export const ProjectCanvasSection = ({ project }: ProjectCanvasSectionProps) => 
           </div>
           {project && project.id && (
             <button
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+              className="px-6 py-3 rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
               onClick={() => navigate(`/projects/${project.id}/canvas`)}
             >
               {project.canvas ? 'View Canvas' : 'Create Canvas'}

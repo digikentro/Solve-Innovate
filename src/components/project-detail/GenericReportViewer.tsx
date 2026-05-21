@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiPlus, FiBox } from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
 
 interface GenericReportViewerProps {
   data: any;
@@ -31,10 +32,12 @@ export const GenericReportViewer = ({ data, title, onGenerateNew }: GenericRepor
       // Check if array contains objects
       if (typeof value[0] === 'object' && value[0] !== null) {
         return (
-          <div className="space-y-4 mt-2">
+          <div className="space-y-6 mt-4">
             {value.map((item, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="font-semibold text-gray-700 mb-3">Item {index + 1}</h4>
+              <div key={index} className="border border-gray-100 p-6">
+                <div className="flex items-center gap-2 mb-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <FiBox className="w-3 h-3" /> Item {index + 1}
+                </div>
                 {renderObject(item, depth + 1)}
               </div>
             ))}
@@ -85,7 +88,7 @@ export const GenericReportViewer = ({ data, title, onGenerateNew }: GenericRepor
           const isComplex = typeof value === 'object' && value !== null;
 
           return (
-            <div key={sectionKey} className="border-l-2 border-indigo-200 pl-4">
+            <div key={sectionKey} className="border-l border-gray-200 pl-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   {isComplex ? (
@@ -126,15 +129,16 @@ export const GenericReportViewer = ({ data, title, onGenerateNew }: GenericRepor
   return (
     <div className="space-y-6">
       {title && (
-        <div className="border-b border-gray-200 pb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        <div className="border-b border-gray-100 pb-6 mb-8 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-medium text-gray-900">{title}</h2>
           {onGenerateNew && (
-            <button
-              className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+            <Button
+              variant="outline"
+              className="border-black text-black hover:bg-black hover:text-white rounded-md h-10 px-6 font-normal transition-colors"
               onClick={onGenerateNew}
             >
               Generate New
-            </button>
+            </Button>
           )}
         </div>
       )}

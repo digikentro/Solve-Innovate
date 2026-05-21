@@ -9,6 +9,10 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  sendOtp: (email: string) => Promise<{ error: any }>;
+  verifyOtp: (email: string, token: string, type?: 'email' | 'signup') => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,24 +23,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and set the user
+    let cancelled = false;
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const timeoutMs = 12_000;
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timed out')), timeoutMs)
+        );
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        if (cancelled) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch {
+        if (cancelled) return;
+        setSession(null);
+        setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
     getSession();
 
-    // Listen for changes in auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => {
+      cancelled = true;
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -66,6 +85,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const sendOtp = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    return { error };
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error };
+  };
+
+  const verifyOtp = async (email: string, token: string, type: 'email' | 'signup' = 'email') => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type,
+    });
+    return { error };
+  };
+
   const value = {
     user,
     session,
@@ -73,11 +121,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    sendOtp,
+    verifyOtp,
+    resetPassword,
+    updatePassword,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-background text-gray-900">
+          <p className="text-sm text-gray-600">Loading…</p>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { HorizontalModal } from '@/components/ui/Modal';
 import { toast } from 'react-hot-toast';
@@ -145,9 +146,9 @@ export const AsIsMapForm: React.FC<{
     };
 
     return (
-        <div className="space-y-4">
-            <div>
-                <label htmlFor="asIsMapPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+                <label htmlFor="asIsMapPrompt" className="text-xs font-medium uppercase tracking-wide text-gray-500">
                     AS-IS Map Prompt
                 </label>
                 <textarea
@@ -156,16 +157,17 @@ export const AsIsMapForm: React.FC<{
                     onChange={(e) => onPromptChange(e.target.value)}
                     placeholder="Enter your prompt here..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-start">
                 <button
-                    className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                    type="button"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleGenerate}
                     disabled={!prompt.trim() || isGenerating}
                 >
-                    {isGenerating ? 'Generating...' : 'Generate AS-IS Map'}
+                    {isGenerating ? <><Loader2 className="size-4 animate-spin" /> Generating...</> : 'Generate AS-IS Map'}
                 </button>
             </div>
         </div>
@@ -217,8 +219,8 @@ const AsIsMapModal: React.FC<AsIsMapModalProps> = ({
                         <p className="text-sm mt-2">Please generate an AS-IS Map first</p>
                     </div>
                 ) : (
-                    <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-4 no-scrollbar">
-                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                    <div className="flex max-h-[70vh] flex-col gap-8 overflow-y-auto pr-4 no-scrollbar">
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
 
                             {(() => {
                                 const content = getAsIsMapContent(asIsMapData, project?.as_is_map_data);
@@ -237,8 +239,8 @@ const AsIsMapModal: React.FC<AsIsMapModalProps> = ({
                                 // If content is a string, display it formatted
                                 if (typeof content === 'string') {
                                     return (
-                                        <div className="bg-white p-4 rounded-lg border border-gray-200">
-                                            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">{content}</div>
+                                        <div className="rounded-xl border border-gray-200 bg-white p-4">
+                                            <div className="whitespace-pre-wrap leading-relaxed text-gray-700">{content}</div>
                                         </div>
                                     );
                                 }
@@ -246,22 +248,22 @@ const AsIsMapModal: React.FC<AsIsMapModalProps> = ({
                                 // If content is an object, display it in a simple, clean way
                                 if (typeof content === 'object' && content !== null) {
                                     return (
-                                        <div className="space-y-6">
+                                        <div className="flex flex-col gap-6">
                                             {/* HMW Statement Analysis */}
                                             {content['HMW STATEMENT ANALYSIS'] && (
-                                                <div className="bg-white p-6 rounded-lg border border-gray-200">
-                                                    <div className="space-y-4">
+                                                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                                                    <div className="flex flex-col gap-4">
                                                         <div>
-                                                            <h5 className="font-semibold text-blue-800 mb-2">Key Question</h5>
-                                                            <p className="text-gray-700 leading-relaxed">{content['HMW STATEMENT ANALYSIS'].HMW}</p>
+                                                            <h5 className="mb-2 text-sm font-semibold text-gray-900">Key Question</h5>
+                                                            <p className="leading-relaxed text-gray-600">{content['HMW STATEMENT ANALYSIS'].HMW}</p>
                                                         </div>
                                                         <div>
-                                                            <h5 className="font-semibold text-blue-800 mb-2">Target Users</h5>
-                                                            <p className="text-gray-700 leading-relaxed">{content['HMW STATEMENT ANALYSIS']['Target Users']}</p>
+                                                            <h5 className="mb-2 text-sm font-semibold text-gray-900">Target Users</h5>
+                                                            <p className="leading-relaxed text-gray-600">{content['HMW STATEMENT ANALYSIS']['Target Users']}</p>
                                                         </div>
                                                         <div>
-                                                            <h5 className="font-semibold text-blue-800 mb-2">Core Need</h5>
-                                                            <p className="text-gray-700 leading-relaxed">{content['HMW STATEMENT ANALYSIS']['Core Need']}</p>
+                                                            <h5 className="mb-2 text-sm font-semibold text-gray-900">Core Need</h5>
+                                                            <p className="leading-relaxed text-gray-600">{content['HMW STATEMENT ANALYSIS']['Core Need']}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -269,24 +271,24 @@ const AsIsMapModal: React.FC<AsIsMapModalProps> = ({
 
                                             {/* AS-IS Map: Complete User Journey */}
                                             {content['AS-IS-MAP: COMPLETE USER JOURNEY'] && (
-                                                <div className="bg-white p-6 rounded-lg border border-gray-200">
-                                                    <h4 className="font-bold text-gray-800 mb-4 text-xl border-b border-gray-200 pb-3">
+                                                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                                                    <h4 className="mb-4 border-b border-gray-200 pb-3 text-lg font-bold text-gray-900">
                                                         Current Process Stages
                                                     </h4>
-                                                    <div className="space-y-6">
+                                                    <div className="flex flex-col gap-6">
                                                         {Object.entries(content['AS-IS-MAP: COMPLETE USER JOURNEY']).map(([stageKey, stageData]: [string, any]) => (
-                                                            <div key={stageKey} className="border-l-4 border-green-200 pl-4">
-                                                                <h5 className="font-semibold text-green-800 text-lg mb-3">
+                                                            <div key={stageKey} className="border-l-4 border-gray-200 pl-4">
+                                                                <h5 className="mb-3 text-base font-semibold text-gray-900">
                                                                     {stageKey.replace(/_/g, ' ')}
                                                                 </h5>
-                                                                <div className="space-y-3">
+                                                                <div className="flex flex-col gap-3">
                                                                     {Object.entries(stageData).filter(([key]) => key.startsWith('Step')).map(([stepKey, stepValue]: [string, unknown]) => (
                                                                         <div key={stepKey} className="flex items-start gap-3">
-                                                                            <span className="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
+                                                                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-700">
                                                                                 {stepKey.split(' ')[1]}
                                                                             </span>
-                                                                            <div className="flex-1 bg-gray-50 p-3 rounded border border-gray-200">
-                                                                                <p className="text-gray-700 leading-relaxed">{String(stepValue)}</p>
+                                                                            <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                                                                <p className="leading-relaxed text-gray-700">{String(stepValue)}</p>
                                                                             </div>
                                                                         </div>
                                                                     ))}
@@ -299,18 +301,18 @@ const AsIsMapModal: React.FC<AsIsMapModalProps> = ({
 
                                             {/* MECE Validation */}
                                             {content['MECE VALIDATION'] && (
-                                                <div className="bg-white p-6 rounded-lg border border-gray-200">
-                                                    <h4 className="font-bold text-gray-800 mb-4 text-xl border-b border-gray-200 pb-3">
+                                                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                                                    <h4 className="mb-4 border-b border-gray-200 pb-3 text-lg font-bold text-gray-900">
                                                         MECE Validation
                                                     </h4>
-                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                    <div className="grid gap-4 md:grid-cols-2">
                                                         <div>
-                                                            <h5 className="font-semibold text-indigo-800 mb-2">Mutually Exclusive Check</h5>
-                                                            <p className="text-gray-700 leading-relaxed">{content['MECE VALIDATION']['Mutually Exclusive Check']}</p>
+                                                            <h5 className="mb-2 text-sm font-semibold text-gray-900">Mutually Exclusive Check</h5>
+                                                            <p className="leading-relaxed text-gray-600">{content['MECE VALIDATION']['Mutually Exclusive Check']}</p>
                                                         </div>
                                                         <div>
-                                                            <h5 className="font-semibold text-indigo-800 mb-2">Collectively Exhaustive Check</h5>
-                                                            <p className="text-gray-700 leading-relaxed">{content['MECE VALIDATION']['Collectively Exhaustive Check']}</p>
+                                                            <h5 className="mb-2 text-sm font-semibold text-gray-900">Collectively Exhaustive Check</h5>
+                                                            <p className="leading-relaxed text-gray-600">{content['MECE VALIDATION']['Collectively Exhaustive Check']}</p>
                                                         </div>
                                                     </div>
                                                 </div>

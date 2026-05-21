@@ -1,4 +1,7 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { FiChevronDown, FiChevronUp, FiEdit3, FiRefreshCw, FiSave, FiX, FiCheckCircle, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
 
 interface OutcomeToBehaviorHMWReportViewerProps {
   data: any;
@@ -8,27 +11,25 @@ interface OutcomeToBehaviorHMWReportViewerProps {
 }
 
 export const OutcomeToBehaviorHMWReportViewer = ({ data, onGenerateNew, projectId, onSave }: OutcomeToBehaviorHMWReportViewerProps) => {
-  const [expandedTransformations, setExpandedTransformations] = useState<{[key: number]: boolean}>({});
-  const [hoverTimer, setHoverTimer] = useState<number | null>(null);
+  const [expandedTransformations, setExpandedTransformations] = useState<{[key: number]: boolean}>({ 0: true });
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
-  const [originalData, setOriginalData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [originalData, setOriginalData] = useState<any>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [errorText, setErrorText] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
-  const reportData = isEditMode ? editedData : (data?.content || data);
+  const reportData = isEditMode && editedData ? editedData?.content || editedData : data?.content || data;
 
   const handleEditToggle = () => {
     if (!isEditMode) {
-      const dataToEdit = data?.content || data;
-      setOriginalData(structuredClone(dataToEdit));
-      setEditedData(structuredClone(dataToEdit));
-      setIsEditMode(true);
+      setOriginalData(structuredClone(data));
+      setEditedData(structuredClone(data));
     }
+    setIsEditMode(!isEditMode);
   };
 
   const handleCancel = () => {
@@ -42,7 +43,7 @@ export const OutcomeToBehaviorHMWReportViewer = ({ data, onGenerateNew, projectI
     setShowCancelDialog(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setShowSaveDialog(true);
   };
 
@@ -52,154 +53,186 @@ export const OutcomeToBehaviorHMWReportViewer = ({ data, onGenerateNew, projectI
     try {
       if (onSave) {
         await onSave(editedData);
-        setShowSuccessMessage(true);
-        setTimeout(() => setShowSuccessMessage(false), 3000);
-        setOriginalData(null);
-        setEditedData(null);
-        setIsEditMode(false);
       }
+      setOriginalData(structuredClone(editedData));
+      setIsEditMode(false);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
     } catch (error) {
-      console.error('Save failed:', error);
-      setErrorText(error instanceof Error ? error.message : 'Failed to save changes');
+      console.error('Save error:', error);
+      setErrorText('Failed to save Transformation Framework. Please try again.');
       setShowErrorMessage(true);
-      setTimeout(() => setShowErrorMessage(false), 5000);
+      setTimeout(() => setShowErrorMessage(false), 3000);
     } finally {
       setIsSaving(false);
     }
   };
 
   const updateTextAtPath = (path: (string | number)[], value: any) => {
-    setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-      current[path[path.length - 1]] = value;
-      return updated;
-    });
+    const clone = structuredClone(editedData || data);
+    let current: any = clone?.content || clone;
+    for (let i = 0; i < path.length - 1; i++) {
+      if (current[path[i]] === undefined) return;
+      current = current[path[i]];
+    }
+    const lastKey = path[path.length - 1];
+    current[lastKey] = value;
+    setEditedData(clone?.content ? { ...clone } : clone);
   };
 
   const updateArrayItemAtPath = (path: (string | number)[], index: number, value: any) => {
-    setEditedData((prev: any) => {
-      const updated = structuredClone(prev);
-      let current = updated;
-      for (let i = 0; i < path.length; i++) {
-        current = current[path[i]];
-      }
-      current[index] = value;
-      return updated;
-    });
+    const fullPath = [...path, index];
+    updateTextAtPath(fullPath, value);
   };
+
+    if (!reportData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-100">
+        <FiAlertCircle className="w-8 h-8 text-gray-200 mb-4" />
+        <p className="text-xs text-gray-400 uppercase tracking-widest">No Transformation Data Available</p>
+      </div>
+    );
+  }
 
   const toggleTransformation = (idx: number) => {
     setExpandedTransformations(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const handleTransformationMouseEnter = (id: number) => {
-    // Auto-expand after a short hover delay to preview content
-    const timer = window.setTimeout(() => {
-      setExpandedTransformations(prev => ({ ...prev, [id]: true }));
-    }, 500);
-    setHoverTimer(timer);
-  };
-
-  const handleTransformationMouseLeave = () => {
-    if (hoverTimer) {
-      window.clearTimeout(hoverTimer);
-      setHoverTimer(null);
-    }
-  };
-
-  const formatValue = (v: any) => {
-    if (v === null || v === undefined) return '—';
-    if (typeof v === 'string' && v.trim().toLowerCase() === 'undefined') return '—';
-    return v;
+  const renderEditableList = (items: string[] | undefined, path: (string | number)[], label: string) => {
+    if (!items || items.length === 0) return null;
+    
+    return (
+      <div className="space-y-3">
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block">{label}</label>
+        <div className="space-y-3 pl-6 border-l border-gray-200">
+          {items.map((item: string, i: number) => (
+            <div key={i} className="group relative">
+              {isEditMode ? (
+                <textarea
+                  value={item || ''}
+                  onChange={(e) => updateArrayItemAtPath(path, i, e.target.value)}
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                />
+              ) : (
+                <div className="flex items-start gap-3 py-1">
+                  <span className="mt-1.5 w-1 h-1 bg-black rounded-md flex-shrink-0" />
+                  <p className="text-sm text-gray-600 leading-relaxed">{item}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-8">
-      {/* Save Confirmation Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Save Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to save these changes to the Outcome-to-Behavior HMW report?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cancel Confirmation Dialog */}
-      {showCancelDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Discard Changes?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to discard all your changes?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCancelDialog(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={confirmCancel}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Toast */}
+    <div className="flex flex-col gap-8">
+      {/* Messages & Dialogs */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          Changes saved successfully!
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-900">✓ Framework saved successfully</p>
         </div>
       )}
 
-      {/* Error Toast */}
       {showErrorMessage && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          Error: {errorText}
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn rounded-xl border border-red-200 bg-white px-6 py-4 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-600">✗ {errorText}</p>
         </div>
       )}
 
-      {/* Header with Edit and Generate New Buttons */}
-      <div className="pb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Outcome-to-Behavior HMW Report</h1>
-        <div className="flex gap-3">
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Save Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Confirm permanent updates to the Transformation Framework.</p>
+            <div className="flex gap-4">
+              <button onClick={() => setShowSaveDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Go Back</button>
+              <button onClick={confirmSave} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90">Save Now</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Discard Changes?</h3>
+            <p className="mb-8 text-sm text-gray-600">Unsaved modifications will be permanently lost.</p>
+            <div className="flex gap-4">
+              <button onClick={() => setShowCancelDialog(false)} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium uppercase tracking-widest text-gray-900 hover:bg-gray-50">Keep Editing</button>
+              <button onClick={confirmCancel} className="flex-1 rounded-xl bg-black px-4 py-3 text-xs font-medium uppercase tracking-widest text-white hover:bg-black/90">Discard</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Mode Banner */}
+      {isEditMode && (
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+          <div className="flex items-center gap-3">
+            <span className="text-xs uppercase tracking-widest text-gray-500">Status</span>
+            <span className="text-sm font-medium text-gray-900">Edit Mode Active — Modification enabled</span>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-gray-100 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="min-w-0 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            Outcome-to-Behavior
+          </h1>
+          <p className="mt-2 max-w-xl text-base leading-snug text-gray-500">
+            Transformation Framework
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           {projectId && onSave && (
-            <button
-              onClick={handleEditToggle}
-              disabled={isEditMode}
-              className="px-6 py-2 font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Edit
-            </button>
+            <>
+              {!isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-colors hover:bg-gray-50"
+                >
+                  Edit Report
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-1.5 inline size-3 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
           )}
           {onGenerateNew && (
             <button
+              type="button"
               onClick={onGenerateNew}
-              className="px-6 py-2 font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors rounded-lg"
+              disabled={isEditMode}
+              className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Generate New
             </button>
@@ -207,507 +240,276 @@ export const OutcomeToBehaviorHMWReportViewer = ({ data, onGenerateNew, projectI
         </div>
       </div>
 
-      {/* Edit Mode Banner */}
-      {isEditMode && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-              <span className="font-semibold text-blue-900">Edit Mode Active</span>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 text-gray-700 hover:bg-white rounded transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Project Context */}
       {reportData.project_context && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Project Context</h2>
-          <div className="grid md:grid-cols-2 gap-8">
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Foundation Analysis</h2>
+          
+          <div className="flex flex-col gap-10">
             <div>
-              <h3 className="font-semibold mb-2">Prioritized Pain Point</h3>
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Prioritized Pain Point</label>
               {isEditMode ? (
                 <textarea
                   value={reportData.project_context.prioritized_pain_point || ''}
                   onChange={(e) => updateTextAtPath(['project_context', 'prioritized_pain_point'], e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                  className="min-h-[100px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                  rows={3}
                 />
               ) : (
-                <p className="text-base pl-2">{formatValue(reportData.project_context.prioritized_pain_point)}</p>
+                <p className="border-l-2 border-gray-900 pl-4 text-base leading-relaxed text-gray-900">
+                  {reportData.project_context.prioritized_pain_point}
+                </p>
               )}
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Target Extreme User</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.project_context.target_extreme_user || ''}
-                  onChange={(e) => updateTextAtPath(['project_context', 'target_extreme_user'], e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-2">{formatValue(reportData.project_context.target_extreme_user)}</p>
-              )}
+
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+              <div>
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Target Extreme User</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.project_context.target_extreme_user || ''}
+                    onChange={(e) => updateTextAtPath(['project_context', 'target_extreme_user'], e.target.value)}
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                  />
+                ) : (
+                  <p className="border-l border-gray-200 pl-4 text-sm leading-relaxed text-gray-600">
+                    {reportData.project_context.target_extreme_user}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </section>
       )}
 
       {/* Transformations */}
-      {Array.isArray(reportData.transformations) && reportData.transformations.length > 0 && (
-        <section className="space-y-6">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Transformations</h2>
-          {reportData.transformations.map((trans: any, idx: number) => (
-            <div key={idx} className="bg-gray-50 p-6 rounded-xl">
-              <button
-                onClick={() => toggleTransformation(idx)}
-                onMouseEnter={() => handleTransformationMouseEnter(idx)}
-                onMouseLeave={() => handleTransformationMouseLeave()}
-                className="w-full text-left mb-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold pr-4">
-                    Transformation {idx + 1}: {trans.outcome || 'Transformation'}
-                  </h3>
-                  <span className="text-2xl flex-shrink-0">{expandedTransformations[idx] ? '−' : '+'}</span>
-                </div>
-              </button>
-              {expandedTransformations[idx] && (
-                <div className="space-y-4 pl-4">
-                  <div>
-                    <h4 className="font-bold mb-1">Outcome</h4>
-                    {isEditMode ? (
-                      <textarea
-                        value={trans.outcome || ''}
-                        onChange={(e) => updateTextAtPath(['transformations', idx, 'outcome'], e.target.value)}
-                        rows={2}
-                        className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                      />
-                    ) : (
-                      <p className="text-base">{formatValue(trans.outcome)}</p>
-                    )}
+      <div className="space-y-6">
+        <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Transformation Pathways</h2>
+        
+        {reportData.transformations?.map((trans: any, idx: number) => (
+          <div key={idx} className="overflow-hidden rounded-xl border border-gray-200">
+            <button
+              onClick={() => toggleTransformation(idx)}
+              className={`flex w-full items-center justify-between px-6 py-4 text-left transition-colors ${expandedTransformations[idx] ? 'bg-black text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
+            >
+              <div className="flex items-center gap-4">
+                <span className={`text-xs font-medium uppercase tracking-wide ${expandedTransformations[idx] ? 'opacity-70' : 'text-gray-500'}`}>Transformation 0{idx + 1}</span>
+                <span className="text-sm font-medium">{trans.outcome || 'Strategic Outcome'}</span>
+              </div>
+              <span className="text-xs">{expandedTransformations[idx] ? 'CLOSE' : 'EXPAND'}</span>
+            </button>
+            
+            {expandedTransformations[idx] && (
+              <div className="flex flex-col gap-4 bg-white p-6 border-t border-gray-100 space-y-8">
+                {/* Outcome & Behavior Analysis */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                  <div className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Core Behavior</label>
+                      {isEditMode ? (
+                        <textarea
+                          value={trans.behavior_analysis?.core_behavior || ''}
+                          onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_analysis', 'core_behavior'], e.target.value)}
+                          rows={2}
+                          className="min-h-[60px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium text-gray-900 border-l-2 border-black pl-4">{trans.behavior_analysis?.core_behavior}</p>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Measurement Criteria</label>
+                      {isEditMode ? (
+                        <textarea
+                          value={trans.behavior_analysis?.measurement_criteria || ''}
+                          onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_analysis', 'measurement_criteria'], e.target.value)}
+                          rows={2}
+                          className="min-h-[60px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600 pl-4 border-l border-gray-200">{trans.behavior_analysis?.measurement_criteria}</p>
+                      )}
+                    </div>
                   </div>
-                  {trans.behavior_analysis && (
-                    <div>
-                      <h4 className="font-bold mb-1">Behavior Analysis</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="font-semibold">Core Behavior:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.behavior_analysis.core_behavior || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_analysis', 'core_behavior'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.behavior_analysis.core_behavior)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Measurement Criteria:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.behavior_analysis.measurement_criteria || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_analysis', 'measurement_criteria'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.behavior_analysis.measurement_criteria)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Ability Barriers:</span>
-                          {isEditMode ? (
-                            <div className="space-y-2 pl-4">
-                              {trans.behavior_analysis.ability_barriers?.map((b: string, i: number) => (
-                                <textarea
-                                  key={i}
-                                  value={b || ''}
-                                  onChange={(e) => updateArrayItemAtPath(['transformations', idx, 'behavior_analysis', 'ability_barriers'], i, e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <ul className="list-disc list-inside space-y-1 pl-4">
-                              {trans.behavior_analysis.ability_barriers?.map((b: string, i: number) => (
-                                <li key={i} className="text-sm">{b}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Extreme User Constraints:</span>
-                          {isEditMode ? (
-                            <div className="space-y-2 pl-4">
-                              {trans.behavior_analysis.extreme_user_constraints?.map((c: string, i: number) => (
-                                <textarea
-                                  key={i}
-                                  value={c || ''}
-                                  onChange={(e) => updateArrayItemAtPath(['transformations', idx, 'behavior_analysis', 'extreme_user_constraints'], i, e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <ul className="list-disc list-inside space-y-1 pl-4">
-                              {trans.behavior_analysis.extreme_user_constraints?.map((c: string, i: number) => (
-                                <li key={i} className="text-sm">{c}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
+
+                  <div className="space-y-8">
+                    {renderEditableList(trans.behavior_analysis?.ability_barriers, ['transformations', idx, 'behavior_analysis', 'ability_barriers'], 'Ability Barriers')}
+                    {renderEditableList(trans.behavior_analysis?.extreme_user_constraints, ['transformations', idx, 'behavior_analysis', 'extreme_user_constraints'], 'Extreme User Constraints')}
+                  </div>
+                </div>
+
+                {/* Specification & Constraints */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pt-12 border-t border-gray-100">
+                  <div className="space-y-8">
+                    <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Behavior Specification</label>
+                    <div className="space-y-6 pl-6 border-l border-gray-200">
+                      <div>
+                        <span className="text-xs text-gray-400 uppercase tracking-wide block mb-2">Specific Action</span>
+                        {isEditMode ? (
+                          <textarea
+                            value={trans.behavior_specification?.specific_action || ''}
+                            onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_specification', 'specific_action'], e.target.value)}
+                            rows={2}
+                            className="min-h-[60px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-900 font-medium">{trans.behavior_specification?.specific_action}</p>
+                        )}
+                      </div>
+                      {renderEditableList(trans.behavior_specification?.measurable_elements, ['transformations', idx, 'behavior_specification', 'measurable_elements'], 'Measurable Elements')}
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Ability-Focused Constraint</label>
+                    <div className="space-y-6 pl-6 border-l border-gray-200">
+                      <div>
+                        <span className="text-xs text-gray-400 uppercase tracking-wide block mb-2">Primary Barrier</span>
+                        {isEditMode ? (
+                          <textarea
+                            value={trans.ability_focused_constraint?.primary_barrier || ''}
+                            onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'primary_barrier'], e.target.value)}
+                            rows={2}
+                            className="min-h-[60px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-900 font-medium">{trans.ability_focused_constraint?.primary_barrier}</p>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-400 uppercase tracking-wide block mb-2">Simplification Approach</span>
+                        {isEditMode ? (
+                          <textarea
+                            value={trans.ability_focused_constraint?.simplification_approach || ''}
+                            onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'simplification_approach'], e.target.value)}
+                            rows={2}
+                            className="min-h-[60px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600">{trans.ability_focused_constraint?.simplification_approach}</p>
+                        )}
                       </div>
                     </div>
-                  )}
-                  {trans.behavior_specification && (
-                    <div>
-                      <h4 className="font-bold mb-1">Behavior Specification</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="font-semibold">Specific Action:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.behavior_specification.specific_action || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_specification', 'specific_action'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.behavior_specification.specific_action)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Measurable Elements:</span>
-                          {isEditMode ? (
-                            <div className="space-y-2 pl-4">
-                              {trans.behavior_specification.measurable_elements?.map((m: string, i: number) => (
-                                <textarea
-                                  key={i}
-                                  value={m || ''}
-                                  onChange={(e) => updateArrayItemAtPath(['transformations', idx, 'behavior_specification', 'measurable_elements'], i, e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <ul className="list-disc list-inside space-y-1 pl-4">
-                              {trans.behavior_specification.measurable_elements?.map((m: string, i: number) => (
-                                <li key={i} className="text-sm">{m}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Observable Components:</span>
-                          {isEditMode ? (
-                            <div className="space-y-2 pl-4">
-                              {trans.behavior_specification.observable_components?.map((o: string, i: number) => (
-                                <textarea
-                                  key={i}
-                                  value={o || ''}
-                                  onChange={(e) => updateArrayItemAtPath(['transformations', idx, 'behavior_specification', 'observable_components'], i, e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <ul className="list-disc list-inside space-y-1 pl-4">
-                              {trans.behavior_specification.observable_components?.map((o: string, i: number) => (
-                                <li key={i} className="text-sm">{o}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Outcome Connection:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.behavior_specification.outcome_connection || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'behavior_specification', 'outcome_connection'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.behavior_specification.outcome_connection)}</p>
-                          )}
-                        </div>
-                      </div>
+                  </div>
+                </div>
+
+                {/* HMW Statement - Highlighted */}
+                <div className="pt-12 border-t border-gray-100">
+                  <div className="rounded-xl border border-gray-200 bg-white p-8 flex flex-col md:flex-row items-center gap-12">
+                    <div className="flex-shrink-0">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">HMW Statement</span>
                     </div>
-                  )}
-                  {trans.ability_focused_constraint && (
-                    <div>
-                      <h4 className="font-bold mb-1">Ability-Focused Constraint</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="font-semibold">Primary Barrier:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.ability_focused_constraint.primary_barrier || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'primary_barrier'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.ability_focused_constraint.primary_barrier)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Simplification Approach:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.ability_focused_constraint.simplification_approach || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'simplification_approach'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.ability_focused_constraint.simplification_approach)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Constraint Framing:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.ability_focused_constraint.constraint_framing || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'constraint_framing'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.ability_focused_constraint.constraint_framing)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Outcome Alignment:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.ability_focused_constraint.outcome_alignment || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'ability_focused_constraint', 'outcome_alignment'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.ability_focused_constraint.outcome_alignment)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {trans.hmw_statement && (
-                    <div>
-                      <h4 className="font-bold mb-1">HMW Statement</h4>
+                    <div className="flex-1 w-full">
                       {isEditMode ? (
                         <textarea
                           value={trans.hmw_statement || ''}
                           onChange={(e) => updateTextAtPath(['transformations', idx, 'hmw_statement'], e.target.value)}
-                          rows={2}
-                          className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                          rows={3}
+                          className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-base leading-relaxed focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                         />
                       ) : (
-                        <p className="text-base">{formatValue(trans.hmw_statement)}</p>
+                        <h3 className="text-lg font-medium text-gray-900 leading-relaxed italic">
+                          "{trans.hmw_statement}"
+                        </h3>
                       )}
                     </div>
-                  )}
-                  {trans.bj_fogg_validation && (
-                    <div>
-                      <h4 className="font-bold mb-1">BJ Fogg Validation</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="font-semibold">Ability Focus:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.bj_fogg_validation.ability_focus || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'bj_fogg_validation', 'ability_focus'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.bj_fogg_validation.ability_focus)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Behavior Specificity:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.bj_fogg_validation.behavior_specificity || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'bj_fogg_validation', 'behavior_specificity'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.bj_fogg_validation.behavior_specificity)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Extreme User Enablement:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.bj_fogg_validation.extreme_user_enablement || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'bj_fogg_validation', 'extreme_user_enablement'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.bj_fogg_validation.extreme_user_enablement)}</p>
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Outcome Achievement:</span>
-                          {isEditMode ? (
-                            <textarea
-                              value={trans.bj_fogg_validation.outcome_achievement || ''}
-                              onChange={(e) => updateTextAtPath(['transformations', idx, 'bj_fogg_validation', 'outcome_achievement'], e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                            />
-                          ) : (
-                            <p className="text-sm pl-2">{formatValue(trans.bj_fogg_validation.outcome_achievement)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
+
+                {/* BJ Fogg Validation */}
+                <div className="pt-12 border-t border-gray-100">
+                  <label className="mb-8 block text-xs font-medium uppercase tracking-wide text-gray-500">Behavioral Design Validation (BJ Fogg)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    {[
+                      { label: 'Ability Focus', path: ['transformations', idx, 'bj_fogg_validation', 'ability_focus'], value: trans.bj_fogg_validation?.ability_focus },
+                      { label: 'Specificity', path: ['transformations', idx, 'bj_fogg_validation', 'behavior_specificity'], value: trans.bj_fogg_validation?.behavior_specificity },
+                      { label: 'Enablement', path: ['transformations', idx, 'bj_fogg_validation', 'extreme_user_enablement'], value: trans.bj_fogg_validation?.extreme_user_enablement },
+                      { label: 'Outcome Link', path: ['transformations', idx, 'bj_fogg_validation', 'outcome_achievement'], value: trans.bj_fogg_validation?.outcome_achievement }
+                    ].map((val, vIdx) => (
+                      <div key={vIdx} className="space-y-3">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block">{val.label}</span>
+                        {isEditMode ? (
+                          <textarea
+                            value={val.value || ''}
+                            onChange={(e) => updateTextAtPath(val.path, e.target.value)}
+                            rows={3}
+                            className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-xs focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                          />
+                        ) : (
+                          <p className="text-xs text-gray-600 leading-relaxed">{val.value}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Behavior Integration Analysis */}
       {reportData.behavior_integration_analysis && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Behavior Integration Analysis</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-semibold mb-2">Behavior Pattern Themes</h3>
-              {isEditMode ? (
-                <div className="space-y-2 pl-4">
-                  {reportData.behavior_integration_analysis.behavior_pattern_themes?.map((t: string, i: number) => (
-                    <textarea
-                      key={i}
-                      value={t || ''}
-                      onChange={(e) => updateArrayItemAtPath(['behavior_integration_analysis', 'behavior_pattern_themes'], i, e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ul className="list-disc list-inside space-y-1 pl-4">
-                  {reportData.behavior_integration_analysis.behavior_pattern_themes?.map((t: string, i: number) => (
-                    <li key={i} className="text-sm">{t}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Ability Simplification Strategies</h3>
-              {isEditMode ? (
-                <div className="space-y-2 pl-4">
-                  {reportData.behavior_integration_analysis.ability_simplification_strategies?.map((s: string, i: number) => (
-                    <textarea
-                      key={i}
-                      value={s || ''}
-                      onChange={(e) => updateArrayItemAtPath(['behavior_integration_analysis', 'ability_simplification_strategies'], i, e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ul className="list-disc list-inside space-y-1 pl-4">
-                  {reportData.behavior_integration_analysis.ability_simplification_strategies?.map((s: string, i: number) => (
-                    <li key={i} className="text-sm">{s}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8">
+          <h2 className="mb-8 text-xs font-medium uppercase tracking-wide text-gray-500">Integration Synthesis</h2>
+          
+          <div className="flex flex-col gap-10">
+            {renderEditableList(reportData.behavior_integration_analysis.behavior_pattern_themes, ['behavior_integration_analysis', 'behavior_pattern_themes'], 'Behavioral Themes')}
+            {renderEditableList(reportData.behavior_integration_analysis.ability_simplification_strategies, ['behavior_integration_analysis', 'ability_simplification_strategies'], 'Simplification Strategies')}
           </div>
-          {reportData.behavior_integration_analysis.extreme_user_enablement_coherence && (
-            <div className="mt-8">
-              <h3 className="font-semibold mb-2">Extreme User Enablement Coherence</h3>
+
+          <div className="grid grid-cols-1 gap-12 mt-16 pt-12 border-t border-gray-100">
+            <div className="space-y-6">
+              <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Coherence Analysis</label>
               {isEditMode ? (
                 <textarea
                   value={reportData.behavior_integration_analysis.extreme_user_enablement_coherence || ''}
                   onChange={(e) => updateTextAtPath(['behavior_integration_analysis', 'extreme_user_enablement_coherence'], e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
+                  className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
                 />
               ) : (
-                <p className="text-base pl-2">{reportData.behavior_integration_analysis.extreme_user_enablement_coherence}</p>
+                <p className="text-sm leading-relaxed text-gray-600 border-l border-gray-200 pl-4">{reportData.behavior_integration_analysis.extreme_user_enablement_coherence}</p>
               )}
             </div>
-          )}
-          {reportData.behavior_integration_analysis.outcome_achievement_pathway && (
-            <div className="mt-6">
-              <h3 className="font-semibold mb-2">Outcome Achievement Pathway</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.behavior_integration_analysis.outcome_achievement_pathway || ''}
-                  onChange={(e) => updateTextAtPath(['behavior_integration_analysis', 'outcome_achievement_pathway'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-2">{reportData.behavior_integration_analysis.outcome_achievement_pathway}</p>
-              )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+              <div className="space-y-6">
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Achievement Pathway</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.behavior_integration_analysis.outcome_achievement_pathway || ''}
+                    onChange={(e) => updateTextAtPath(['behavior_integration_analysis', 'outcome_achievement_pathway'], e.target.value)}
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                  />
+                ) : (
+                  <p className="text-sm leading-relaxed text-gray-600 border-l border-gray-200 pl-4">{reportData.behavior_integration_analysis.outcome_achievement_pathway}</p>
+                )}
+              </div>
+              <div className="space-y-6">
+                <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-gray-500">Implementation Feasibility</label>
+                {isEditMode ? (
+                  <textarea
+                    value={reportData.behavior_integration_analysis.implementation_feasibility_assessment || ''}
+                    onChange={(e) => updateTextAtPath(['behavior_integration_analysis', 'implementation_feasibility_assessment'], e.target.value)}
+                    rows={3}
+                    className="min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20"
+                  />
+                ) : (
+                  <p className="text-sm leading-relaxed text-gray-600 border-l border-gray-200 pl-4">{reportData.behavior_integration_analysis.implementation_feasibility_assessment}</p>
+                )}
+              </div>
             </div>
-          )}
-          {reportData.behavior_integration_analysis.implementation_feasibility_assessment && (
-            <div className="mt-6">
-              <h3 className="font-semibold mb-2">Implementation Feasibility Assessment</h3>
-              {isEditMode ? (
-                <textarea
-                  value={reportData.behavior_integration_analysis.implementation_feasibility_assessment || ''}
-                  onChange={(e) => updateTextAtPath(['behavior_integration_analysis', 'implementation_feasibility_assessment'], e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-blue-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              ) : (
-                <p className="text-base pl-2">{reportData.behavior_integration_analysis.implementation_feasibility_assessment}</p>
-              )}
-            </div>
-          )}
+          </div>
         </section>
       )}
 
-      {/* Fallback: Show all raw data if structure doesn't match expected format */}
-      {!reportData.project_context && !(Array.isArray(reportData.transformations) && reportData.transformations.length > 0) && !reportData.behavior_integration_analysis && (
-        <section className="p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 pb-2">Raw Data Structure</h2>
-          <pre className="text-sm text-gray-700 overflow-auto max-h-96 font-mono">
-            {JSON.stringify(reportData, null, 2)}
-          </pre>
-        </section>
-      )}
-
-      {/* Report Metadata */}
+      {/* Footer Metadata */}
       {data.generated_at && (
-        <div className="text-sm text-gray-500 text-center pt-4">
-          Report generated on {new Date(data.generated_at).toLocaleString()}
+        <div className="text-xs text-gray-500 text-center pt-8 border-t border-gray-100 uppercase tracking-widest">
+          Analysis Synchronized on {new Date(data.generated_at).toLocaleString()}
         </div>
       )}
     </div>
